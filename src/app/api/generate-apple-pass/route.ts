@@ -1,19 +1,13 @@
-// @ts-nocheck
-import { NextRequest, NextResponse } from "next/server";
+// @ts-expect-error PKPass type definitions incomplete
 import { PKPass } from "passkit-generator";
 import fs from "fs/promises";
 import path from "path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
-    const { customerName, currentStamps } = await req.json();
-
-    if (!customerName || currentStamps === undefined) {
-      return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
-    }
-
-    // --- SÉCURITÉ : Authentification obligatoire ---
+    // --- SÉCURITÉ : Rate limiting ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -21,6 +15,25 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Session expirée ou non trouvée. Veuillez vous reconnecter." }, { status: 401 });
+    }
+
+    const rateLimitResult = rateLimit(`generate-apple-pass:${user.id}`, 30, 3600000); // 30/hour
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: "Limite de générations atteinte. Réessayez dans 1 heure." }, { status: 429 });
+    }
+
+    const { customerName, currentStamps } = await req.json();
+
+    if (!customerName || currentStamps === undefined) {
+      return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
+    }
+
+    if (typeof currentStamps !== 'number' || currentStamps < 0 || currentStamps > 10) {
+      return NextResponse.json({ error: "currentStamps doit être entre 0 et 10" }, { status: 400 });
+    }
+
+    if (typeof customerName !== 'string' || customerName.length < 2 || customerName.length > 100) {
+      return NextResponse.json({ error: "customerName invalide (2-100 caractères)" }, { status: 400 });
     }
 
     // --- SÉCURITÉ : Récupérer le marchand lié à cet utilisateur ---
@@ -136,7 +149,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error("Erreur de génération du Apple Pass:", error);
-    return NextResponse.json({ error: error.message || "Erreur lors de la génération" }, { status: 500 });
+    console.error("Apple Pass generation error:", error.message);
+    return NextResponse.json({ error: "Erreur lors de la génération de la carte" }, { status: 500 });
   }
 }
