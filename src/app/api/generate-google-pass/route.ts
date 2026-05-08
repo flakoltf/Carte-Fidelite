@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
+import { signQRCode } from "@/lib/qrSignature";
 
 export async function POST(req: Request) {
   try {
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
       },
       barcode: {
         type: "QR_CODE",
-        value: card.id // Le QR code contiendra l'ID unique de la carte en base
+        value: signQRCode(card.id)
       }
     };
 

@@ -21,16 +21,26 @@ export default function Login() {
     setError("");
 
     try {
+      // Client-side rate limiting indication (server will enforce)
       const { error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes("429") || error.message?.includes("too many")) {
+          setError("Trop de tentatives. Réessayez dans 15 minutes.");
+        } else {
+          setError(error.message || "Email ou mot de passe incorrect.");
+        }
+        throw error;
+      }
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Email ou mot de passe incorrect.");
+      if (!error) {
+        setError("Erreur de connexion. Réessayez.");
+      }
     } finally {
       setLoading(false);
     }

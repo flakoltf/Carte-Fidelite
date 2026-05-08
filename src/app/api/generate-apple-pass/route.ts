@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
+import { signQRCode } from "@/lib/qrSignature";
 
 export async function POST(req: NextRequest) {
   try {
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
     });
 
     pass.setBarcodes({
-      message: card.id, // Le QR contient l'ID unique
+      message: signQRCode(card.id),
       format: "PKBarcodeFormatQR",
       messageEncoding: "iso-8859-1",
       altText: "Scannez pour valider vos tampons"

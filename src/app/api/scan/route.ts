@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
+import { verifyQRCode } from "@/lib/qrSignature";
 
 export async function POST(req: Request) {
   try {
@@ -23,12 +24,20 @@ export async function POST(req: Request) {
 
     const { cardId } = await req.json();
 
-    if (!cardId || typeof cardId !== 'string' || cardId.length > 100) {
+    if (!cardId || typeof cardId !== 'string' || cardId.length > 200) {
       return NextResponse.json({ error: "ID de carte invalide" }, { status: 400 });
     }
 
+    // --- SÉCURITÉ : Vérifier la signature du QR code ---
+    const qrVerification = verifyQRCode(cardId);
+    if (!qrVerification.valid || !qrVerification.cardId) {
+      return NextResponse.json({ error: "QR code invalide ou forgé" }, { status: 400 });
+    }
+
+    const actualCardId = qrVerification.cardId;
+
     // --- SÉCURITÉ : Idempotence ---
-    const idempotencyKey = `${user.id}:${cardId}:${req.headers.get('idempotency-key') || ''}`;
+    const idempotencyKey = `${user.id}:${actualCardId}:${req.headers.get('idempotency-key') || ''}`;
     const cachedResponse = checkIdempotency(idempotencyKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
@@ -48,7 +57,7 @@ export async function POST(req: Request) {
     const { data: card, error: cardError } = await supabaseAdmin
       .from("loyalty_cards")
       .select("*, customers(*)")
-      .eq("id", cardId)
+      .eq("id", actualCardId)
       .single();
 
     if (cardError || !card) {
@@ -73,11 +82,11 @@ export async function POST(req: Request) {
     // 3. Incrémenter les points dans Supabase
     const { data: updatedCard, error: updateError } = await supabaseAdmin
       .from("loyalty_cards")
-      .update({ 
+      .update({
         stamps_count: newStamps,
         last_scan: new Date().toISOString()
       })
-      .eq("id", cardId)
+      .eq("id", actualCardId)
       .select("*, customers(*)")
       .single();
 
@@ -87,7 +96,7 @@ export async function POST(req: Request) {
     await supabaseAdmin
       .from("scan_history")
       .insert({
-        card_id: cardId,
+        card_id: actualCardId,
         merchant_id: card.merchant_id,
         points_added: 1
       });
