@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.20.10.9", "localhost:3000"],
+  turbopack: {
+    root: process.cwd(),
+  },
   headers: async () => [
     {
       source: "/(.*)",

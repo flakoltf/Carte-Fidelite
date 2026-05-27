@@ -1,29 +1,12 @@
-type IdempotencyRecord = {
-  timestamp: number;
-  response: any;
-};
+import { redis } from "./redis";
 
-const store: Record<string, IdempotencyRecord> = {};
-const TTL = 86400000; // 24 heures
+const TTL_SECONDS = 86400; // 24h
 
-export function checkIdempotency(key: string): any | null {
-  const record = store[key];
-  if (!record || Date.now() - record.timestamp > TTL) {
-    return null;
-  }
-  return record.response;
+export async function checkIdempotency(key: string): Promise<unknown | null> {
+  const value = await redis.get(`idem:${key}`);
+  return value ?? null;
 }
 
-export function setIdempotency(key: string, response: any) {
-  store[key] = { response, timestamp: Date.now() };
+export async function setIdempotency(key: string, response: unknown): Promise<void> {
+  await redis.set(`idem:${key}`, response, { ex: TTL_SECONDS });
 }
-
-// Cleanup old entries every 6 hours
-setInterval(() => {
-  const now = Date.now();
-  for (const key in store) {
-    if (now - store[key].timestamp > TTL) {
-      delete store[key];
-    }
-  }
-}, 21600000);

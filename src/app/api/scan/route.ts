@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
 import { verifyQRCode } from "@/lib/qrSignature";
+import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     // Rate limiting: 200 scans par minute par merchant
-    const rateLimitResult = rateLimit(`scan:${user.id}`, 200, 60000);
+    const rateLimitResult = await rateLimit(`scan:${user.id}`, 200, 60000);
     if (!rateLimitResult.success) {
       return NextResponse.json({ error: "Trop de scans. Réessayez dans 1 minute." }, { status: 429 });
     }
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
 
     // --- SÉCURITÉ : Idempotence ---
     const idempotencyKey = `${user.id}:${actualCardId}:${req.headers.get('idempotency-key') || ''}`;
-    const cachedResponse = checkIdempotency(idempotencyKey);
+    const cachedResponse = await checkIdempotency(idempotencyKey);
     if (cachedResponse) {
       return NextResponse.json(cachedResponse);
     }
@@ -101,9 +102,16 @@ export async function POST(req: Request) {
         points_added: 1
       });
 
-    // --- TODO: Optionnel ---
-    // Envoyer une notification Push à Apple/Google Wallet ici !
-    // Cela nécessite des credentials supplémentaires et une intégration API Push.
+    // 5. Audit trail (RGPD + forensics)
+    const meta = extractRequestMeta(req);
+    await logAuditEvent({
+      action: "CARD_SCANNED",
+      merchant_id: merchant.id,
+      user_id: user.id,
+      card_id: actualCardId,
+      details: { new_stamps: newStamps, reward_unlocked: rewardUnlocked },
+      ...meta,
+    });
 
     const response = {
       success: true,
@@ -111,7 +119,7 @@ export async function POST(req: Request) {
       rewardUnlocked
     };
 
-    setIdempotency(idempotencyKey, response);
+    await setIdempotency(idempotencyKey, response);
     return NextResponse.json(response);
 
   } catch (error: any) {

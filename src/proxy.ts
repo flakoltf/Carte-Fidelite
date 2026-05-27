@@ -33,8 +33,9 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protéger le dashboard et le scan
-  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/scan'))) {
+  // Protéger le dashboard, le scan et l'admin (présence de session ; le rôle est
+  // vérifié dans les layouts server).
+  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/scan') || request.nextUrl.pathname.startsWith('/admin'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -47,5 +48,7 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // /enroll/* (page publique d'enrôlement) et /api/enroll* sont exclus :
+  // ce sont des routes publiques, sans session, identifiées par enrollment_token.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|enroll|api/enroll|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

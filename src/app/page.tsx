@@ -63,18 +63,12 @@ export default function Home() {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link 
-                        href="/signup" 
+                    <Link
+                        href="/signup"
                         className="w-full sm:w-auto bg-emerald-500 text-black px-8 py-5 rounded-2xl font-bold text-lg hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
                     >
-                        Créer ma boutique gratutement
+                        Créer ma boutique gratuitement
                         <ArrowRight className="w-5 h-5" />
-                    </Link>
-                    <Link 
-                        href="/demo" 
-                        className="w-full sm:w-auto bg-zinc-900 border border-zinc-800 text-white px-8 py-5 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
-                    >
-                        Voir la démo
                     </Link>
                 </div>
             </motion.div>

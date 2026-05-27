@@ -1,6 +1,9 @@
 import crypto from 'crypto';
 
-const QR_SECRET_KEY = process.env.QR_SIGNATURE_SECRET || 'fallback-secret-change-in-production';
+if (!process.env.QR_SIGNATURE_SECRET) {
+  throw new Error('QR_SIGNATURE_SECRET is required. Set it in your environment.');
+}
+const QR_SECRET_KEY = process.env.QR_SIGNATURE_SECRET;
 
 export function signQRCode(cardId: string): string {
   const hmac = crypto.createHmac('sha256', QR_SECRET_KEY);

@@ -1,14 +1,15 @@
-// @ts-expect-error PKPass type definitions incomplete
-import { PKPass } from "passkit-generator";
-import fs from "fs/promises";
-import path from "path";
+import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
-import { signQRCode } from "@/lib/qrSignature";
+import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
+import { buildApplePassBuffer } from "@/lib/applePass";
+
+type CachedCard = { cardId: string; customerId: string; customerName: string; stamps: number };
 
 export async function POST(req: NextRequest) {
   try {
-    // --- SÉCURITÉ : Rate limiting ---
+    // --- SÉCURITÉ : Authentification + Rate limiting ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
     const { data: { session } } = await supabase.auth.getSession();
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Session expirée ou non trouvée. Veuillez vous reconnecter." }, { status: 401 });
     }
 
-    const rateLimitResult = rateLimit(`generate-apple-pass:${user.id}`, 30, 3600000); // 30/hour
+    const rateLimitResult = await rateLimit(`generate-apple-pass:${user.id}`, 30, 3600000); // 30/hour
     if (!rateLimitResult.success) {
       return NextResponse.json({ error: "Limite de générations atteinte. Réessayez dans 1 heure." }, { status: 429 });
     }
@@ -37,10 +38,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "customerName invalide (2-100 caractères)" }, { status: 400 });
     }
 
-    // --- SÉCURITÉ : Récupérer le marchand lié à cet utilisateur ---
+    // --- SÉCURITÉ : Récupérer le marchand lié à cet utilisateur (+ branding) ---
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id")
+      .select("id, shop_name, primary_color")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -48,100 +49,81 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Profil marchand manquant pour cet utilisateur" }, { status: 400 });
     }
 
-    const { data: customer, error: custError } = await supabaseAdmin
-      .from("customers")
-      .upsert({
+    // --- SÉCURITÉ : Idempotence (évite la double création BDD en cas de retry) ---
+    // On cache uniquement l'ID de la carte, pas le buffer binaire ;
+    // un même Idempotency-Key régénère le même pkpass pour la même carte BDD.
+    const idempotencyHeader = req.headers.get("idempotency-key");
+    const idempotencyKey = idempotencyHeader
+      ? `generate-apple:${user.id}:${idempotencyHeader}`
+      : null;
+
+    let cardId: string;
+    let resolvedCustomerName: string;
+    let resolvedStamps: number;
+
+    const cached = idempotencyKey ? (await checkIdempotency(idempotencyKey)) as CachedCard | null : null;
+    if (cached) {
+      cardId = cached.cardId;
+      resolvedCustomerName = cached.customerName;
+      resolvedStamps = cached.stamps;
+    } else {
+      const { data: customer, error: custError } = await supabaseAdmin
+        .from("customers")
+        .insert({
+          merchant_id: merchant.id,
+          full_name: customerName,
+        })
+        .select()
+        .single();
+
+      if (custError) throw custError;
+
+      const { data: card, error: cardError } = await supabaseAdmin
+        .from("loyalty_cards")
+        .insert({
+          customer_id: customer.id,
+          merchant_id: merchant.id,
+          stamps_count: currentStamps,
+          pass_type: 'apple'
+        })
+        .select()
+        .single();
+
+      if (cardError) throw cardError;
+
+      cardId = card.id;
+      resolvedCustomerName = customerName;
+      resolvedStamps = card.stamps_count;
+
+      const meta = extractRequestMeta(req);
+      await logAuditEvent({
+        action: "CARD_GENERATED",
         merchant_id: merchant.id,
-        full_name: customerName,
-        email: `${customerName.toLowerCase().replace(/\s+/g, '.')}_${merchant.id}_${Date.now()}@walletcard.local`
-      }, { onConflict: 'email' })
-      .select()
-      .single();
+        user_id: user.id,
+        card_id: card.id,
+        details: { pass_type: "apple", initial_stamps: currentStamps },
+        ...meta,
+      });
 
-    if (custError) throw custError;
-
-    const { data: card, error: cardError } = await supabaseAdmin
-      .from("loyalty_cards")
-      .insert({
-        customer_id: customer.id,
-        merchant_id: merchant.id,
-        stamps_count: currentStamps,
-        pass_type: 'apple'
-      })
-      .select()
-      .single();
-
-    if (cardError) throw cardError;
-
-    // --- LOGIQUE APPLE WALLET ---
-    const wwdrPath = process.env.WWDR_PEM_PATH || "certs/wwdr.pem";
-    const signerCertPath = process.env.SIGNER_CERT_PATH || "certs/signerCert.pem";
-    const signerKeyPath = process.env.SIGNER_KEY_PATH || "certs/signerKey.pem";
-    const signerKeyPassphrase = process.env.SIGNER_KEY_PASSPHRASE || "";
-
-    let wwdr, signerCert, signerKey;
-    try {
-        [wwdr, signerCert, signerKey] = await Promise.all([
-        fs.readFile(path.join(process.cwd(), wwdrPath)),
-        fs.readFile(path.join(process.cwd(), signerCertPath)),
-        fs.readFile(path.join(process.cwd(), signerKeyPath))
-        ]);
-    } catch (e) {
-        throw new Error("Certificats Apple manquants dans /certs. (wwdr.pem, signerCert.pem, signerKey.pem)");
+      if (idempotencyKey) {
+        await setIdempotency(idempotencyKey, {
+          cardId,
+          customerId: customer.id,
+          customerName: resolvedCustomerName,
+          stamps: resolvedStamps,
+        } satisfies CachedCard);
+      }
     }
 
-    const pass = new PKPass({
-      "passTypeIdentifier": process.env.APPLE_PASS_TYPE_ID || "pass.com.tamarque.fidelite",
-      "teamIdentifier": process.env.APPLE_TEAM_ID || "ABCDE12345",
-      "serialNumber": card.id, // ID unique de la base de données
-      "organizationName": "Ma Super Marque",
-      "logoText": "Fidélité",
-      "description": "Carte de fidélité numérique",
-      "backgroundColor": "rgb(23, 23, 23)", 
-      "foregroundColor": "rgb(255, 255, 255)", 
-      "labelColor": "rgb(156, 163, 175)", 
-    }, {
-      wwdr,
-      signerCert,
-      signerKey,
-      signerKeyPassphrase,
+    // --- LOGIQUE APPLE WALLET (extraite dans src/lib/applePass.ts) ---
+    const passBuffer = await buildApplePassBuffer({
+      cardId,
+      customerName: resolvedCustomerName,
+      stamps: resolvedStamps,
+      branding: { shopName: merchant.shop_name, primaryColor: merchant.primary_color },
     });
 
-    pass.type = "storeCard";
-
-    pass.primaryFields.push({
-      key: "stamps",
-      label: "TAMPONS",
-      value: `${card.stamps_count} / 10`,
-      textAlignment: "PKTextAlignmentRight"
-    });
-
-    pass.secondaryFields.push({
-      key: "customerName",
-      label: "CLIENT",
-      value: customerName
-    });
-
-    pass.setBarcodes({
-      message: signQRCode(card.id),
-      format: "PKBarcodeFormatQR",
-      messageEncoding: "iso-8859-1",
-      altText: "Scannez pour valider vos tampons"
-    });
-
-    const assetsPath = path.join(process.cwd(), "public", "pass-assets");
-    try {
-        pass.addBuffer("icon.png", await fs.readFile(path.join(assetsPath, "icon.png")));
-        pass.addBuffer("icon@2x.png", await fs.readFile(path.join(assetsPath, "icon@2x.png")));
-        pass.addBuffer("logo.png", await fs.readFile(path.join(assetsPath, "logo.png")));
-        pass.addBuffer("strip.png", await fs.readFile(path.join(assetsPath, "strip.png"))); 
-    } catch (e) {
-        console.warn("Certaines images manquantes dans public/pass-assets.");
-    }
-    
-    const passBuffer = pass.getAsBuffer();
-
-    return new NextResponse(passBuffer, {
+    return new NextResponse(new Uint8Array(passBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.apple.pkpass",
@@ -149,8 +131,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error("Apple Pass generation error:", error.message);
+  } catch (error) {
+    console.error("Apple Pass generation error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Erreur lors de la génération de la carte" }, { status: 500 });
   }
 }

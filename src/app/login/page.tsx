@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Wallet, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
@@ -13,7 +12,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const supabaseClient = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,26 +19,22 @@ export default function Login() {
     setError("");
 
     try {
-      // Client-side rate limiting indication (server will enforce)
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (error) {
-        if (error.message?.includes("429") || error.message?.includes("too many")) {
-          setError("Trop de tentatives. Réessayez dans 15 minutes.");
-        } else {
-          setError(error.message || "Email ou mot de passe incorrect.");
-        }
-        throw error;
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error || "Email ou mot de passe incorrect.");
+        return;
       }
 
-      router.push("/dashboard");
-    } catch (err: any) {
-      if (!error) {
-        setError("Erreur de connexion. Réessayez.");
-      }
+      router.push(body.role === "admin" ? "/admin" : "/dashboard");
+      router.refresh();
+    } catch {
+      setError("Erreur de connexion. Réessayez.");
     } finally {
       setLoading(false);
     }
@@ -123,9 +117,8 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text-center text-zinc-500 text-sm mt-8">
-            Vous n'avez pas de compte ?{" "}
-            <Link href="/signup" className="text-white font-bold hover:underline">Créer un compte</Link>
+          <p className="text-center text-zinc-600 text-xs mt-8">
+            Les comptes marchands sont créés par l&apos;administrateur.
           </p>
         </div>
       </motion.div>

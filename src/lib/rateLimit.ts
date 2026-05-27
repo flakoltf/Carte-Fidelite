@@ -1,34 +1,30 @@
-type RateLimitStore = Record<string, { count: number; resetTime: number }>;
+import { Ratelimit } from "@upstash/ratelimit";
+import { redis } from "./redis";
 
-const store: RateLimitStore = {};
+const limiters = new Map<string, Ratelimit>();
 
-export function rateLimit(
-  key: string,
-  limit: number = 10,
-  windowMs: number = 60000 // 1 minute
-): { success: boolean; remaining: number } {
-  const now = Date.now();
-  const record = store[key];
+function getLimiter(prefix: string, limit: number, windowMs: number): Ratelimit {
+  const cacheKey = `${prefix}:${limit}:${windowMs}`;
+  const cached = limiters.get(cacheKey);
+  if (cached) return cached;
 
-  if (!record || now >= record.resetTime) {
-    store[key] = { count: 1, resetTime: now + windowMs };
-    return { success: true, remaining: limit - 1 };
-  }
-
-  if (record.count >= limit) {
-    return { success: false, remaining: 0 };
-  }
-
-  record.count++;
-  return { success: true, remaining: limit - record.count };
+  const limiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+    prefix: `rl:${prefix}`,
+    analytics: true,
+  });
+  limiters.set(cacheKey, limiter);
+  return limiter;
 }
 
-// Cleanup old entries every hour
-setInterval(() => {
-  const now = Date.now();
-  for (const key in store) {
-    if (now >= store[key].resetTime) {
-      delete store[key];
-    }
-  }
-}, 3600000);
+export async function rateLimit(
+  key: string,
+  limit: number = 10,
+  windowMs: number = 60000
+): Promise<{ success: boolean; remaining: number }> {
+  const [prefix] = key.split(":");
+  const limiter = getLimiter(prefix || "default", limit, windowMs);
+  const { success, remaining } = await limiter.limit(key);
+  return { success, remaining };
+}
