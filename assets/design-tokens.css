@@ -1,0 +1,95 @@
+/* Design Tokens - Auto-generated */
+/* Do not edit directly - modify tokens.json instead */
+
+/* === PRIMITIVES === */
+:root {
+  --primitive-color-calcaire-500: #F3F0E9;
+  --primitive-color-galet-300: #C4C6C8;
+  --primitive-color-galet-500: #9B9DA0;
+  --primitive-color-galet-700: #6E7073;
+  --primitive-color-white-500: #FFFFFF;
+  --primitive-color-emerald-50: #E6F2EF;
+  --primitive-color-emerald-100: #C2E0D9;
+  --primitive-color-emerald-200: #8FC7BB;
+  --primitive-color-emerald-300: #5BAD9C;
+  --primitive-color-emerald-400: #2E8C7B;
+  --primitive-color-emerald-500: #0D6B5E;
+  --primitive-color-emerald-600: #0A574C;
+  --primitive-color-emerald-700: #08443B;
+  --primitive-color-emerald-800: #06322C;
+  --primitive-color-emerald-900: #04221E;
+  --primitive-color-onyx-50: #EDEDEE;
+  --primitive-color-onyx-100: #D2D3D5;
+  --primitive-color-onyx-200: #A7A8AB;
+  --primitive-color-onyx-300: #7A7C7F;
+  --primitive-color-onyx-400: #46484C;
+  --primitive-color-onyx-500: #0E0F11;
+  --primitive-color-onyx-600: #0B0C0E;
+  --primitive-color-onyx-700: #08090A;
+  --primitive-color-onyx-800: #050506;
+  --primitive-color-onyx-900: #020203;
+  --primitive-color-emerald-glow-50: #E9FBF6;
+  --primitive-color-emerald-glow-100: #C8F5EA;
+  --primitive-color-emerald-glow-200: #92E9D5;
+  --primitive-color-emerald-glow-300: #5CD7BD;
+  --primitive-color-emerald-glow-400: #34C7A8;
+  --primitive-color-emerald-glow-500: #1FB89A;
+  --primitive-color-emerald-glow-600: #17937B;
+  --primitive-color-emerald-glow-700: #126E5D;
+  --primitive-color-emerald-glow-800: #0C4A3E;
+  --primitive-color-emerald-glow-900: #062721;
+  --primitive-color-warning-500: #E8B964;
+  --primitive-color-danger-300: #F09683;
+  --primitive-color-danger-500: #E2513A;
+  --primitive-color-info-300: #8FC3EC;
+  --primitive-color-info-500: #4FA3E0;
+  --primitive-spacing-xs: 4px;
+  --primitive-spacing-sm: 8px;
+  --primitive-spacing-md: 16px;
+  --primitive-spacing-lg: 24px;
+  --primitive-spacing-xl: 40px;
+  --primitive-spacing-2xl: 64px;
+  --primitive-spacing-3xl: 120px;
+  --primitive-radius-sm: 6px;
+  --primitive-radius-md: 10px;
+  --primitive-radius-lg: 18px;
+  --primitive-radius-pill: 100px;
+  --primitive-font-heading: 'Canela', 'Fraunces', Georgia, serif;
+  --primitive-font-body: 'Söhne', 'Inter', system-ui, -apple-system, sans-serif;
+  --primitive-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --primitive-fontWeight-light: 300;
+  --primitive-fontWeight-regular: 400;
+  --primitive-fontWeight-medium: 500;
+  --primitive-fontWeight-semibold: 600;
+}
+
+/* === SEMANTIC === */
+:root {
+  --color-primary: #0D6B5E;
+  --color-primary-hover: #0A574C;
+  --color-primary-active: #08443B;
+  --color-primary-light: #2E8C7B;
+  --color-primary-lighter: #C2E0D9;
+  --color-secondary: #0E0F11;
+  --color-secondary-hover: #0B0C0E;
+  --color-secondary-light: #7A7C7F;
+  --color-accent: #1FB89A;
+  --color-accent-hover: #17937B;
+  --color-accent-light: #5CD7BD;
+  --color-bg: #0E0F11;
+  --color-surface: #46484C;
+  --color-text: #F3F0E9;
+  --color-text-muted: #9B9DA0;
+  --color-success: #1FB89A;
+  --color-success-light: #5CD7BD;
+  --color-warning: #E8B964;
+  --color-error: #E2513A;
+  --color-error-light: #F09683;
+  --color-info: #4FA3E0;
+  --color-info-light: #8FC3EC;
+}
+
+/* === COMPONENTS === */
+:root {
+  --button-secondary-bg-hover: #0D6B5E1A;
+}

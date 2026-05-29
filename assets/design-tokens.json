@@ -1,0 +1,124 @@
+{
+  "brand": "HALO",
+  "primitive": {
+    "color": {
+      "calcaire": {
+        "500": { "$value": "#F3F0E9", "$type": "color" }
+      },
+      "galet": {
+        "300": { "$value": "#C4C6C8", "$type": "color" },
+        "500": { "$value": "#9B9DA0", "$type": "color" },
+        "700": { "$value": "#6E7073", "$type": "color" }
+      },
+      "white": {
+        "500": { "$value": "#FFFFFF", "$type": "color" }
+      },
+      "emerald": {
+        "50": { "$value": "#E6F2EF", "$type": "color" },
+        "100": { "$value": "#C2E0D9", "$type": "color" },
+        "200": { "$value": "#8FC7BB", "$type": "color" },
+        "300": { "$value": "#5BAD9C", "$type": "color" },
+        "400": { "$value": "#2E8C7B", "$type": "color" },
+        "500": { "$value": "#0D6B5E", "$type": "color" },
+        "600": { "$value": "#0A574C", "$type": "color" },
+        "700": { "$value": "#08443B", "$type": "color" },
+        "800": { "$value": "#06322C", "$type": "color" },
+        "900": { "$value": "#04221E", "$type": "color" }
+      },
+      "onyx": {
+        "50": { "$value": "#EDEDEE", "$type": "color" },
+        "100": { "$value": "#D2D3D5", "$type": "color" },
+        "200": { "$value": "#A7A8AB", "$type": "color" },
+        "300": { "$value": "#7A7C7F", "$type": "color" },
+        "400": { "$value": "#46484C", "$type": "color" },
+        "500": { "$value": "#0E0F11", "$type": "color" },
+        "600": { "$value": "#0B0C0E", "$type": "color" },
+        "700": { "$value": "#08090A", "$type": "color" },
+        "800": { "$value": "#050506", "$type": "color" },
+        "900": { "$value": "#020203", "$type": "color" }
+      },
+      "emerald-glow": {
+        "50": { "$value": "#E9FBF6", "$type": "color" },
+        "100": { "$value": "#C8F5EA", "$type": "color" },
+        "200": { "$value": "#92E9D5", "$type": "color" },
+        "300": { "$value": "#5CD7BD", "$type": "color" },
+        "400": { "$value": "#34C7A8", "$type": "color" },
+        "500": { "$value": "#1FB89A", "$type": "color" },
+        "600": { "$value": "#17937B", "$type": "color" },
+        "700": { "$value": "#126E5D", "$type": "color" },
+        "800": { "$value": "#0C4A3E", "$type": "color" },
+        "900": { "$value": "#062721", "$type": "color" }
+      },
+      "warning": {
+        "500": { "$value": "#E8B964", "$type": "color" }
+      },
+      "danger": {
+        "300": { "$value": "#F09683", "$type": "color" },
+        "500": { "$value": "#E2513A", "$type": "color" }
+      },
+      "info": {
+        "300": { "$value": "#8FC3EC", "$type": "color" },
+        "500": { "$value": "#4FA3E0", "$type": "color" }
+      }
+    },
+    "spacing": {
+      "xs": { "$value": "4px", "$type": "dimension" },
+      "sm": { "$value": "8px", "$type": "dimension" },
+      "md": { "$value": "16px", "$type": "dimension" },
+      "lg": { "$value": "24px", "$type": "dimension" },
+      "xl": { "$value": "40px", "$type": "dimension" },
+      "2xl": { "$value": "64px", "$type": "dimension" },
+      "3xl": { "$value": "120px", "$type": "dimension" }
+    },
+    "radius": {
+      "sm": { "$value": "6px", "$type": "dimension" },
+      "md": { "$value": "10px", "$type": "dimension" },
+      "lg": { "$value": "18px", "$type": "dimension" },
+      "pill": { "$value": "100px", "$type": "dimension" }
+    },
+    "font": {
+      "heading": { "$value": "'Canela', 'Fraunces', Georgia, serif", "$type": "fontFamily" },
+      "body": { "$value": "'Söhne', 'Inter', system-ui, -apple-system, sans-serif", "$type": "fontFamily" },
+      "mono": { "$value": "'JetBrains Mono', 'Fira Code', monospace", "$type": "fontFamily" }
+    },
+    "fontWeight": {
+      "light": { "$value": "300", "$type": "fontWeight" },
+      "regular": { "$value": "400", "$type": "fontWeight" },
+      "medium": { "$value": "500", "$type": "fontWeight" },
+      "semibold": { "$value": "600", "$type": "fontWeight" }
+    }
+  },
+  "semantic": {
+    "color": {
+      "primary": { "$value": "{primitive.color.emerald.500}", "$type": "color" },
+      "primary-hover": { "$value": "{primitive.color.emerald.600}", "$type": "color" },
+      "primary-active": { "$value": "{primitive.color.emerald.700}", "$type": "color" },
+      "primary-light": { "$value": "{primitive.color.emerald.400}", "$type": "color" },
+      "primary-lighter": { "$value": "{primitive.color.emerald.100}", "$type": "color" },
+      "secondary": { "$value": "{primitive.color.onyx.500}", "$type": "color" },
+      "secondary-hover": { "$value": "{primitive.color.onyx.600}", "$type": "color" },
+      "secondary-light": { "$value": "{primitive.color.onyx.300}", "$type": "color" },
+      "accent": { "$value": "{primitive.color.emerald-glow.500}", "$type": "color" },
+      "accent-hover": { "$value": "{primitive.color.emerald-glow.600}", "$type": "color" },
+      "accent-light": { "$value": "{primitive.color.emerald-glow.300}", "$type": "color" },
+      "bg": { "$value": "{primitive.color.onyx.500}", "$type": "color" },
+      "surface": { "$value": "{primitive.color.onyx.400}", "$type": "color" },
+      "text": { "$value": "{primitive.color.calcaire.500}", "$type": "color" },
+      "text-muted": { "$value": "{primitive.color.galet.500}", "$type": "color" },
+      "success": { "$value": "{primitive.color.emerald-glow.500}", "$type": "color" },
+      "success-light": { "$value": "{primitive.color.emerald-glow.300}", "$type": "color" },
+      "warning": { "$value": "{primitive.color.warning.500}", "$type": "color" },
+      "error": { "$value": "{primitive.color.danger.500}", "$type": "color" },
+      "error-light": { "$value": "{primitive.color.danger.300}", "$type": "color" },
+      "info": { "$value": "{primitive.color.info.500}", "$type": "color" },
+      "info-light": { "$value": "{primitive.color.info.300}", "$type": "color" }
+    }
+  },
+  "component": {
+    "button": {
+      "secondary": {
+        "bg-hover": { "$value": "#0D6B5E1A", "$type": "color" }
+      }
+    }
+  }
+}

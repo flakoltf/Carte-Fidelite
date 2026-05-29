@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HALO — Concept visuel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --onyx:#0E0F11;
+    --calcaire:#F3F0E9;
+    --galet:#9B9DA0;
+    --emerald:#0D6B5E;
+    --emerald-glow:#1FB89A;
+    --champagne:#C8A96A;
+    --champagne-glow:#E6CF9B;
+    --accent:var(--emerald);
+    --accent-glow:var(--emerald-glow);
+    --serif:'Fraunces',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--onyx);
+    color:var(--calcaire);
+    font-family:var(--sans);
+    font-weight:300;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 40px}
+  section{padding:120px 0;border-bottom:1px solid rgba(243,240,233,.07)}
+  .eyebrow{
+    font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--galet);font-weight:500;margin-bottom:28px;
+  }
+  h2{font-family:var(--serif);font-weight:300;font-size:44px;line-height:1.1;letter-spacing:-.01em;margin-bottom:18px}
+  h2 em{font-style:italic;color:var(--accent-glow)}
+  .lede{color:var(--galet);max-width:560px;font-size:17px}
+  .accent-txt{color:var(--accent-glow)}
+
+  /* ---------- switcher ---------- */
+  .switcher{
+    position:fixed;top:24px;right:24px;z-index:50;
+    background:rgba(20,21,24,.78);backdrop-filter:blur(14px);
+    border:1px solid rgba(243,240,233,.12);border-radius:100px;
+    padding:6px;display:flex;gap:4px;
+  }
+  .switcher button{
+    font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--galet);background:transparent;border:none;cursor:pointer;
+    padding:8px 16px;border-radius:100px;transition:.3s;font-weight:500;
+  }
+  .switcher button.on{background:var(--accent);color:#fff}
+
+  /* ---------- hero ---------- */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;border:none;position:relative}
+  .hero-glow{
+    position:absolute;width:620px;height:620px;border-radius:50%;
+    background:radial-gradient(circle,var(--accent) 0%,transparent 62%);
+    opacity:.16;filter:blur(40px);transition:1s;
+  }
+  .logotype{
+    font-family:var(--serif);font-weight:300;font-size:clamp(64px,13vw,150px);
+    letter-spacing:.06em;display:flex;align-items:center;justify-content:center;
+    position:relative;z-index:2;
+  }
+  .logotype .ring-o{
+    display:inline-block;width:.78em;height:.78em;border-radius:50%;
+    border:3px solid var(--calcaire);position:relative;margin:0 .04em;
+    box-shadow:0 0 0 0 transparent;
+  }
+  .logotype .ring-o::after{
+    content:"";position:absolute;inset:-3px;border-radius:50%;
+    border:3px solid transparent;border-top-color:var(--accent-glow);border-right-color:var(--accent-glow);
+    transform:rotate(-35deg);transition:.5s;
+  }
+  .tag{margin-top:42px;font-size:13px;letter-spacing:.42em;text-transform:uppercase;color:var(--galet);z-index:2}
+  .scrollcue{position:absolute;bottom:38px;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--galet);opacity:.6;z-index:2}
+
+  /* ---------- mark ---------- */
+  .mark-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:64px}
+  .mark-cell{
+    aspect-ratio:1;border:1px solid rgba(243,240,233,.1);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .mark-cell.light{background:var(--calcaire)}
+  .mark-cell .label{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--galet)}
+  .mark-cell.light .label{color:#7a766c}
+  svg .ring{stroke:var(--calcaire)}
+  .mark-cell.light svg .ring{stroke:var(--onyx)}
+  svg .glint{stroke:var(--accent-glow)}
+
+  /* ---------- palette ---------- */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;margin-top:56px}
+  .swatch{border-radius:6px;overflow:hidden;border:1px solid rgba(243,240,233,.08)}
+  .swatch .chip{height:130px}
+  .swatch .meta{padding:16px 18px;background:rgba(255,255,255,.02)}
+  .swatch .nm{font-size:14px;font-weight:500;margin-bottom:3px}
+  .swatch .hx{font-size:12px;color:var(--galet);letter-spacing:.08em}
+  .swatch .use{font-size:11px;color:var(--galet);margin-top:8px;line-height:1.4}
+
+  /* ---------- type ---------- */
+  .type-block{margin-top:56px;display:grid;gap:48px}
+  .type-row{border-top:1px solid rgba(243,240,233,.08);padding-top:32px}
+  .type-row .tlabel{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--galet);margin-bottom:20px}
+  .specimen-serif{font-family:var(--serif);font-weight:300;font-size:clamp(40px,7vw,76px);line-height:1.05;letter-spacing:-.01em}
+  .specimen-serif em{font-style:italic;color:var(--accent-glow)}
+  .glyphs{font-family:var(--serif);font-weight:300;font-size:30px;color:var(--galet);letter-spacing:.04em;margin-top:18px}
+  .specimen-sans{font-size:19px;max-width:620px;color:#cfccc3;font-weight:300}
+  .sans-weights{display:flex;gap:32px;flex-wrap:wrap;margin-top:22px;color:var(--galet);font-size:15px}
+  .sans-weights span{display:block}
+  .w3{font-weight:300}.w4{font-weight:400}.w5{font-weight:500}.w6{font-weight:600}
+
+  /* ---------- cards ---------- */
+  .cards-row{display:flex;gap:48px;flex-wrap:wrap;margin-top:60px;justify-content:center}
+  .card-unit{display:flex;flex-direction:column;gap:18px}
+  .card-unit .cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--galet);text-align:center}
+  .card{
+    width:340px;height:214px;border-radius:14px;position:relative;overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.7);
+  }
+  /* recto onyx soft-touch */
+  .card.recto{
+    background:
+      radial-gradient(120% 140% at 80% 10%, rgba(255,255,255,.04), transparent 50%),
+      linear-gradient(150deg,#16171a,#0b0c0e);
+  }
+  .card.recto::before{ /* edge accent strip */
+    content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:var(--accent);
+  }
+  .card .brandmark{position:absolute;top:22px;left:24px;display:flex;align-items:center;gap:10px}
+  .card .brandmark .wm{font-family:var(--serif);font-size:17px;letter-spacing:.16em;color:var(--calcaire)}
+  .card .tier{position:absolute;bottom:20px;left:24px;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--galet)}
+  .card .spotuv{position:absolute;bottom:18px;right:22px;font-family:var(--serif);font-style:italic;font-size:13px;color:rgba(243,240,233,.16)}
+
+  /* metal eclipse */
+  .card.metal{
+    background:
+      linear-gradient(125deg, #2a2c30 0%, #0e0f11 28%, #303338 52%, #0c0d0f 78%, #26282c 100%);
+  }
+  .card.metal::after{ /* brushed sheen */
+    content:"";position:absolute;inset:0;opacity:.5;
+    background:repeating-linear-gradient(125deg,rgba(255,255,255,.03) 0 1px,transparent 1px 3px);
+  }
+  .card.metal .tier{color:#cdd0d4}
+
+  /* verso */
+  .card.verso{background:linear-gradient(150deg,#141518,#0b0c0e)}
+  .card.verso .magstripe{position:absolute;top:26px;left:0;right:0;height:40px;background:linear-gradient(#000,#1a1a1c)}
+  .card.verso .qr{position:absolute;bottom:22px;right:22px;width:62px;height:62px;background:#fff;border-radius:6px;padding:6px}
+  .card.verso .qr svg{width:100%;height:100%}
+  .card.verso .name{position:absolute;bottom:30px;left:24px;font-size:13px;letter-spacing:.18em;color:var(--calcaire);text-transform:uppercase}
+  .card.verso .meta{position:absolute;bottom:14px;left:24px;font-size:9px;letter-spacing:.14em;color:var(--galet)}
+  .card.verso .nfc{position:absolute;top:78px;left:24px;color:var(--galet);opacity:.7}
+  .card.verso::before{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:var(--accent)}
+
+  /* ---------- wallet ---------- */
+  .wallet-row{display:flex;gap:60px;flex-wrap:wrap;align-items:center;margin-top:56px;justify-content:center}
+  .phone{
+    width:300px;height:600px;border-radius:46px;background:#000;
+    border:1px solid rgba(243,240,233,.14);padding:14px;position:relative;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.8);
+  }
+  .phone .screen{width:100%;height:100%;border-radius:34px;background:linear-gradient(#0a0b0d,#121316);overflow:hidden;position:relative;padding:54px 20px 20px}
+  .phone .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:14px;z-index:5}
+  .phone .status{position:absolute;top:20px;left:24px;right:24px;display:flex;justify-content:space-between;font-size:12px;color:var(--galet)}
+  .wallet-card{
+    border-radius:18px;height:200px;position:relative;overflow:hidden;margin-top:10px;
+    background:radial-gradient(120% 140% at 80% 8%, rgba(255,255,255,.05), transparent 50%),linear-gradient(150deg,#17181b,#0a0b0d);
+    box-shadow:0 20px 40px -16px rgba(0,0,0,.7);
+  }
+  .wallet-card .sweep{
+    position:absolute;top:-60%;left:-30%;width:50%;height:220%;
+    background:linear-gradient(105deg,transparent,rgba(243,240,233,.10),var(--accent-glow),rgba(243,240,233,.10),transparent);
+    filter:blur(6px);transform:rotate(8deg);
+    animation:sweep 5.5s ease-in-out infinite;
+  }
+  @keyframes sweep{0%{left:-40%}55%{left:120%}100%{left:120%}}
+  .wallet-card .wm{position:absolute;top:20px;left:22px;font-family:var(--serif);font-size:16px;letter-spacing:.16em}
+  .wallet-card .pts{position:absolute;bottom:46px;left:22px;font-family:var(--serif);font-size:34px;font-weight:300}
+  .wallet-card .pts small{font-size:12px;font-family:var(--sans);letter-spacing:.2em;color:var(--galet);text-transform:uppercase;display:block;margin-top:2px}
+  .wallet-card .tier{position:absolute;bottom:18px;right:22px;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent-glow)}
+  .wallet-card::before{content:"";position:absolute;top:0;bottom:0;right:0;width:4px;background:var(--accent)}
+  .wallet-note{max-width:300px}
+  .wallet-note h3{font-family:var(--serif);font-weight:300;font-size:26px;margin-bottom:14px}
+  .wallet-note p{color:var(--galet);font-size:15px;margin-bottom:14px}
+  .wallet-note .ring-demo{margin-top:10px}
+
+  footer{padding:80px 0;text-align:center;color:var(--galet);font-size:13px;letter-spacing:.1em}
+  .pulse-ring{animation:pulse 4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+  @media(max-width:640px){.mark-grid{grid-template-columns:1fr 1fr}.wrap{padding:0 24px}h2{font-size:34px}}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <button id="b-em" class="on" onclick="setAccent('emerald')">Émeraude</button>
+  <button id="b-ch" onclick="setAccent('champagne')">Champagne</button>
+</div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="logotype">HAL<span class="ring-o"></span></div>
+  <div class="tag">Entrez dans le cercle</div>
+  <div class="scrollcue">défiler ↓</div>
+</header>
+
+<!-- MARK -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">01 — Le Symbole</div>
+    <h2>Le <em>Halo</em> pur.</h2>
+    <p class="lede">Un cercle parfait, traversé d'un seul arc de lumière — le <em class="accent-txt">glint</em>. Du favicon 16px à la façade. Le nom <em>est</em> le logo.</p>
+    <div class="mark-grid">
+      <div class="mark-cell">
+        <svg viewBox="0 0 120 120" width="62%">
+          <circle class="ring" cx="60" cy="60" r="42" fill="none" stroke-width="2.5"/>
+          <circle class="glint" cx="60" cy="60" r="42" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="40 264" transform="rotate(-58 60 60)"/>
+        </svg>
+        <div class="label">symbole · onyx</div>
+      </div>
+      <div class="mark-cell light">
+        <svg viewBox="0 0 120 120" width="62%">
+          <circle class="ring" cx="60" cy="60" r="42" fill="none" stroke-width="2.5"/>
+          <circle class="glint" cx="60" cy="60" r="42" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="40 264" transform="rotate(-58 60 60)"/>
+        </svg>
+        <div class="label">symbole · calcaire</div>
+      </div>
+      <div class="mark-cell">
+        <div style="font-family:var(--serif);font-weight:300;font-size:34px;letter-spacing:.1em;display:flex;align-items:center">
+          HAL<span style="display:inline-block;width:.8em;height:.8em;border-radius:50%;border:2.5px solid var(--calcaire);position:relative;margin-left:.04em">
+            <span style="position:absolute;inset:-2.5px;border-radius:50%;border:2.5px solid transparent;border-top-color:var(--accent-glow);border-right-color:var(--accent-glow);transform:rotate(-35deg)"></span>
+          </span>
+        </div>
+        <div class="label">lock-up · wordmark</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PALETTE -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">02 — Palette · Minéral &amp; Joyau</div>
+    <h2>Le calme, puis <em>l'étincelle</em>.</h2>
+    <p class="lede">Une base presque monochrome, sobre et coûteuse. Un seul accent jewel-tone crée le désir. Utilise le commutateur en haut à droite pour comparer.</p>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#0E0F11"></div><div class="meta"><div class="nm">Noir Onyx</div><div class="hx">#0E0F11</div><div class="use">Fonds, texte, la carte.</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#F3F0E9"></div><div class="meta"><div class="nm">Blanc Calcaire</div><div class="hx">#F3F0E9</div><div class="use">Off-white chaud, respiration.</div></div></div>
+      <div class="swatch"><div class="chip" style="background:#9B9DA0"></div><div class="meta"><div class="nm">Gris Galet</div><div class="hx">#9B9DA0</div><div class="use">Neutre, lignes, textes secondaires.</div></div></div>
+      <div class="swatch"><div class="chip" style="background:var(--accent);transition:.4s"></div><div class="meta"><div class="nm" id="acc-name">Vert Émeraude</div><div class="hx" id="acc-hex">#0D6B5E</div><div class="use">L'accent signature.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPO -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">03 — Typographie</div>
+    <h2>Serif fin <em>×</em> Grotesque suisse.</h2>
+    <p class="lede">Le contraste <em>est</em> la marque : l'émotion d'une serif éditoriale, la rigueur d'une grotesque. (Aperçu : Fraunces &amp; Inter — substituts libres de Canela &amp; Söhne.)</p>
+    <div class="type-block">
+      <div class="type-row">
+        <div class="tlabel">Titres — Canela · sub. Fraunces</div>
+        <div class="specimen-serif">Le privilège,<br><em>en silence.</em></div>
+        <div class="glyphs">ABCDEFGHIJ — abcdefghij — 0123456789 — &amp;?!</div>
+      </div>
+      <div class="type-row">
+        <div class="tlabel">Courant — Söhne · sub. Inter</div>
+        <div class="specimen-sans">HALO révèle votre place dans la ville. Un accès choisi aux meilleures adresses de Genève, jamais affiché — un cercle discret où la fidélité a enfin la valeur qu'elle mérite.</div>
+        <div class="sans-weights">
+          <span class="w3">Light 300</span><span class="w4">Regular 400</span><span class="w5">Medium 500</span><span class="w6">Semibold 600</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARDS -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">04 — La Carte · Physique</div>
+    <h2>Le vide est le <em>luxe</em>.</h2>
+    <p class="lede">80% de silence. Le logo en spot-UV n'apparaît qu'à la lumière. Tranche peinte en accent. Numéro absent de la face — le mystère.</p>
+
+    <div class="cards-row">
+      <div class="card-unit">
+        <div class="card recto">
+          <div class="brandmark">
+            <svg viewBox="0 0 120 120" width="26"><circle cx="60" cy="60" r="42" fill="none" stroke="#F3F0E9" stroke-width="3"/><circle cx="60" cy="60" r="42" fill="none" stroke="var(--accent-glow)" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="40 264" transform="rotate(-58 60 60)"/></svg>
+            <span class="wm">HALO</span>
+          </div>
+          <div class="tier">Éclipse</div>
+          <div class="spotuv">spot-UV</div>
+        </div>
+        <div class="cap">Recto — PVC soft-touch onyx</div>
+      </div>
+
+      <div class="card-unit">
+        <div class="card verso">
+          <div class="magstripe"></div>
+          <div class="nfc">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 8.5a8 8 0 0 1 0 7M9.5 6a12 12 0 0 1 0 12M3 11a4 4 0 0 1 0 2"/></svg>
+          </div>
+          <div class="name">A. Letaief</div>
+          <div class="meta">halo.ch · membre depuis 2026</div>
+          <div class="qr"><svg viewBox="0 0 50 50" id="qr"></svg></div>
+        </div>
+        <div class="cap">Verso — NFC · QR · gravure</div>
+      </div>
+
+      <div class="card-unit">
+        <div class="card metal recto">
+          <div class="brandmark">
+            <svg viewBox="0 0 120 120" width="26"><circle cx="60" cy="60" r="42" fill="none" stroke="#e8eaec" stroke-width="3"/><circle cx="60" cy="60" r="42" fill="none" stroke="var(--accent-glow)" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="40 264" transform="rotate(-58 60 60)"/></svg>
+            <span class="wm" style="color:#e8eaec">HALO</span>
+          </div>
+          <div class="tier">Éclipse · métal</div>
+        </div>
+        <div class="cap">Palier sommet — métal brossé</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WALLET -->
+<section style="border:none">
+  <div class="wrap">
+    <div class="eyebrow">05 — La Carte · Digitale</div>
+    <h2>La lumière qui <em>respire</em>.</h2>
+    <div class="wallet-row">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="status"><span>9:41</span><span>HALO</span></div>
+          <div class="wallet-card">
+            <div class="sweep"></div>
+            <div class="wm">HALO</div>
+            <div class="pts">1&nbsp;240<small>points · cercle</small></div>
+            <div class="tier">Éclipse</div>
+          </div>
+        </div>
+      </div>
+      <div class="wallet-note">
+        <h3>Indiscernable du physique.</h3>
+        <p>Pass Apple / Google Wallet. Même onyx, même accent, mêmes marges.</p>
+        <p>Un reflet balaie lentement le halo. À chaque gain, le cercle <span class="accent-txt">s'intensifie</span> — micro-animation + haptique. Le « Vibrant », sans trahir la sobriété.</p>
+        <div class="ring-demo">
+          <svg class="pulse-ring" viewBox="0 0 120 120" width="56"><circle cx="60" cy="60" r="42" fill="none" stroke="var(--accent-glow)" stroke-width="3"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>HALO — Concept visuel · Direction artistique · Genève 2026</footer>
+
+<script>
+  // QR placeholder (motif fixe, esthétique)
+  (function(){
+    var pat=[
+      "1111111 0 1011 0 1111111",
+      "1000001 0 0110 0 1000001",
+      "1011101 0 1001 0 1011101",
+      "1011101 0 0111 0 1011101",
+      "1011101 0 1010 0 1011101",
+      "1000001 0 0101 0 1000001",
+      "1111111 0 1011 0 1111111",
+      "0000000 0 0000 0 0000000",
+      "1010110 1 0110 1 0101101",
+      "0110011 0 1001 1 1010010",
+      "1101001 1 0110 0 0110101",
+      "0010110 0 1101 1 1001010",
+      "1100101 1 0011 0 0110110",
+      "0000000 0 1010 1 1000001",
+      "1111111 0 0110 0 1011101",
+      "1000001 0 1011 1 1000101",
+      "1011101 0 0101 0 1110111"
+    ];
+    var svg=document.getElementById('qr'); if(!svg)return;
+    pat.forEach(function(row,y){
+      row.replace(/ /g,'').split('').forEach(function(c,x){
+        if(c==='1'){
+          var r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+          r.setAttribute('x',x*2.7+1);r.setAttribute('y',y*2.7+1);
+          r.setAttribute('width',2.5);r.setAttribute('height',2.5);r.setAttribute('fill','#0E0F11');
+          svg.appendChild(r);
+        }
+      });
+    });
+  })();
+
+  function setAccent(which){
+    var root=document.documentElement.style;
+    if(which==='champagne'){
+      root.setProperty('--accent','var(--champagne)');
+      root.setProperty('--accent-glow','var(--champagne-glow)');
+      document.getElementById('b-ch').classList.add('on');
+      document.getElementById('b-em').classList.remove('on');
+      document.getElementById('acc-name').textContent='Champagne Satiné';
+      document.getElementById('acc-hex').textContent='#C8A96A';
+    }else{
+      root.setProperty('--accent','var(--emerald)');
+      root.setProperty('--accent-glow','var(--emerald-glow)');
+      document.getElementById('b-em').classList.add('on');
+      document.getElementById('b-ch').classList.remove('on');
+      document.getElementById('acc-name').textContent='Vert Émeraude';
+      document.getElementById('acc-hex').textContent='#0D6B5E';
+    }
+  }
+</script>
+</body>
+</html>

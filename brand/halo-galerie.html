@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HALO — Galerie de cartes de fidélité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --onyx:#0E0F11;--calcaire:#F3F0E9;--galet:#9B9DA0;
+    --emerald:#0D6B5E;--emerald-glow:#1FB89A;
+    --serif:'Fraunces',Georgia,serif;--sans:'Inter',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--onyx);color:var(--calcaire);font-family:var(--sans);font-weight:300;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+  a{color:inherit}
+
+  /* accent switcher (marque HALO) */
+  .switcher{position:fixed;top:22px;right:22px;z-index:80;background:rgba(20,21,24,.8);backdrop-filter:blur(14px);border:1px solid rgba(243,240,233,.14);border-radius:100px;padding:6px;display:flex;gap:4px}
+  .switcher button{font-family:var(--sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--galet);background:transparent;border:none;cursor:pointer;padding:8px 15px;border-radius:100px;transition:.3s;font-weight:500}
+  .switcher button.on{background:var(--emerald);color:#fff}
+  .switcher .lab{color:var(--galet);font-size:10px;letter-spacing:.16em;text-transform:uppercase;align-self:center;padding:0 8px 0 10px}
+
+  /* hero */
+  .hero{padding:120px 0 80px;text-align:center;position:relative;overflow:hidden}
+  .hero-glow{position:absolute;top:-160px;left:50%;transform:translateX(-50%);width:700px;height:500px;border-radius:50%;background:radial-gradient(circle,var(--emerald),transparent 60%);opacity:.16;filter:blur(50px)}
+  .brand{font-family:var(--serif);font-size:30px;letter-spacing:.18em;position:relative;z-index:2;display:inline-flex;align-items:center}
+  .brand .o{display:inline-block;width:.74em;height:.74em;border-radius:50%;border:2.5px solid var(--calcaire);position:relative;margin-left:.05em}
+  .brand .o::after{content:"";position:absolute;inset:-2.5px;border-radius:50%;border:2.5px solid transparent;border-top-color:var(--emerald-glow);border-right-color:var(--emerald-glow);transform:rotate(-35deg)}
+  h1{font-family:var(--serif);font-weight:300;font-size:clamp(38px,6vw,68px);line-height:1.05;letter-spacing:-.015em;margin:34px 0 20px;position:relative;z-index:2}
+  h1 em{font-style:italic;color:var(--emerald-glow)}
+  .sub{color:var(--galet);max-width:620px;margin:0 auto;font-size:18px;position:relative;z-index:2}
+
+  /* value props */
+  .props{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin:64px 0 30px}
+  .prop{border:1px solid rgba(243,240,233,.1);border-radius:10px;padding:24px}
+  .prop .ic{font-size:22px;margin-bottom:12px}
+  .prop h4{font-size:15px;font-weight:600;margin-bottom:6px}
+  .prop p{color:var(--galet);font-size:13.5px}
+
+  /* section heads */
+  .shead{padding:90px 0 0}
+  .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--galet);font-weight:500;margin-bottom:18px}
+  h2{font-family:var(--serif);font-weight:300;font-size:38px;letter-spacing:-.01em;margin-bottom:14px}
+  h2 em{font-style:italic;color:var(--emerald-glow)}
+  .shead p{color:var(--galet);max-width:580px}
+
+  /* gallery grid */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:40px 32px;padding:54px 0 40px}
+  .item{display:flex;flex-direction:column}
+  .lcard{
+    border-radius:18px;padding:22px 22px 20px;position:relative;overflow:hidden;isolation:isolate;
+    aspect-ratio:1.62/1;display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 24px 48px -22px rgba(0,0,0,.75);
+    color:var(--cfg);background:var(--cbg);
+  }
+  .lcard::after{content:"";position:absolute;top:0;bottom:0;right:0;width:5px;background:var(--cac);z-index:4;box-shadow:0 0 16px var(--cac)}
+  /* holographique : arc-en-ciel mobile */
+  .holo{position:absolute;inset:0;z-index:0;pointer-events:none;mix-blend-mode:screen;opacity:.32;
+    background:linear-gradient(115deg,
+      rgba(255,0,128,0) 10%, rgba(255,196,0,.28) 28%, rgba(0,255,194,.30) 46%,
+      rgba(64,140,255,.28) 62%, rgba(170,0,255,.26) 78%, rgba(255,0,128,0) 95%);
+    background-size:280% 280%;animation:holo 9s linear infinite;
+  }
+  @keyframes holo{0%{background-position:0% 50%}100%{background-position:280% 50%}}
+  /* éclat lumineux qui passe */
+  .sheen{position:absolute;top:-60%;left:-40%;width:38%;height:220%;z-index:1;pointer-events:none;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);
+    filter:blur(5px);transform:rotate(10deg);animation:sheen 6.5s ease-in-out infinite;
+  }
+  @keyframes sheen{0%{left:-45%}55%{left:135%}100%{left:135%}}
+  .lc-top,.lc-mech,.lc-foot{position:relative;z-index:2}
+  .lc-top{display:flex;align-items:center;gap:12px}
+  .lc-ic{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--cac);flex-shrink:0;box-shadow:0 4px 12px -3px rgba(0,0,0,.4)}
+  .lc-name{font-weight:600;font-size:17px;letter-spacing:.01em;line-height:1.1}
+  .lc-type{font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.62;margin-top:3px}
+  .lc-mech{margin:6px 0}
+  .lc-foot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+  .lc-foot-l{flex:1;min-width:0}
+  .lc-reward{font-size:12.5px;opacity:.9;margin-bottom:9px}
+  .lc-reward b{font-weight:600}
+  .lc-halo{font-family:var(--serif);font-size:11px;letter-spacing:.14em;opacity:.42;display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .lc-halo .od{width:7px;height:7px;border-radius:50%;border:1.4px solid currentColor;display:inline-block}
+  .qr{width:56px;height:56px;background:#fff;border-radius:8px;padding:5px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  .qr svg{width:100%;height:100%;display:block}
+
+  /* stamps */
+  .stamps{display:flex;flex-wrap:wrap;gap:7px}
+  .stamp{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:1.6px solid var(--cac);opacity:.55}
+  .stamp.on{background:var(--cac);opacity:1;border-color:var(--cac);box-shadow:0 0 10px var(--cac);color:#1a1a1a}
+  .stamp-lbl{font-size:11.5px;opacity:.7;margin-top:9px;letter-spacing:.04em}
+
+  /* points + bar */
+  .pts-n{font-family:var(--serif);font-size:34px;font-weight:300;line-height:1}
+  .pts-n small{font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.6;margin-left:6px}
+  .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.18);margin-top:11px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;background:var(--cac);box-shadow:0 0 10px var(--cac)}
+  .bar-lbl{font-size:11px;opacity:.7;margin-top:7px}
+
+  /* tier */
+  .tier-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;padding:6px 12px;border-radius:100px;background:var(--cac);align-self:flex-start}
+  .tier-next{font-size:11.5px;opacity:.72;margin-top:10px}
+
+  /* cashback */
+  .cb-n{font-family:var(--serif);font-size:32px;font-weight:300}
+  .cb-rate{display:inline-block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:100px;border:1px solid var(--cac);margin-top:8px}
+
+  /* pass */
+  .pass-n{font-family:var(--serif);font-size:40px;font-weight:300;line-height:1}
+  .pass-lbl{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.65;margin-top:4px}
+
+  /* caption */
+  .cap{margin-top:16px}
+  .cap .ctype{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--emerald-glow);font-weight:500}
+  .cap .cmech{font-size:14px;color:var(--calcaire);margin:5px 0 4px;font-weight:500}
+  .cap .cwhy{font-size:13px;color:var(--galet);line-height:1.5}
+
+  footer{padding:90px 0 70px;text-align:center;border-top:1px solid rgba(243,240,233,.08);margin-top:40px}
+  footer h3{font-family:var(--serif);font-weight:300;font-size:30px;margin-bottom:14px}
+  footer p{color:var(--galet);max-width:480px;margin:0 auto 26px}
+  .cta{display:inline-block;background:var(--emerald);color:#fff;padding:15px 34px;border-radius:100px;font-weight:500;letter-spacing:.04em;text-decoration:none}
+  .legal{margin-top:50px;font-size:12px;color:var(--galet);letter-spacing:.08em}
+  @media(max-width:600px){.wrap{padding:0 22px}h1{font-size:34px}}
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <span class="lab">Accent HALO</span>
+  <button id="b-em" class="on" onclick="setAccent('emerald')">Émeraude</button>
+  <button id="b-ch" onclick="setAccent('champagne')">Champagne</button>
+</div>
+
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="brand">HAL<span class="o"></span></div>
+  <h1>Une plateforme.<br><em>Toutes les fidélités.</em></h1>
+  <p class="sub">HALO transforme la fidélité de n'importe quel commerce en carte numérique — dans Apple &amp; Google Wallet, sans appli à télécharger. À votre image, en quelques minutes.</p>
+
+  <div class="wrap">
+    <div class="props">
+      <div class="prop"><div class="ic">📲</div><h4>Zéro appli</h4><p>La carte vit dans le Wallet du téléphone. Le client l'ajoute en un scan.</p></div>
+      <div class="prop"><div class="ic">🎨</div><h4>À votre image</h4><p>Vos couleurs, votre logo, votre nom. White-label complet.</p></div>
+      <div class="prop"><div class="ic">⚙️</div><h4>5 mécaniques</h4><p>Tampons, points, paliers VIP, cashback, passages. Vous choisissez.</p></div>
+      <div class="prop"><div class="ic">🔔</div><h4>Notifications push</h4><p>Rappelez une offre, relancez un client inactif, gratuitement.</p></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="shead">
+    <div class="eyebrow">La galerie</div>
+    <h2>Chaque commerce, sa <em>carte</em>.</h2>
+    <p>Dix exemples concrets. Trouvez votre métier — ou inspirez-vous d'un voisin. Chaque carte est entièrement personnalisable.</p>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <h3>Et la vôtre, elle ressemblerait à quoi&nbsp;?</h3>
+    <p>Créez votre carte de fidélité numérique en quelques minutes. Sans engagement, sans matériel.</p>
+    <a class="cta" href="#">Créer ma carte →</a>
+    <div class="legal">HALO — Cartes de fidélité numériques · Genève 2026 · La mention « HALO » est masquable (white-label).</div>
+  </div>
+</footer>
+
+<script>
+const cards = [
+  {
+    name:"Studio Ciseaux", type:"Coiffeur", icon:"✂️",
+    bg:"linear-gradient(150deg,#2b2622,#15110e)", fg:"#F3EFE7", ac:"#C9A56B",
+    mech:{kind:"stamps", total:10, filled:7, ic:"✂", word:"7 / 10 coupes"},
+    rewardHtml:"La <b>10ᵉ coupe offerte</b>.",
+    capMech:"Carte à tampons", capWhy:"Idéal pour un rythme de visite régulier : chaque passage rapproche le client de sa récompense."
+  },
+  {
+    name:"Café Léman", type:"Café · Coffee shop", icon:"☕",
+    bg:"linear-gradient(150deg,#3a2d23,#211710)", fg:"#F6EEE2", ac:"#D8A567",
+    mech:{kind:"stamps", total:9, filled:6, ic:"☕", word:"6 / 9 cafés"},
+    rewardHtml:"Le <b>9ᵉ café offert</b>.",
+    capMech:"Carte à tampons", capWhy:"Le grand classique du quotidien. Crée l'habitude et fait revenir chaque matin."
+  },
+  {
+    name:"Trattoria Bella", type:"Restaurant", icon:"🍝",
+    bg:"linear-gradient(150deg,#3a1f22,#1c0f11)", fg:"#F7ECE6", ac:"#E0734F",
+    mech:{kind:"points", current:1240, target:1500, unit:"pts", pct:82},
+    rewardHtml:"Plus que 260 pts → <b>−20 CHF</b>.",
+    capMech:"Points cumulés", capWhy:"1 pt par franc dépensé. Récompense les gros paniers et valorise le client fidèle."
+  },
+  {
+    name:"Le Fournil", type:"Boulangerie · Pâtisserie", icon:"🥐",
+    bg:"linear-gradient(150deg,#4a3a26,#2a2014)", fg:"#FBF2E2", ac:"#E8B964",
+    mech:{kind:"stamps", total:8, filled:4, ic:"🥐", word:"4 / 8 achats"},
+    rewardHtml:"La <b>8ᵉ viennoiserie offerte</b>.",
+    capMech:"Carte à tampons", capWhy:"Parfait pour les achats fréquents de petit montant. Simple à comprendre pour tous."
+  },
+  {
+    name:"Maison Rive", type:"Boutique mode", icon:"👗",
+    bg:"linear-gradient(150deg,#1a1a1c,#0c0c0d)", fg:"#F3F0E9", ac:"#B9BDC2",
+    mech:{kind:"tier", badge:"Argent", next:"Plus que 1 achat → niveau Or", icon:"◆"},
+    rewardHtml:"Niveau Or → <b>−15% permanents</b>.",
+    capMech:"Paliers VIP", capWhy:"Bronze → Argent → Or. Crée un sentiment de statut et pousse à monter de palier."
+  },
+  {
+    name:"Pulse Gym", type:"Salle de sport", icon:"💪",
+    bg:"linear-gradient(150deg,#16181a,#0a0b0c)", fg:"#F0F4F2", ac:"#C6F24A",
+    mech:{kind:"pass", n:"12", lbl:"séances ce mois-ci"},
+    rewardHtml:"15 séances → <b>1 séance coaching offerte</b>.",
+    capMech:"Carte de passages", capWhy:"Suit l'assiduité, motive la régularité et récompense les membres les plus actifs."
+  },
+  {
+    name:"Nüage Spa", type:"Institut de beauté", icon:"🌸",
+    bg:"linear-gradient(150deg,#3a2a33,#221820)", fg:"#F8ECF1", ac:"#E0A6BE",
+    mech:{kind:"cashback", balance:"24.50", rate:"5% rendu sur chaque soin"},
+    rewardHtml:"Cagnotte utilisable dès <b>20 CHF</b>.",
+    capMech:"Cashback", capWhy:"Une cagnotte qui grandit à chaque visite. Très valorisant sur les prestations à haut panier."
+  },
+  {
+    name:"Napoli", type:"Pizzeria", icon:"🍕",
+    bg:"linear-gradient(150deg,#3a201c,#1c0f0d)", fg:"#FBEDE6", ac:"#E2513A",
+    mech:{kind:"stamps", total:6, filled:3, ic:"🍕", word:"3 / 6 pizzas"},
+    rewardHtml:"La <b>6ᵉ pizza offerte</b>.",
+    capMech:"Carte à tampons", capWhy:"Mécanique gourmande et lisible. Fonctionne en boutique comme en livraison."
+  },
+  {
+    name:"Flora", type:"Fleuriste", icon:"🌷",
+    bg:"linear-gradient(150deg,#1f3329,#11201a)", fg:"#ECF6EF", ac:"#6FC79A",
+    mech:{kind:"points", current:340, target:500, unit:"pts", pct:68},
+    rewardHtml:"500 pts → <b>un bouquet offert</b>.",
+    capMech:"Points cumulés", capWhy:"Idéal quand les achats sont irréguliers : la valeur cumulée reste visible et incitative."
+  },
+  {
+    name:"AquaShine", type:"Lavage auto", icon:"🚗",
+    bg:"linear-gradient(150deg,#1c2733,#0e151c)", fg:"#E9F1F7", ac:"#4FA3E0",
+    mech:{kind:"stamps", total:5, filled:4, ic:"🚗", word:"4 / 5 lavages"},
+    rewardHtml:"Le <b>5ᵉ lavage offert</b>.",
+    capMech:"Carte à tampons", capWhy:"Cycle court = récompense rapide. Excellent pour ancrer un réflexe d'achat."
+  }
+];
+
+// QR illustratif (non scannable — maquette) : 3 motifs de repère + modules déterministes
+function qrSvg(seed){
+  const N=21,u=3;
+  const m=Array.from({length:N},()=>Array(N).fill(0));
+  const res=Array.from({length:N},()=>Array(N).fill(false));
+  let s=(seed*2654435761)%2147483647; if(s<=0)s+=2147483646;
+  const rnd=()=>{s=(s*16807)%2147483647;return (s-1)/2147483646;};
+  function finder(ox,oy){
+    for(let y=-1;y<=7;y++)for(let x=-1;x<=7;x++){
+      const px=ox+x,py=oy+y;
+      if(px<0||py<0||px>=N||py>=N)continue;
+      res[py][px]=true;
+      if(x<0||y<0||x>6||y>6){m[py][px]=0;continue;}
+      const edge=(x===0||x===6||y===0||y===6);
+      const inner=(x>=2&&x<=4&&y>=2&&y<=4);
+      m[py][px]=(edge||inner)?1:0;
+    }
+  }
+  finder(0,0);finder(N-7,0);finder(0,N-7);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){ if(!res[y][x]) m[y][x]=rnd()>0.52?1:0; }
+  let r='';
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){ if(m[y][x]) r+=`<rect x="${x*u}" y="${y*u}" width="${u}" height="${u}"/>`; }
+  return `<svg viewBox="0 0 ${N*u} ${N*u}" fill="#0E0F11" shape-rendering="crispEdges">${r}</svg>`;
+}
+
+function mechHtml(m){
+  if(m.kind==="stamps"){
+    let dots="";
+    for(let i=0;i<m.total;i++){dots+=`<div class="stamp ${i<m.filled?'on':''}">${i<m.filled?m.ic:''}</div>`;}
+    return `<div class="stamps">${dots}</div><div class="stamp-lbl">${m.word}</div>`;
+  }
+  if(m.kind==="points"){
+    return `<div class="pts-n">${m.current.toLocaleString('fr-CH')}<small>${m.unit}</small></div>
+      <div class="bar"><i style="width:${m.pct}%"></i></div>
+      <div class="bar-lbl">Objectif ${m.target.toLocaleString('fr-CH')} ${m.unit}</div>`;
+  }
+  if(m.kind==="tier"){
+    return `<div class="tier-badge">${m.icon} ${m.badge}</div><div class="tier-next">${m.next}</div>`;
+  }
+  if(m.kind==="cashback"){
+    return `<div class="cb-n">CHF ${m.balance}</div><div class="cb-rate">${m.rate}</div>`;
+  }
+  if(m.kind==="pass"){
+    return `<div class="pass-n">${m.n}</div><div class="pass-lbl">${m.lbl}</div>`;
+  }
+  return "";
+}
+
+const g=document.getElementById('gallery');
+cards.forEach((c,i)=>{
+  const el=document.createElement('div');
+  el.className='item';
+  el.innerHTML=`
+    <div class="lcard" style="--cbg:${c.bg};--cfg:${c.fg};--cac:${c.ac}">
+      <div class="holo" style="animation-delay:${i*-1.3}s"></div>
+      <div class="sheen" style="animation-delay:${i*-0.9}s"></div>
+      <div class="lc-top">
+        <div class="lc-ic">${c.icon}</div>
+        <div><div class="lc-name">${c.name}</div><div class="lc-type">${c.type}</div></div>
+      </div>
+      <div class="lc-mech">${mechHtml(c.mech)}</div>
+      <div class="lc-foot">
+        <div class="lc-foot-l">
+          <div class="lc-reward">${c.rewardHtml}</div>
+          <div class="lc-halo"><span class="od"></span>HALO</div>
+        </div>
+        <div class="qr">${qrSvg(i+3)}</div>
+      </div>
+    </div>
+    <div class="cap">
+      <div class="ctype">${c.type}</div>
+      <div class="cmech">${c.capMech}</div>
+      <div class="cwhy">${c.capWhy}</div>
+    </div>`;
+  g.appendChild(el);
+});
+
+function setAccent(which){
+  const root=document.documentElement.style;
+  if(which==='champagne'){
+    root.setProperty('--emerald','#C8A96A');
+    root.setProperty('--emerald-glow','#E6CF9B');
+    document.getElementById('b-ch').classList.add('on');
+    document.getElementById('b-em').classList.remove('on');
+  }else{
+    root.setProperty('--emerald','#0D6B5E');
+    root.setProperty('--emerald-glow','#1FB89A');
+    document.getElementById('b-em').classList.add('on');
+    document.getElementById('b-ch').classList.remove('on');
+  }
+}
+</script>
+</body>
+</html>
