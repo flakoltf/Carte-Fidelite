@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck — passkit-generator v3 .d.ts declare a constructor signature
-// (buffers, certs, props) that doesn't match the runtime usage (props, certs).
-// On confine ce @ts-nocheck à ce module dédié pour que le reste du code reste typé.
+// @ts-nocheck — passkit-generator v3 typings imparfaits sur Buffer<ArrayBufferLike>.
 import { PKPass } from "passkit-generator";
 import fs from "fs/promises";
 import path from "path";
@@ -20,7 +18,6 @@ export interface ApplePassInput {
 }
 
 // Convertit un hex "#rrggbb" en "rgb(r, g, b)" (format attendu par Apple Wallet).
-// Renvoie null si l'entrée est absente/invalide, pour laisser l'appelant choisir un fallback.
 export function hexToRgb(hex?: string | null): string | null {
   if (!hex) return null;
   const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
@@ -29,86 +26,111 @@ export function hexToRgb(hex?: string | null): string | null {
   return `rgb(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255})`;
 }
 
-// Génère le buffer .pkpass d'une carte de fidélité. Logique extraite de
-// generate-apple-pass/route.ts pour être partagée avec l'enrôlement public.
+// Génère le buffer .pkpass d'une carte de fidélité.
+//
+// IMPORTANT : la signature correcte de passkit-generator v3 est
+//   new PKPass(buffers, certificates, props?)
+// où `buffers` est une map { "pass.json": Buffer, "icon.png": Buffer, … }.
+// L'ancienne version de ce fichier appelait `new PKPass(props, certs)` (sous @ts-nocheck),
+// ce qui produisait un zip où chaque prop devenait un fichier — iOS refusait alors le pass
+// (« impossible d'ajouter la carte ou le billet »). On construit donc pass.json explicitement.
 export async function buildApplePassBuffer({
   cardId,
   customerName,
   stamps,
   branding,
 }: ApplePassInput): Promise<Buffer> {
-  const wwdrPath = process.env.WWDR_PEM_PATH || "certs/wwdr.pem";
-  const signerCertPath = process.env.SIGNER_CERT_PATH || "certs/signerCert.pem";
-  const signerKeyPath = process.env.SIGNER_KEY_PATH || "certs/signerKey.pem";
+  // En prod : certificats fournis en base64 via env (WWDR_PEM_BASE64, SIGNER_CERT_BASE64,
+  // SIGNER_KEY_BASE64) — les fichiers PEM sont gitignorés et n'arrivent pas sur Vercel.
+  // En local : fallback sur les fichiers dans certs/.
   const signerKeyPassphrase = process.env.SIGNER_KEY_PASSPHRASE || "";
+  const loadPem = async (envB64: string | undefined, fileRelPath: string): Promise<Buffer> => {
+    if (envB64 && envB64.trim().length > 0) return Buffer.from(envB64, "base64");
+    return fs.readFile(path.join(process.cwd(), fileRelPath));
+  };
 
   let wwdr: Buffer, signerCert: Buffer, signerKey: Buffer;
   try {
     [wwdr, signerCert, signerKey] = await Promise.all([
-      fs.readFile(path.join(process.cwd(), wwdrPath)),
-      fs.readFile(path.join(process.cwd(), signerCertPath)),
-      fs.readFile(path.join(process.cwd(), signerKeyPath)),
+      loadPem(process.env.WWDR_PEM_BASE64, process.env.WWDR_PEM_PATH || "certs/wwdr.pem"),
+      loadPem(process.env.SIGNER_CERT_BASE64, process.env.SIGNER_CERT_PATH || "certs/signerCert.pem"),
+      loadPem(process.env.SIGNER_KEY_BASE64, process.env.SIGNER_KEY_PATH || "certs/signerKey.pem"),
     ]);
   } catch {
     throw new Error(
-      "Certificats Apple manquants dans /certs. (wwdr.pem, signerCert.pem, signerKey.pem)"
+      "Certificats Apple manquants : ni les variables d'env (WWDR_PEM_BASE64, SIGNER_CERT_BASE64, SIGNER_KEY_BASE64), ni les fichiers dans certs/."
     );
   }
 
-  const orgName = branding?.shopName || "Ma Super Marque";
+  const orgName = branding?.shopName || "WalletCard";
   const backgroundColor = hexToRgb(branding?.primaryColor) || "rgb(23, 23, 23)";
+  const passTypeIdentifier = process.env.APPLE_PASS_TYPE_ID || "pass.com.tamarque.fidelite";
+  const teamIdentifier = process.env.APPLE_TEAM_ID || "ABCDE12345";
 
-  const pass = new PKPass(
-    {
-      passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID || "pass.com.tamarque.fidelite",
-      teamIdentifier: process.env.APPLE_TEAM_ID || "ABCDE12345",
-      serialNumber: cardId,
-      organizationName: orgName,
-      logoText: orgName,
-      description: "Carte de fidélité numérique",
-      backgroundColor,
-      foregroundColor: "rgb(255, 255, 255)",
-      labelColor: "rgb(255, 255, 255)",
+  // pass.json complet (format Apple Wallet v1, storeCard).
+  const passJson = {
+    formatVersion: 1,
+    passTypeIdentifier,
+    teamIdentifier,
+    serialNumber: cardId,
+    organizationName: orgName,
+    description: "Carte de fidélité numérique",
+    logoText: orgName,
+    backgroundColor,
+    foregroundColor: "rgb(255, 255, 255)",
+    labelColor: "rgb(255, 255, 255)",
+    storeCard: {
+      headerFields: [],
+      primaryFields: [
+        {
+          key: "stamps",
+          label: "TAMPONS",
+          value: `${stamps} / 10`,
+          textAlignment: "PKTextAlignmentRight",
+        },
+      ],
+      secondaryFields: [
+        {
+          key: "customerName",
+          label: "CLIENT",
+          value: customerName,
+        },
+      ],
+      auxiliaryFields: [],
+      backFields: [],
     },
-    {
-      wwdr,
-      signerCert,
-      signerKey,
-      signerKeyPassphrase,
-    }
-  );
+    barcodes: [
+      {
+        message: signQRCode(cardId),
+        format: "PKBarcodeFormatQR",
+        messageEncoding: "iso-8859-1",
+        altText: "Scannez pour valider vos tampons",
+      },
+    ],
+  };
 
-  pass.type = "storeCard";
-
-  pass.primaryFields.push({
-    key: "stamps",
-    label: "TAMPONS",
-    value: `${stamps} / 10`,
-    textAlignment: "PKTextAlignmentRight",
-  });
-
-  pass.secondaryFields.push({
-    key: "customerName",
-    label: "CLIENT",
-    value: customerName,
-  });
-
-  pass.setBarcodes({
-    message: signQRCode(cardId),
-    format: "PKBarcodeFormatQR",
-    messageEncoding: "iso-8859-1",
-    altText: "Scannez pour valider vos tampons",
-  });
+  // Buffer map initial pour PKPass : pass.json + icônes/logo.
+  // icon.png et icon@2x.png sont les seuls vraiment requis par iOS.
+  const buffers: Record<string, Buffer> = {
+    "pass.json": Buffer.from(JSON.stringify(passJson), "utf-8"),
+  };
 
   const assetsPath = path.join(process.cwd(), "public", "pass-assets");
-  try {
-    pass.addBuffer("icon.png", await fs.readFile(path.join(assetsPath, "icon.png")));
-    pass.addBuffer("icon@2x.png", await fs.readFile(path.join(assetsPath, "icon@2x.png")));
-    pass.addBuffer("logo.png", await fs.readFile(path.join(assetsPath, "logo.png")));
-    pass.addBuffer("strip.png", await fs.readFile(path.join(assetsPath, "strip.png")));
-  } catch {
-    console.warn("Certaines images manquantes dans public/pass-assets.");
+  for (const name of ["icon.png", "icon@2x.png", "icon@3x.png", "logo.png", "logo@2x.png"]) {
+    try {
+      buffers[name] = await fs.readFile(path.join(assetsPath, name));
+    } catch {
+      // Asset optionnel absent — on continue (icon.png + icon@2x.png suffisent au minimum).
+    }
   }
+
+  // Construction correcte : (buffers, certificates).
+  const pass = new PKPass(buffers, {
+    wwdr,
+    signerCert,
+    signerKey,
+    signerKeyPassphrase,
+  });
 
   return pass.getAsBuffer();
 }
