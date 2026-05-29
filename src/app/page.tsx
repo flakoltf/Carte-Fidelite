@@ -2,152 +2,448 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Wallet, ArrowRight, CheckCircle, Smartphone, Database, Globe, Zap, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  ArrowRight,
+  Check,
+  Smartphone,
+  Palette,
+  Bell,
+  MapPin,
+  BarChart3,
+  Stamp,
+  Coins,
+  Crown,
+  PiggyBank,
+  CalendarCheck,
+  HeartHandshake,
+  QrCode,
+  Quote,
+  type LucideIcon,
+} from "lucide-react";
+import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
+import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
+
+/* ---------- motion helper (respects reduced-motion) ---------- */
+function Reveal({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className={className}
+      initial={reduce ? false : { opacity: 0, y: 24 }}
+      whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const MECHANICS: { Icon: LucideIcon; title: string; desc: string; ex: string }[] = [
+  { Icon: Stamp, title: "Tampons", desc: "X achats = 1 offert.", ex: "Café, boulangerie, coiffeur, pizzeria" },
+  { Icon: Coins, title: "Points cumulés", desc: "Des points à chaque franc dépensé.", ex: "Restaurant, fleuriste, retail" },
+  { Icon: Crown, title: "Paliers VIP", desc: "Bronze → Argent → Or, avantages croissants.", ex: "Boutique, concept-store" },
+  { Icon: PiggyBank, title: "Cashback", desc: "Un % de la dépense rendu en cagnotte.", ex: "Institut beauté, spa" },
+  { Icon: CalendarCheck, title: "Passages", desc: "Suivi d'assiduité et d'abonnement.", ex: "Salle de sport, studio" },
+];
+
+const STEPS: { Icon: LucideIcon; title: string; desc: string }[] = [
+  { Icon: Palette, title: "Créez votre carte", desc: "Vos couleurs, votre logo, votre mécanique. Prête en quelques minutes, sans matériel." },
+  { Icon: Smartphone, title: "Le client l'ajoute au Wallet", desc: "Un scan, et la carte vit dans Apple ou Google Wallet. Aucune appli à télécharger." },
+  { Icon: HeartHandshake, title: "Vous fidélisez", desc: "Points, tampons et notifications font revenir vos clients — et vous voyez tout dans votre tableau de bord." },
+];
+
+const WHY: { Icon: LucideIcon; title: string; desc: string }[] = [
+  { Icon: Smartphone, title: "Zéro appli", desc: "La carte vit dans le Wallet du téléphone. Le client l'ajoute en un scan." },
+  { Icon: Palette, title: "À votre image", desc: "Vos couleurs, votre logo, votre nom. White-label complet." },
+  { Icon: Bell, title: "Notifications push", desc: "Relancez un client inactif ou annoncez une offre, gratuitement." },
+  { Icon: MapPin, title: "Notifications de proximité", desc: "Le client reçoit votre message quand il passe près de votre commerce." },
+  { Icon: BarChart3, title: "Stats & tableau de bord", desc: "Comprenez et pilotez votre fidélisation, en temps réel." },
+  { Icon: QrCode, title: "Scan en caisse", desc: "Validez un passage ou créditez des points d'un simple scan." },
+];
+
+const PRICING = [
+  {
+    name: "Essentiel",
+    price: "69.90",
+    unit: "CHF / mois",
+    tagline: "Jusqu'à 300 clients",
+    featured: true,
+    cta: "Commencer",
+    href: "/signup",
+    features: [
+      "Toutes les mécaniques de fidélité",
+      "Apple & Google Wallet (sans appli)",
+      "Carte 100% à votre image",
+      "Notifications push illimitées",
+      "Notifications de proximité",
+      "Tableau de bord & statistiques",
+      "Scan en caisse (QR / NFC)",
+    ],
+  },
+  {
+    name: "Croissance",
+    price: "129", // placeholder — à ajuster
+    unit: "CHF / mois",
+    tagline: "Jusqu'à 1 000 clients",
+    featured: false,
+    cta: "Commencer",
+    href: "/signup",
+    features: [
+      "Tout de l'offre Essentiel",
+      "Plus de clients actifs",
+      "Multi-établissements",
+      "Support prioritaire",
+    ],
+  },
+  {
+    name: "Sur-mesure",
+    price: "Sur devis",
+    unit: "",
+    tagline: "Au-delà de 1 000 clients",
+    featured: false,
+    cta: "Nous contacter",
+    href: "mailto:hello@halo.ch",
+    features: [
+      "Volume de clients illimité",
+      "Accompagnement dédié",
+      "Accès API & intégrations",
+    ],
+  },
+];
+
+const TESTIMONIALS = [
+  { quote: "Mes clients adorent — plus de carte en carton perdue. Le taux de retour a clairement augmenté.", name: "Camille R.", role: "Café, Genève" },
+  { quote: "Mis en place en un après-midi, sans rien installer. Les notifications de proximité ramènent du monde le midi.", name: "Marco T.", role: "Pizzeria, Carouge" },
+  { quote: "Enfin une carte de fidélité aussi soignée que ma boutique. Image au top.", name: "Sophie L.", role: "Boutique mode, Genève" },
+];
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-emerald-500/30 overflow-x-hidden">
-      
-      {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
-        scrolled ? "bg-zinc-950/80 backdrop-blur-md border-zinc-900 py-4" : "bg-transparent border-transparent py-6"
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wallet className="text-emerald-400 w-6 h-6" />
-            <span className="text-xl font-bold italic tracking-tighter">WalletCard</span>
+    <div className="min-h-dvh bg-onyx font-sans text-calcaire selection:bg-halo/40 overflow-x-hidden">
+      {/* ---------------- NAV ---------------- */}
+      <nav
+        className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
+          scrolled
+            ? "border-onyx-line bg-onyx/80 py-3 backdrop-blur-md"
+            : "border-transparent bg-transparent py-5"
+        }`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
+          <Link href="/" aria-label="HALO — accueil">
+            <HaloWordmark className="text-lg" />
+          </Link>
+          <div className="hidden items-center gap-8 text-sm text-galet md:flex">
+            <a href="#fonctionnement" className="transition-colors hover:text-calcaire">Fonctionnement</a>
+            <a href="#mecaniques" className="transition-colors hover:text-calcaire">Mécaniques</a>
+            <a href="#galerie" className="transition-colors hover:text-calcaire">Exemples</a>
+            <a href="#tarifs" className="transition-colors hover:text-calcaire">Tarifs</a>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
-            <Link href="#features" className="hover:text-white transition-colors">Fonctionnalités</Link>
-            <Link href="#how-it-works" className="hover:text-white transition-colors">Fonctionnement</Link>
-            <Link href="#pricing" className="hover:text-white transition-colors">Tarifs</Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-bold px-4 py-2 hover:text-emerald-400 transition-colors">Connexion</Link>
-            <Link href="/signup" className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-zinc-200 transition-all active:scale-95">
-              Démarrer
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="rounded-full px-4 py-2 text-sm font-medium text-galet transition-colors hover:text-calcaire focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+            >
+              Connexion
+            </Link>
+            <Link
+              href="/signup"
+              className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+            >
+              Créer ma carte
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-40 pb-20 px-6 overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-emerald-500/10 blur-[120px] rounded-full -z-10" />
-        
-        <div className="max-w-5xl mx-auto text-center">
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-            >
-                <span className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest mb-8 inline-block">
-                    L'avenir de la fidélité est là
-                </span>
-                <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-8 bg-gradient-to-b from-white via-white to-zinc-600 bg-clip-text text-transparent leading-[1.1]">
-                    Fidélisez vos clients <br className="hidden md:block" /> 
-                    en un clin d'œil.
-                </h1>
-                <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
-                    Créez des cartes de fidélité numériques directement dans le **Apple & Google Wallet** de vos clients. Pas d'application à télécharger, pas de papier à jeter.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link
-                        href="/signup"
-                        className="w-full sm:w-auto bg-emerald-500 text-black px-8 py-5 rounded-2xl font-bold text-lg hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-2"
-                    >
-                        Créer ma boutique gratuitement
-                        <ArrowRight className="w-5 h-5" />
-                    </Link>
+      {/* ---------------- HERO ---------------- */}
+      <section className="relative px-6 pb-16 pt-36 sm:pt-44">
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[560px] w-[900px] max-w-[110vw] -translate-x-1/2 rounded-full opacity-20 blur-[120px]"
+          style={{ background: "radial-gradient(circle, var(--color-halo), transparent 62%)" }}
+          aria-hidden
+        />
+        <div className="mx-auto max-w-3xl text-center">
+          <Reveal>
+            <span className="mb-7 inline-block rounded-full border border-onyx-line bg-onyx-soft px-4 py-1.5 text-xs font-medium uppercase tracking-[0.22em] text-halo-glow">
+              Cartes de fidélité numériques · Genève
+            </span>
+          </Reveal>
+          <Reveal delay={0.05}>
+            <h1 className="font-display text-5xl font-light leading-[1.05] tracking-tight sm:text-7xl">
+              La fidélité des grandes
+              <br className="hidden sm:block" /> enseignes, <em className="italic text-halo-glow">à votre image.</em>
+            </h1>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <p className="mx-auto mt-7 max-w-xl text-lg text-galet">
+              Lancez votre carte de fidélité dans Apple &amp; Google Wallet — sans
+              appli à télécharger. Tampons, points, paliers, cashback : prête en
+              quelques minutes.
+            </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/signup"
+                className="group inline-flex items-center gap-2 rounded-full bg-halo px-7 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+              >
+                Créer ma carte
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+              <a
+                href="#galerie"
+                className="rounded-full border border-onyx-line px-7 py-3.5 font-medium text-calcaire transition-colors hover:bg-onyx-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+              >
+                Voir des exemples
+              </a>
+            </div>
+          </Reveal>
+        </div>
+
+        {/* hero card teaser */}
+        <Reveal delay={0.2} className="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {SAMPLE_CARDS.slice(0, 3).map((c, i) => (
+            <LoyaltyCard key={c.name} card={c} delay={i} />
+          ))}
+        </Reveal>
+      </section>
+
+      {/* ---------------- HOW IT WORKS ---------------- */}
+      <section id="fonctionnement" className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Fonctionnement</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Trois étapes, <em className="italic text-halo-glow">zéro complexité.</em>
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid gap-8 md:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <Reveal key={s.title} delay={i * 0.08}>
+                <div className="flex h-full flex-col rounded-2xl border border-onyx-line bg-onyx-soft p-7">
+                  <div className="mb-5 flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                      <s.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                    </span>
+                    <span className="font-display text-2xl text-galet">0{i + 1}</span>
+                  </div>
+                  <h3 className="text-lg font-semibold">{s.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-galet">{s.desc}</p>
                 </div>
-            </motion.div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Platform Preview */}
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="mt-24 relative"
-            >
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent z-10" />
-                <div className="bg-zinc-900/40 border border-zinc-800 rounded-[40px] p-4 backdrop-blur-sm">
-                    <img 
-                        src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2426&ixlib=rb-4.0.3" 
-                        alt="Dashboard Preview" 
-                        className="rounded-[32px] w-full h-auto shadow-2xl opacity-80"
-                    />
+      {/* ---------------- MECHANICS ---------------- */}
+      <section id="mecaniques" className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Les mécaniques</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Cinq façons de <em className="italic text-halo-glow">fidéliser.</em>
+            </h2>
+            <p className="mt-4 text-galet">Choisissez celle qui colle à votre métier. Changez quand vous voulez.</p>
+          </Reveal>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {MECHANICS.map((m, i) => (
+              <Reveal key={m.title} delay={i * 0.06}>
+                <div className="h-full rounded-2xl border border-onyx-line bg-onyx-soft p-6 transition-colors hover:border-halo/40">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                    <m.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                  </span>
+                  <h3 className="mt-4 text-lg font-semibold">{m.title}</h3>
+                  <p className="mt-1.5 text-sm text-galet">{m.desc}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.12em] text-galet/70">{m.ex}</p>
                 </div>
-            </motion.div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-32 px-6">
-        <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-20">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">Tout ce dont vous avez besoin.</h2>
-                <p className="text-zinc-500 max-w-xl mx-auto">Une plateforme complète pour gérer vos clients et booster vos ventes.</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-                {[
-                    { title: "Universal", desc: "Compatible Apple Wallet & Google Wallet sur tous les smartphones.", icon: Globe },
-                    { title: "Instantané", desc: "Générez un lien ou un QR code de carte en moins de 2 secondes.", icon: Zap },
-                    { title: "Sécurisé", desc: "Données chiffrées et accès protégé pour chaque marchand.", icon: ShieldCheck },
-                ].map((f, i) => (
-                    <div key={i} className="bg-zinc-900/40 border border-zinc-800 p-10 rounded-[32px] hover:border-emerald-500/20 transition-all group">
-                        <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                            <f.icon className="text-emerald-400 w-7 h-7" />
-                        </div>
-                        <h3 className="text-2xl font-bold mb-4">{f.title}</h3>
-                        <p className="text-zinc-500 leading-relaxed">{f.desc}</p>
-                    </div>
-                ))}
-            </div>
+      {/* ---------------- GALLERY ---------------- */}
+      <section id="galerie" className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Les exemples</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Chaque commerce, <em className="italic text-halo-glow">sa carte.</em>
+            </h2>
+            <p className="mt-4 text-galet">Trouvez votre métier — ou inspirez-vous d'un voisin. Tout est personnalisable.</p>
+          </Reveal>
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {SAMPLE_CARDS.map((c, i) => (
+              <Reveal key={c.name} delay={(i % 3) * 0.06}>
+                <LoyaltyCard card={c} delay={i} />
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-32 px-6">
-        <div className="max-w-5xl mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-[48px] p-12 md:p-20 text-center text-black relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 blur-[80px] rounded-full translate-x-32 -translate-y-32" />
-            <h2 className="text-4xl md:text-6xl font-black mb-8 leading-tight">Rejoignez la révolution de la fidélité.</h2>
-            <Link 
-                href="/signup" 
-                className="inline-flex items-center gap-2 bg-black text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-zinc-900 transition-all active:scale-95 shadow-2xl"
-            >
-                C'est parti !
-                <ArrowRight className="w-6 h-6" />
-            </Link>
+      {/* ---------------- WHY HALO ---------------- */}
+      <section className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Pourquoi HALO</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Tout ce qu'il faut, <em className="italic text-halo-glow">rien de superflu.</em>
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {WHY.map((w, i) => (
+              <Reveal key={w.title} delay={(i % 3) * 0.06}>
+                <div className="flex h-full gap-4 rounded-2xl border border-onyx-line bg-onyx-soft p-6">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                    <w.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                  </span>
+                  <div>
+                    <h3 className="font-semibold">{w.title}</h3>
+                    <p className="mt-1 text-sm text-galet">{w.desc}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-zinc-900 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-                <Wallet className="text-emerald-400 w-5 h-5" />
-                <span className="font-bold italic">WalletCard</span>
-            </div>
-            <p className="text-zinc-600 text-sm">© 2026 LetaiefSolution. Tous droits réservés.</p>
-            <div className="flex gap-6 text-sm text-zinc-500">
-                <Link href="#" className="hover:text-white underline">Mentions Légales</Link>
-                <Link href="#" className="hover:text-white underline">Confidentialité</Link>
-            </div>
+      {/* ---------------- TESTIMONIALS ---------------- */}
+      <section className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Ils utilisent HALO</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Des commerçants <em className="italic text-halo-glow">convaincus.</em>
+            </h2>
+            <p className="mt-3 text-xs text-galet/60">Témoignages illustratifs — à remplacer par de vrais avis.</p>
+          </Reveal>
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 0.08}>
+                <figure className="flex h-full flex-col rounded-2xl border border-onyx-line bg-onyx-soft p-7">
+                  <Quote className="h-6 w-6 text-halo-glow" aria-hidden />
+                  <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-calcaire/90">
+                    « {t.quote} »
+                  </blockquote>
+                  <figcaption className="mt-5 text-sm">
+                    <span className="font-semibold">{t.name}</span>
+                    <span className="text-galet"> — {t.role}</span>
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- PRICING ---------------- */}
+      <section id="tarifs" className="border-t border-onyx-line px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="max-w-2xl">
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Tarifs</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Un prix clair, <em className="italic text-halo-glow">sans surprise.</em>
+            </h2>
+            <p className="mt-4 text-galet">Sans engagement, sans matériel. Le prix évolue avec votre nombre de clients.</p>
+          </Reveal>
+          <div className="mt-14 grid gap-6 lg:grid-cols-3">
+            {PRICING.map((p, i) => (
+              <Reveal key={p.name} delay={i * 0.08}>
+                <div
+                  className={`flex h-full flex-col rounded-2xl border p-8 ${
+                    p.featured
+                      ? "border-halo/60 bg-halo/[0.07] shadow-[0_0_40px_-12px_var(--color-halo)]"
+                      : "border-onyx-line bg-onyx-soft"
+                  }`}
+                >
+                  {p.featured && (
+                    <span className="mb-4 inline-block w-fit rounded-full bg-halo px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+                      Le plus populaire
+                    </span>
+                  )}
+                  <h3 className="font-display text-2xl">{p.name}</h3>
+                  <p className="mt-1 text-sm text-galet">{p.tagline}</p>
+                  <div className="mt-5 flex items-baseline gap-1.5">
+                    <span className="font-display text-4xl font-light">{p.price}</span>
+                    {p.unit && <span className="text-sm text-galet">{p.unit}</span>}
+                  </div>
+                  <ul className="mt-7 flex-1 space-y-3">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm text-calcaire/90">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-halo-glow" aria-hidden />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={p.href}
+                    className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow ${
+                      p.featured
+                        ? "bg-halo text-white hover:bg-halo-600"
+                        : "border border-onyx-line text-calcaire hover:bg-onyx"
+                    }`}
+                  >
+                    {p.cta}
+                  </Link>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------- FINAL CTA ---------------- */}
+      <section className="border-t border-onyx-line px-6 py-28">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <HaloSymbol size={48} ring="var(--color-calcaire)" className="mx-auto mb-8" />
+          <h2 className="font-display text-4xl font-light tracking-tight sm:text-6xl">
+            Et la vôtre, elle ressemblerait <em className="italic text-halo-glow">à quoi&nbsp;?</em>
+          </h2>
+          <p className="mx-auto mt-6 max-w-md text-galet">
+            Créez votre carte de fidélité numérique en quelques minutes. Sans engagement.
+          </p>
+          <Link
+            href="/signup"
+            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-halo px-8 py-4 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+          >
+            Créer ma carte
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+        </Reveal>
+      </section>
+
+      {/* ---------------- FOOTER ---------------- */}
+      <footer className="border-t border-onyx-line px-6 py-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-galet sm:flex-row">
+          <HaloWordmark className="text-base" />
+          <p>© 2026 HALO — Cartes de fidélité numériques · Genève</p>
+          <div className="flex gap-6">
+            <Link href="/login" className="transition-colors hover:text-calcaire">Connexion</Link>
+            <a href="#tarifs" className="transition-colors hover:text-calcaire">Tarifs</a>
+          </div>
         </div>
       </footer>
-
     </div>
   );
 }

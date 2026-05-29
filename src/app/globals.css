@@ -8,8 +8,24 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  /* Fonts (injected by next/font in layout.tsx) */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+}
+
+/* HALO brand palette — non-inline so the CSS variables are emitted to :root
+   (used both as Tailwind utilities like bg-halo AND directly via var(...)). */
+@theme {
+  --color-onyx: #0E0F11;
+  --color-onyx-soft: #16171A;
+  --color-onyx-line: #21232a;
+  --color-calcaire: #F3F0E9;
+  --color-galet: #9B9DA0;
+  --color-halo: #0D6B5E;
+  --color-halo-600: #0A574C;
+  --color-halo-glow: #1FB89A;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +38,45 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* ============ HALO motion ============ */
+@keyframes halo-holo {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 280% 50%; }
+}
+@keyframes halo-sheen {
+  0% { transform: translateX(-130%) rotate(8deg); }
+  55%, 100% { transform: translateX(360%) rotate(8deg); }
+}
+
+.halo-holo {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 0, 128, 0) 10%,
+    rgba(255, 196, 0, 0.22) 28%,
+    rgba(0, 255, 194, 0.24) 46%,
+    rgba(64, 140, 255, 0.22) 62%,
+    rgba(170, 0, 255, 0.20) 78%,
+    rgba(255, 0, 128, 0) 95%
+  );
+  background-size: 280% 280%;
+  mix-blend-mode: screen;
+  animation: halo-holo 9s linear infinite;
+}
+.halo-sheen {
+  background: linear-gradient(
+    105deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+  filter: blur(5px);
+  animation: halo-sheen 6.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halo-holo,
+  .halo-sheen { animation: none; }
 }
