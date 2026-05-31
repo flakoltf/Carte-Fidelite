@@ -7,8 +7,11 @@ export default async function NotificationsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: merchant } = await supabase.from("merchants").select("id").eq("user_id", user?.id).single();
+  if (!merchant) {
+    return <p className="text-zinc-500">Aucun profil marchand associé à ce compte.</p>;
+  }
   const { data: history } = await supabase
-    .from("wallet_notifications").select("*").eq("merchant_id", merchant?.id)
+    .from("wallet_notifications").select("*").eq("merchant_id", merchant.id)
     .order("created_at", { ascending: false }).limit(20);
 
   return (

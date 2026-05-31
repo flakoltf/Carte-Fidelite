@@ -27,6 +27,9 @@ export async function sendPush(pushTokens: string[], passTypeId: string): Promis
   const passphrase = process.env.SIGNER_KEY_PASSPHRASE || "";
   const host = process.env.APNS_HOST || "https://api.push.apple.com";
   const client = http2.connect(host, { cert, key, passphrase });
+  // Absorbe les erreurs de session (certs invalides, TLS) : sans ce handler,
+  // l'événement 'error' lèverait une exception non capturée et planterait la lambda.
+  client.on("error", () => {});
 
   let ok = 0;
   const dead: string[] = [];

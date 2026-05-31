@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { parseApplePassAuth } from "@/lib/wallet/authToken";
+import { parseApplePassAuth, safeCompare } from "@/lib/wallet/authToken";
 
 export const runtime = "nodejs";
 
@@ -8,7 +8,7 @@ async function authorize(req: Request, serial: string): Promise<boolean> {
   const token = parseApplePassAuth(req.headers.get("authorization"));
   if (!token) return false;
   const { data } = await supabaseAdmin.from("loyalty_cards").select("auth_token").eq("id", serial).single();
-  return !!data?.auth_token && data.auth_token === token;
+  return safeCompare(data?.auth_token as string | null, token);
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ deviceId: string; passTypeId: string; serial: string }> }) {

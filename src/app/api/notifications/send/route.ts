@@ -2,12 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { getChannels } from "@/lib/wallet/channel";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // 10 envois / heure par marchand (anti-spam APNs)
+  const rl = await rateLimit(`notify:${merchantId}`, 10, 3600000);
+  if (!rl.success) return NextResponse.json({ error: "Trop d'envois. Réessayez plus tard." }, { status: 429 });
   const { title, body } = await req.json().catch(() => ({}));
   if (typeof title !== "string" || typeof body !== "string" || !title.trim() || !body.trim())
     return NextResponse.json({ error: "bad input" }, { status: 400 });

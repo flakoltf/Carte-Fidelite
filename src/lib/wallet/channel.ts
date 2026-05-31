@@ -20,7 +20,7 @@ export const AppleChannel: NotificationChannel = {
     if (!tokens.length) return { pushed: 0 };
 
     const res = await sendPush(tokens, passTypeId());
-    if (res.dead.length) await supabaseAdmin.from("wallet_device_registrations").delete().in("push_token", res.dead);
+    if (res.dead.length) await supabaseAdmin.from("wallet_device_registrations").delete().eq("pass_type_id", passTypeId()).in("push_token", res.dead);
     return { pushed: res.ok };
   },
 };
