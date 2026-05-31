@@ -12,10 +12,20 @@ export function CustomizePanel({ config, onClose, onSaved }: {
     setItems(copy.map((w, idx) => ({ ...w, order: idx })));
   };
   const toggle = (i: number) => setItems(items.map((w, idx) => idx === i ? { ...w, visible: !w.visible } : w));
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const save = async () => {
-    const next = { widgets: items };
-    await fetch("/api/dashboard-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
-    onSaved(next); onClose();
+    setSaving(true); setSaveError(null);
+    try {
+      const next = { widgets: items };
+      const res = await fetch("/api/dashboard-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) });
+      if (!res.ok) throw new Error("save failed");
+      onSaved(next); onClose();
+    } catch {
+      setSaveError("Impossible de sauvegarder. Réessayez.");
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-end" onClick={onClose}>
@@ -35,7 +45,11 @@ export function CustomizePanel({ config, onClose, onSaved }: {
             </li>
           ))}
         </ul>
-        <button onClick={save} className="mt-4 w-full bg-emerald-500 text-black rounded-xl py-2 font-bold">Enregistrer</button>
+        <button onClick={save} disabled={saving}
+          className="mt-4 w-full bg-emerald-500 text-black rounded-xl py-2 font-bold disabled:opacity-50">
+          {saving ? "Enregistrement…" : "Enregistrer"}
+        </button>
+        {saveError && <p className="mt-2 text-sm text-red-400">{saveError}</p>}
       </div>
     </div>
   );

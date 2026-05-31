@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return new Response("unauthorized", { status: 401 });
   const range = (req.nextUrl.searchParams.get("range") ?? "30j") as RangeKey;
+  if (!(["7j", "30j", "12m"] as RangeKey[]).includes(range)) return new Response("bad range", { status: 400 });
   const kpis = await fetchKpis(merchantId, range);
 
   const s = StyleSheet.create({

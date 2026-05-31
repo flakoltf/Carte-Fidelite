@@ -9,7 +9,9 @@ export async function GET(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return new Response("unauthorized", { status: 401 });
   const type = req.nextUrl.searchParams.get("type") ?? "clients";
+  if (type !== "clients" && type !== "visites") return new Response("bad type", { status: 400 });
   const range = (req.nextUrl.searchParams.get("range") ?? "30j") as RangeKey;
+  if (!(["7j", "30j", "12m"] as RangeKey[]).includes(range)) return new Response("bad range", { status: 400 });
   const supabase = await createClient();
   const { from } = resolveRange(range);
 
