@@ -1,0 +1,25 @@
+import { describe, it, expect } from "vitest";
+import { buildPassJson } from "@/lib/wallet/passJson";
+
+const base = {
+  cardId: "card-1", customerName: "Alice", stamps: 3,
+  orgName: "Café", backgroundColor: "rgb(0,0,0)",
+  passTypeIdentifier: "pass.x", teamIdentifier: "T1", barcodeMessage: "sig",
+};
+
+describe("buildPassJson", () => {
+  it("inclut webServiceURL + authenticationToken quand fournis", () => {
+    const p = buildPassJson({ ...base, webServiceURL: "https://x/api/wallet/apple", authToken: "tok", message: "Promo" });
+    expect(p.webServiceURL).toBe("https://x/api/wallet/apple");
+    expect(p.authenticationToken).toBe("tok");
+    const msg = p.storeCard.backFields.find((f) => f.key === "message")!;
+    expect(msg.value).toBe("Promo");
+    expect(msg.changeMessage).toBe("%@");
+    expect(p.serialNumber).toBe("card-1");
+  });
+  it("sans authToken : pas de webServiceURL (pass non push-ready)", () => {
+    const p = buildPassJson(base);
+    expect(p.webServiceURL).toBeUndefined();
+    expect(p.authenticationToken).toBeUndefined();
+  });
+});
