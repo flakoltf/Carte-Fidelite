@@ -10,6 +10,7 @@ import {
   Scan,
   LogOut,
   Wallet,
+  Bell,
   Menu,
   X,
   ChevronRight
@@ -31,6 +32,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/dashboard" },
     { name: "Clients", icon: Users, href: "/dashboard/customers" },
+    { name: "Notifications", icon: Bell, href: "/dashboard/notifications" },
     { name: "Scanner", icon: Scan, href: "/scan" },
     { name: "Paramètres", icon: Settings, href: "/dashboard/settings" },
   ];
