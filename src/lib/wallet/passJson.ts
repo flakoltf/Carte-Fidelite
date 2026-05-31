@@ -27,7 +27,7 @@ export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
       backFields: [{ key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" }],
     },
     barcodes: [{ message: i.barcodeMessage, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1", altText: "Scannez pour valider vos tampons" }],
-  } as Record<string, unknown> & { storeCard: { backFields: { key: string; value: string; changeMessage?: string }[] } };
+  } as unknown as Record<string, unknown> & { storeCard: { backFields: { key: string; value: string; changeMessage?: string }[] } };
 
   if (i.webServiceURL && i.authToken) {
     pass.webServiceURL = i.webServiceURL;

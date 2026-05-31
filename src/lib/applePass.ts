@@ -67,47 +67,30 @@ export async function buildApplePassBuffer({
   const passTypeIdentifier = process.env.APPLE_PASS_TYPE_ID || "pass.com.tamarque.fidelite";
   const teamIdentifier = process.env.APPLE_TEAM_ID || "ABCDE12345";
 
-  // pass.json complet (format Apple Wallet v1, storeCard).
-  const passJson = {
-    formatVersion: 1,
+  // pass.json push-ready (webServiceURL + authenticationToken + champ message),
+  // construit par le builder pur partagé.
+  const { buildPassJson } = await import("@/lib/wallet/passJson");
+  const { ensureAuthToken, getCardMessage } = await import("@/lib/wallet/authToken");
+
+  const authToken = await ensureAuthToken(cardId);
+  const message = await getCardMessage(cardId);
+  const webServiceURL =
+    process.env.APPLE_WEB_SERVICE_URL ||
+    `${process.env.NEXT_PUBLIC_BASE_URL || "https://carte-fidelite-nu.vercel.app"}/api/wallet/apple`;
+
+  const passJson = buildPassJson({
+    cardId,
+    customerName,
+    stamps,
+    orgName,
+    backgroundColor,
     passTypeIdentifier,
     teamIdentifier,
-    serialNumber: cardId,
-    organizationName: orgName,
-    description: "Carte de fidélité numérique",
-    logoText: orgName,
-    backgroundColor,
-    foregroundColor: "rgb(255, 255, 255)",
-    labelColor: "rgb(255, 255, 255)",
-    storeCard: {
-      headerFields: [],
-      primaryFields: [
-        {
-          key: "stamps",
-          label: "TAMPONS",
-          value: `${stamps} / 10`,
-          textAlignment: "PKTextAlignmentRight",
-        },
-      ],
-      secondaryFields: [
-        {
-          key: "customerName",
-          label: "CLIENT",
-          value: customerName,
-        },
-      ],
-      auxiliaryFields: [],
-      backFields: [],
-    },
-    barcodes: [
-      {
-        message: signQRCode(cardId),
-        format: "PKBarcodeFormatQR",
-        messageEncoding: "iso-8859-1",
-        altText: "Scannez pour valider vos tampons",
-      },
-    ],
-  };
+    barcodeMessage: signQRCode(cardId),
+    webServiceURL,
+    authToken,
+    message,
+  });
 
   // Buffer map initial pour PKPass : pass.json + icônes/logo.
   // icon.png et icon@2x.png sont les seuls vraiment requis par iOS.
