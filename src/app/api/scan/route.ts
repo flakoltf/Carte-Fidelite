@@ -102,6 +102,14 @@ export async function POST(req: Request) {
         points_added: 1
       });
 
+    // 4b. Carte vivante : pousse la mise à jour du pass (best-effort, n'échoue pas le scan)
+    try {
+      const { getChannels } = await import("@/lib/wallet/channel");
+      for (const ch of getChannels()) await ch.notify([actualCardId]);
+    } catch (e) {
+      console.error("[scan] push notify failed:", e);
+    }
+
     // 5. Audit trail (RGPD + forensics)
     const meta = extractRequestMeta(req);
     await logAuditEvent({
