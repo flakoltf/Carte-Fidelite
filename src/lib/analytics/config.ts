@@ -9,7 +9,7 @@ export function resolveDashboardConfig(stored: DashboardConfig | null, businessT
     return {
       key: key as WidgetKey,
       visible: s ? s.visible : true,
-      order: s ? s.order : order.indexOf(key),
+      order: s ? s.order : (order.indexOf(key) >= 0 ? order.indexOf(key) : order.length),
     };
   }).sort((a, b) => a.order - b.order);
   return { widgets };

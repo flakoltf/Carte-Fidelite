@@ -17,11 +17,11 @@ export function computeTopCustomers(rows: Row[], limit: number): TopCustomer[] {
 
 export async function fetchTopCustomers(merchantId: string, range: RangeKey): Promise<TopCustomer[]> {
   const supabase = await createClient();
-  const { from } = resolveRange(range);
+  const { from, to } = resolveRange(range);
   const { data } = await supabase
     .from("scan_history")
     .select("loyalty_cards(customer_id, customers(full_name))")
-    .eq("merchant_id", merchantId).gte("scanned_at", from.toISOString());
+    .eq("merchant_id", merchantId).gte("scanned_at", from.toISOString()).lte("scanned_at", to.toISOString());
   // Supabase infère les relations imbriquées comme des tableaux ; au runtime ce
   // sont des objets (relations to-one). On caste vers la forme réelle.
   type ScanRow = { loyalty_cards?: { customer_id?: string; customers?: { full_name?: string } } };

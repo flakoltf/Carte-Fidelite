@@ -12,6 +12,6 @@ export async function fetchAcquisition(merchantId: string, range: RangeKey): Pro
   const supabase = await createClient();
   const { from, to, bucket } = resolveRange(range);
   const { data } = await supabase.from("customers").select("created_at")
-    .eq("merchant_id", merchantId).gte("created_at", from.toISOString());
+    .eq("merchant_id", merchantId).gte("created_at", from.toISOString()).lte("created_at", to.toISOString());
   return computeAcquisitionSeries(data ?? [], from, to, bucket);
 }

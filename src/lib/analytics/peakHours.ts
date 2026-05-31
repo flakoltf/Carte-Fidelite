@@ -15,8 +15,8 @@ export function computePeakHours(rows: { scanned_at: string }[]): Heatmap {
 
 export async function fetchPeakHours(merchantId: string, range: RangeKey): Promise<Heatmap> {
   const supabase = await createClient();
-  const { from } = resolveRange(range);
+  const { from, to } = resolveRange(range);
   const { data } = await supabase.from("scan_history").select("scanned_at")
-    .eq("merchant_id", merchantId).gte("scanned_at", from.toISOString());
+    .eq("merchant_id", merchantId).gte("scanned_at", from.toISOString()).lte("scanned_at", to.toISOString());
   return computePeakHours(data ?? []);
 }

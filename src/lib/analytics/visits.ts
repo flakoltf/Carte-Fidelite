@@ -35,6 +35,7 @@ export async function fetchVisits(merchantId: string, range: RangeKey): Promise<
   const { data } = await supabase
     .from("scan_history").select("scanned_at")
     .eq("merchant_id", merchantId)
-    .gte("scanned_at", from.toISOString());
+    .gte("scanned_at", from.toISOString())
+    .lte("scanned_at", to.toISOString());
   return computeVisitsSeries(data ?? [], from, to, bucket);
 }
