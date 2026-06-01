@@ -1,5 +1,5 @@
 export interface PassJsonInput {
-  cardId: string; customerName: string; stamps: number;
+  cardId: string; customerName: string; stamps: number; stampGoal?: number;
   orgName: string; backgroundColor: string;
   passTypeIdentifier: string; teamIdentifier: string; barcodeMessage: string;
   webServiceURL?: string; authToken?: string; message?: string;
@@ -21,7 +21,7 @@ export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
     labelColor: "rgb(255, 255, 255)",
     storeCard: {
       headerFields: [] as unknown[],
-      primaryFields: [{ key: "stamps", label: "TAMPONS", value: `${i.stamps} / 10`, textAlignment: "PKTextAlignmentRight" }],
+      primaryFields: [{ key: "stamps", label: "TAMPONS", value: `${i.stamps} / ${i.stampGoal ?? 10}`, textAlignment: "PKTextAlignmentRight" }],
       secondaryFields: [{ key: "customerName", label: "CLIENT", value: i.customerName }],
       auxiliaryFields: [] as unknown[],
       backFields: [{ key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" }],
