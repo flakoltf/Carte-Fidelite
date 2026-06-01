@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { tallyScansByCard } from "./scans";
 import { buildCustomerStats, type CustomerRow, type CardRow } from "./stats";
 import { classifyCustomer } from "./classify";
@@ -28,7 +29,9 @@ async function loadClassified(merchantId: string): Promise<{ stats: CustomerStat
   const cardIds = list.flatMap((c) => (c.loyalty_cards ?? []).map((k) => k.id));
   let reachable = new Set<string>();
   if (cardIds.length) {
-    const { data: regs } = await supabase
+    // wallet_device_registrations n'a pas de RLS → on lit via supabaseAdmin (comme tous
+    // les autres appels), en restant scopé aux serial_number (= ids de cartes) du marchand.
+    const { data: regs } = await supabaseAdmin
       .from("wallet_device_registrations")
       .select("serial_number")
       .in("serial_number", cardIds);
