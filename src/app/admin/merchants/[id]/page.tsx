@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { resolveMerchantConfig } from "@/lib/merchant-config/resolve";
 import EnrollmentQR from "../../EnrollmentQR";
 import EditMerchantForm from "./EditMerchantForm";
 
@@ -17,11 +18,13 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
   const supabase = await createClient();
   const { data: m } = await supabase
     .from("merchants")
-    .select("id, shop_name, email, primary_color, logo_url, enrollment_token, role")
+    .select("id, shop_name, email, primary_color, logo_url, enrollment_token, role, business_type, stamp_goal, segment_config")
     .eq("id", id)
     .maybeSingle();
 
   if (!m || m.role !== "merchant") notFound();
+
+  const cfg = resolveMerchantConfig({ stamp_goal: m.stamp_goal, segment_config: m.segment_config });
 
   const h = await headers();
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
@@ -49,6 +52,9 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
             shopName: m.shop_name,
             primaryColor: m.primary_color || "#10b981",
             logoUrl: m.logo_url,
+            stampGoal: cfg.stampGoal,
+            businessType: m.business_type || "autre",
+            thresholds: cfg.thresholds,
           }}
         />
 

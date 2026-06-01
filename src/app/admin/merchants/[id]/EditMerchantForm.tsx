@@ -4,8 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Store, RefreshCw, Check, AlertCircle } from "lucide-react";
 
+const BUSINESS_OPTIONS = ["cafe", "restaurant", "boulangerie", "boutique", "salon", "sport", "autre"];
+
 interface Props {
-  merchant: { id: string; shopName: string; primaryColor: string; logoUrl: string | null };
+  merchant: {
+    id: string;
+    shopName: string;
+    primaryColor: string;
+    logoUrl: string | null;
+    stampGoal: number;
+    businessType: string;
+    thresholds: { activeDays: number; atRiskDays: number; vipVisits: number; newTenureDays: number };
+  };
 }
 
 export default function EditMerchantForm({ merchant }: Props) {
@@ -13,6 +23,12 @@ export default function EditMerchantForm({ merchant }: Props) {
   const [shopName, setShopName] = useState(merchant.shopName);
   const [primaryColor, setPrimaryColor] = useState(merchant.primaryColor);
   const [logoUrl, setLogoUrl] = useState(merchant.logoUrl || "");
+  const [stampGoal, setStampGoal] = useState(merchant.stampGoal);
+  const [businessType, setBusinessType] = useState(merchant.businessType);
+  const [activeDays, setActiveDays] = useState(merchant.thresholds.activeDays);
+  const [atRiskDays, setAtRiskDays] = useState(merchant.thresholds.atRiskDays);
+  const [vipVisits, setVipVisits] = useState(merchant.thresholds.vipVisits);
+  const [newTenureDays, setNewTenureDays] = useState(merchant.thresholds.newTenureDays);
   const [saving, setSaving] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [msg, setMsg] = useState("");
@@ -27,7 +43,10 @@ export default function EditMerchantForm({ merchant }: Props) {
       const res = await fetch(`/api/admin/merchants/${merchant.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopName, primaryColor, logoUrl }),
+        body: JSON.stringify({
+          shopName, primaryColor, logoUrl,
+          stampGoal, businessType, activeDays, atRiskDays, vipVisits, newTenureDays,
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -63,6 +82,8 @@ export default function EditMerchantForm({ merchant }: Props) {
       setRotating(false);
     }
   };
+
+  const numInput = "w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all";
 
   return (
     <form onSubmit={save} className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 space-y-5 h-fit">
@@ -103,6 +124,42 @@ export default function EditMerchantForm({ merchant }: Props) {
           placeholder="https://…/logo.png"
           className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 px-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all placeholder:text-zinc-700"
         />
+      </div>
+
+      <h2 className="font-bold pt-2 border-t border-zinc-800">Programme &amp; segmentation</h2>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Objectif carte (tampons)</label>
+          <input type="number" min={1} max={50} value={stampGoal}
+            onChange={(e) => setStampGoal(Number(e.target.value))} className={numInput} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Métier</label>
+          <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className={numInput}>
+            {BUSINESS_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Jours « actif » (déf. 30)</label>
+          <input type="number" min={1} value={activeDays}
+            onChange={(e) => setActiveDays(Number(e.target.value))} className={numInput} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Jours « à risque » (déf. 90)</label>
+          <input type="number" min={1} value={atRiskDays}
+            onChange={(e) => setAtRiskDays(Number(e.target.value))} className={numInput} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Visites VIP (déf. 10)</label>
+          <input type="number" min={1} value={vipVisits}
+            onChange={(e) => setVipVisits(Number(e.target.value))} className={numInput} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Ancienneté « nouveau » (déf. 30)</label>
+          <input type="number" min={1} value={newTenureDays}
+            onChange={(e) => setNewTenureDays(Number(e.target.value))} className={numInput} />
+        </div>
       </div>
 
       {error && (
