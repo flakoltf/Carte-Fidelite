@@ -17,7 +17,6 @@ export const WIDGETS: Record<WidgetKey, { label: string }> = {
 
 export type RangeKey = "7j" | "30j" | "12m";
 export const INACTIVE_DAYS = 30;
-export const REWARD_THRESHOLD = 10;
 
 export type WidgetConfigItem = { key: WidgetKey; visible: boolean; order: number };
 export type DashboardConfig = { widgets: WidgetConfigItem[] };

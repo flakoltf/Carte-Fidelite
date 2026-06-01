@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { resolveRange } from "./range";
-import { INACTIVE_DAYS, REWARD_THRESHOLD, type RangeKey } from "./types";
+import { INACTIVE_DAYS, type RangeKey } from "./types";
+import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 
 export type KpisInput = {
   totalCustomers: number; newCustomers: number; visits: number;
@@ -17,13 +18,14 @@ export async function fetchKpis(merchantId: string, range: RangeKey): Promise<Kp
   const supabase = await createClient();
   const { from } = resolveRange(range);
   const activeSince = new Date(Date.now() - INACTIVE_DAYS * 86400000).toISOString();
+  const { stampGoal } = await fetchMerchantConfig(merchantId);
 
   const [total, fresh, visits, active, completed] = await Promise.all([
     supabase.from("customers").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId),
     supabase.from("customers").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("created_at", from.toISOString()),
     supabase.from("scan_history").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("scanned_at", from.toISOString()),
     supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("last_scan", activeSince),
-    supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("stamps_count", REWARD_THRESHOLD),
+    supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("stamps_count", stampGoal),
   ]);
 
   return computeKpis({

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
-import { REWARD_THRESHOLD, type RangeKey } from "./types";
+import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { type RangeKey } from "./types";
 
 export type Rewards = { completedCards: number; totalCards: number; completionRate: number };
 
@@ -11,6 +12,7 @@ export function computeRewards(cards: { stamps_count: number }[], threshold: num
 
 export async function fetchRewards(merchantId: string, _range: RangeKey): Promise<Rewards> {
   const supabase = await createClient();
+  const { stampGoal } = await fetchMerchantConfig(merchantId);
   const { data } = await supabase.from("loyalty_cards").select("stamps_count").eq("merchant_id", merchantId);
-  return computeRewards(data ?? [], REWARD_THRESHOLD);
+  return computeRewards(data ?? [], stampGoal);
 }
