@@ -26,14 +26,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
       update.shop_name = s;
     }
-    if (typeof body.primaryColor === "string") {
-      if (!/^#[0-9a-fA-F]{6}$/.test(body.primaryColor)) {
-        return NextResponse.json({ error: "Couleur invalide (format #rrggbb)" }, { status: 400 });
-      }
-      update.primary_color = body.primaryColor;
-    }
-    if (typeof body.logoUrl === "string") {
-      update.logo_url = body.logoUrl.trim() || null;
+
+    // Bundle config marchand (présent dès que le formulaire enregistre).
+    if (body.stampGoal !== undefined) {
+      const { validateMerchantConfig } = await import("@/lib/merchant-config/validate");
+      const v = validateMerchantConfig(body);
+      if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+      update.stamp_goal = v.value.stampGoal;
+      update.business_type = v.value.businessType;
+      update.primary_color = v.value.primaryColor;
+      update.logo_url = v.value.logoUrl;
+      update.segment_config = v.value.segmentConfig;
     }
 
     if (Object.keys(update).length === 0) {
