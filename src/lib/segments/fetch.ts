@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 import { tallyScansByCard } from "./scans";
 import { buildCustomerStats, type CustomerRow, type CardRow } from "./stats";
 import { classifyCustomer } from "./classify";
@@ -38,10 +39,11 @@ async function loadClassified(merchantId: string): Promise<{ stats: CustomerStat
     reachable = new Set((regs ?? []).map((r) => r.serial_number as string));
   }
 
+  const cfg = await fetchMerchantConfig(merchantId);
   const now = new Date();
   return list.map((c) => {
     const stats = buildCustomerStats(c, c.loyalty_cards ?? [], scanCounts, reachable);
-    return { stats, cls: classifyCustomer(stats, now) };
+    return { stats, cls: classifyCustomer(stats, now, cfg) };
   });
 }
 
