@@ -78,10 +78,27 @@ export async function buildApplePassBuffer({
     process.env.APPLE_WEB_SERVICE_URL ||
     `${process.env.NEXT_PUBLIC_BASE_URL || "https://carte-fidelite-nu.vercel.app"}/api/wallet/apple`;
 
+  const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+  let stampGoal = 10;
+  const { data: cardRow } = await supabaseAdmin
+    .from("loyalty_cards")
+    .select("merchant_id")
+    .eq("id", cardId)
+    .single();
+  if (cardRow?.merchant_id) {
+    const { data: mRow } = await supabaseAdmin
+      .from("merchants")
+      .select("stamp_goal")
+      .eq("id", cardRow.merchant_id)
+      .single();
+    stampGoal = mRow?.stamp_goal ?? 10;
+  }
+
   const passJson = buildPassJson({
     cardId,
     customerName,
     stamps,
+    stampGoal,
     orgName,
     backgroundColor,
     passTypeIdentifier,
