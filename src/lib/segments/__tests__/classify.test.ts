@@ -48,6 +48,12 @@ describe("classifyCustomer — stades", () => {
   it("actif + visites 3..9 -> regulier", () => {
     expect(classifyCustomer(stats({ recencyDays: 5, tenureDays: 200, visits: 3 }), NOW).stage).toBe("regulier");
   });
+  it("actif + visites 9 -> regulier (borne juste sous VIP)", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, tenureDays: 200, visits: 9 }), NOW).stage).toBe("regulier");
+  });
+  it("recence = 30j -> actif (regulier, pas en_train_de_partir)", () => {
+    expect(classifyCustomer(stats({ recencyDays: 30, tenureDays: 200, visits: 5 }), NOW).stage).toBe("regulier");
+  });
   it("jamais scanné, inscrit récemment -> nouveau (recence = ancienneté)", () => {
     expect(classifyCustomer(stats({ recencyDays: null, tenureDays: 10, visits: 0 }), NOW).stage).toBe("nouveau");
   });
