@@ -1,0 +1,69 @@
+import { describe, it, expect } from "vitest";
+import { classifyCustomer } from "@/lib/segments/classify";
+import { type CustomerStats } from "@/lib/segments/types";
+
+const NOW = new Date("2026-06-01T00:00:00Z");
+const DAY = 86_400_000;
+// Construit des stats de test. recencyDays: jours depuis la dernière visite
+// (null = jamais scanné). tenureDays: jours depuis l'inscription.
+function stats(p: {
+  visits?: number;
+  tenureDays?: number;
+  recencyDays?: number | null;
+  maxStamps?: number;
+  reachablePush?: boolean;
+}): CustomerStats {
+  const tenureDays = p.tenureDays ?? 200;
+  const recency = p.recencyDays === undefined ? 5 : p.recencyDays; // défaut : vu il y a 5j
+  return {
+    customerId: "c",
+    name: "X",
+    visits: p.visits ?? 5,
+    lastScan: recency === null ? null : new Date(NOW.getTime() - recency * DAY),
+    createdAt: new Date(NOW.getTime() - tenureDays * DAY),
+    maxStamps: p.maxStamps ?? 0,
+    reachablePush: p.reachablePush ?? false,
+  };
+}
+
+describe("classifyCustomer — stades", () => {
+  it("recence > 90j -> inactif", () => {
+    expect(classifyCustomer(stats({ recencyDays: 91 }), NOW).stage).toBe("inactif");
+  });
+  it("recence = 90j -> en_train_de_partir (borne)", () => {
+    expect(classifyCustomer(stats({ recencyDays: 90 }), NOW).stage).toBe("en_train_de_partir");
+  });
+  it("recence = 31j -> en_train_de_partir", () => {
+    expect(classifyCustomer(stats({ recencyDays: 31 }), NOW).stage).toBe("en_train_de_partir");
+  });
+  it("actif + visites >= 10 -> vip", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, visits: 10 }), NOW).stage).toBe("vip");
+  });
+  it("actif + inscrit <= 30j + visites <= 2 -> nouveau", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, tenureDays: 30, visits: 2 }), NOW).stage).toBe("nouveau");
+  });
+  it("actif + inscrit 31j + visites 2 -> regulier (plus 'nouveau')", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, tenureDays: 31, visits: 2 }), NOW).stage).toBe("regulier");
+  });
+  it("actif + visites 3..9 -> regulier", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, tenureDays: 200, visits: 3 }), NOW).stage).toBe("regulier");
+  });
+  it("jamais scanné, inscrit récemment -> nouveau (recence = ancienneté)", () => {
+    expect(classifyCustomer(stats({ recencyDays: null, tenureDays: 10, visits: 0 }), NOW).stage).toBe("nouveau");
+  });
+  it("jamais scanné, inscrit il y a longtemps -> inactif", () => {
+    expect(classifyCustomer(stats({ recencyDays: null, tenureDays: 200, visits: 0 }), NOW).stage).toBe("inactif");
+  });
+});
+
+describe("classifyCustomer — étiquettes", () => {
+  it("tampons >= 10 -> recompense_prete vrai", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, maxStamps: 10 }), NOW).flags.recompense_prete).toBe(true);
+  });
+  it("tampons 9 -> recompense_prete faux", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, maxStamps: 9 }), NOW).flags.recompense_prete).toBe(false);
+  });
+  it("joignable_push reflète reachablePush", () => {
+    expect(classifyCustomer(stats({ recencyDays: 5, reachablePush: true }), NOW).flags.joignable_push).toBe(true);
+  });
+});
