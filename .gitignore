@@ -34,6 +34,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# secrets locaux (jamais committés) — credentials de comptes démo
+*.local.md
+DEMO-ADMIN.local.md
+
 # vercel
 .vercel
 
