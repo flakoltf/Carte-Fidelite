@@ -23,13 +23,8 @@ export const STAGE_FAMILIES: { title: string; stages: StageKey[] }[] = [
   { title: "À reconquérir", stages: ["en_train_de_partir", "inactif"] },
 ];
 
-// Seuils (fixes — voir spec). DAY_MS pour les calculs de jours.
-export const ACTIVE_DAYS = 30;
-export const AT_RISK_DAYS = 90;
-export const NEW_TENURE_DAYS = 30;
+// DAY_MS pour les calculs de jours. NEW_MAX_VISITS utilisé par classify.ts.
 export const NEW_MAX_VISITS = 2;
-export const VIP_MIN_VISITS = 10;
-export const REWARD_THRESHOLD = 10;
 export const DAY_MS = 86_400_000;
 
 export type CustomerStats = {
