@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { SendForm } from "./SendForm";
+import { audienceLabel, isAudienceKey } from "@/lib/segments/audience";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function NotificationsPage() {
             <div key={n.id} className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4">
               <div className="font-bold">{n.title}</div>
               <div className="text-sm text-zinc-400">{n.body}</div>
-              <div className="text-xs text-zinc-600 mt-1">{new Date(n.created_at).toLocaleString()} · {n.sent_count} envoyé(s)</div>
+              <div className="text-xs text-zinc-600 mt-1">{new Date(n.created_at).toLocaleString()} · {n.sent_count} envoyé(s) · {isAudienceKey(n.audience) ? audienceLabel(n.audience) : "Tous mes clients"}</div>
             </div>
           )) : <p className="text-zinc-600 text-sm">Aucune notification envoyée pour l&apos;instant.</p>}
         </div>
