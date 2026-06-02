@@ -9,6 +9,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [merchant, setMerchant] = useState<any>(null);
   
   const [shopName, setShopName] = useState("");
@@ -90,7 +91,7 @@ export default function Settings() {
       
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Paramètres</h1>
-        <p className="text-zinc-500">Personnalisez votre boutique et l'apparence de vos cartes Wallet.</p>
+        <p className="text-zinc-500">Personnalisez votre boutique et l&apos;apparence de vos cartes Wallet.</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -229,7 +230,7 @@ export default function Settings() {
             </div>
 
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 text-xs text-zinc-500 leading-relaxed">
-                <p>💡 <strong>Note :</strong> La couleur et le logo s'appliqueront aux prochaines cartes générées. Pour mettre à jour les cartes existantes, utilisez le bouton "Push Update" (disponible prochainement).</p>
+                <p>💡 <strong>Note :</strong> La couleur et le logo s&apos;appliqueront aux prochaines cartes générées. Pour mettre à jour les cartes existantes, utilisez le bouton &quot;Push Update&quot; (disponible prochainement).</p>
             </div>
         </div>
 
