@@ -39,8 +39,22 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       update.segment_config = v.value.segmentConfig;
     }
 
-    if (Object.keys(update).length === 0) {
+    // Adresse / position (géocodée) — traitée à part via le helper partagé.
+    if (typeof body.address === "string" && body.address.trim()) {
+      const { applyMerchantLocation } = await import("@/lib/geo/applyLocation");
+      await applyMerchantLocation(id, {
+        address: body.address,
+        latitude: typeof body.latitude === "number" ? body.latitude : undefined,
+        longitude: typeof body.longitude === "number" ? body.longitude : undefined,
+      });
+    }
+
+    const addressOnly = typeof body.address === "string" && body.address.trim().length > 0;
+    if (Object.keys(update).length === 0 && !addressOnly) {
       return NextResponse.json({ error: "Aucune modification fournie" }, { status: 400 });
+    }
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ ok: true });
     }
 
     const { data, error } = await supabaseAdmin
