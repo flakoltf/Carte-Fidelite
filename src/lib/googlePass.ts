@@ -49,6 +49,18 @@ export async function buildGoogleSaveUrl({
   const sanitizedCardId = cardId.replace(/-/g, "_");
   const objectId = `${issuerId}.${sanitizedCardId}`;
 
+  const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+  let geoLocations: { latitude: number; longitude: number }[] | undefined;
+  const { data: cardRow } = await supabaseAdmin
+    .from("loyalty_cards").select("merchant_id").eq("id", cardId).single();
+  if (cardRow?.merchant_id) {
+    const { data: mRow } = await supabaseAdmin
+      .from("merchants").select("latitude, longitude").eq("id", cardRow.merchant_id).single();
+    if (mRow?.latitude != null && mRow?.longitude != null) {
+      geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
+    }
+  }
+
   const loyaltyObject = {
     id: objectId,
     classId,
@@ -63,6 +75,7 @@ export async function buildGoogleSaveUrl({
       type: "QR_CODE",
       value: signQRCode(cardId),
     },
+    ...(geoLocations ? { locations: geoLocations } : {}),
   };
 
   const claims = {
