@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { getChannels } from "@/lib/wallet/channel";
 import { rateLimit } from "@/lib/rateLimit";
+import { fetchAudienceCardIds } from "@/lib/segments/fetch";
+import { isAudienceKey, type AudienceKey } from "@/lib/segments/audience";
 
 export const runtime = "nodejs";
 
@@ -12,12 +14,14 @@ export async function POST(req: NextRequest) {
   // 10 envois / heure par marchand (anti-spam APNs)
   const rl = await rateLimit(`notify:${merchantId}`, 10, 3600000);
   if (!rl.success) return NextResponse.json({ error: "Trop d'envois. Réessayez plus tard." }, { status: 429 });
-  const { title, body } = await req.json().catch(() => ({}));
+
+  const { title, body, audience } = await req.json().catch(() => ({}));
   if (typeof title !== "string" || typeof body !== "string" || !title.trim() || !body.trim())
     return NextResponse.json({ error: "bad input" }, { status: 400 });
+  const aud: AudienceKey = audience === undefined ? "all" : audience;
+  if (!isAudienceKey(aud)) return NextResponse.json({ error: "bad audience" }, { status: 400 });
 
-  const { data: cards } = await supabaseAdmin.from("loyalty_cards").select("id").eq("merchant_id", merchantId);
-  const cardIds = (cards ?? []).map((c) => c.id as string);
+  const cardIds = await fetchAudienceCardIds(merchantId, aud);
   if (!cardIds.length) return NextResponse.json({ pushed: 0, reachable: 0 });
 
   const { data: regs } = await supabaseAdmin
@@ -26,6 +30,8 @@ export async function POST(req: NextRequest) {
 
   let pushed = 0;
   for (const ch of getChannels()) pushed += (await ch.notify(reachable, { title, body })).pushed;
-  await supabaseAdmin.from("wallet_notifications").insert({ merchant_id: merchantId, title, body, sent_count: pushed });
+  await supabaseAdmin
+    .from("wallet_notifications")
+    .insert({ merchant_id: merchantId, title, body, sent_count: pushed, audience: aud });
   return NextResponse.json({ pushed, reachable: reachable.length });
 }
