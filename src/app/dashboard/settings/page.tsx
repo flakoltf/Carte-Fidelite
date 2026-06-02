@@ -18,6 +18,8 @@ export default function Settings() {
   const [address, setAddress] = useState("");
   const [savingAddr, setSavingAddr] = useState(false);
   const [addrMsg, setAddrMsg] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
 
   // Utilisation du client SSR Browser
   const supabaseClient = createClient();
@@ -40,6 +42,8 @@ export default function Settings() {
       setPrimaryColor(data.primary_color || "#10b981");
       setLogoUrl(data.logo_url || "");
       setAddress(data.address || "");
+      setLat(data.latitude != null ? String(data.latitude) : "");
+      setLng(data.longitude != null ? String(data.longitude) : "");
     }
     setLoading(false);
   };
@@ -47,9 +51,11 @@ export default function Settings() {
   const saveAddress = async () => {
     setSavingAddr(true); setAddrMsg("");
     try {
+      const payload: { address: string; latitude?: number; longitude?: number } = { address };
+      if (lat.trim() && lng.trim()) { payload.latitude = Number(lat); payload.longitude = Number(lng); }
       const res = await fetch("/api/merchant/location", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok) { setAddrMsg(json.error || "Erreur."); return; }
@@ -186,6 +192,13 @@ export default function Settings() {
             <p className="text-sm text-zinc-500">Vos clients verront leur carte sur leur écran verrouillé quand ils passent près de votre boutique (≈100 m).</p>
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, Genève"
               className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-sm outline-none focus:border-emerald-500" />
+            <div className="grid grid-cols-2 gap-3">
+              <input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="Latitude (optionnel)"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-sm outline-none focus:border-emerald-500" />
+              <input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="Longitude (optionnel)"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-sm outline-none focus:border-emerald-500" />
+            </div>
+            <p className="text-xs text-zinc-600">Si l&apos;adresse n&apos;est pas trouvée, collez vos coordonnées (Google Maps → clic droit → copier).</p>
             <button type="button" onClick={saveAddress} disabled={savingAddr || address.trim().length < 5}
               className="bg-emerald-500 text-black rounded-xl px-5 py-2.5 font-bold disabled:opacity-50">
               {savingAddr ? "Enregistrement…" : "Enregistrer l'adresse"}
