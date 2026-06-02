@@ -15,6 +15,7 @@ interface Props {
     stampGoal: number;
     businessType: string;
     thresholds: { activeDays: number; atRiskDays: number; vipVisits: number; newTenureDays: number };
+    address: string | null;
   };
 }
 
@@ -29,6 +30,7 @@ export default function EditMerchantForm({ merchant }: Props) {
   const [atRiskDays, setAtRiskDays] = useState(merchant.thresholds.atRiskDays);
   const [vipVisits, setVipVisits] = useState(merchant.thresholds.vipVisits);
   const [newTenureDays, setNewTenureDays] = useState(merchant.thresholds.newTenureDays);
+  const [address, setAddress] = useState(merchant.address || "");
   const [saving, setSaving] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [msg, setMsg] = useState("");
@@ -46,6 +48,7 @@ export default function EditMerchantForm({ merchant }: Props) {
         body: JSON.stringify({
           shopName, primaryColor, logoUrl,
           stampGoal, businessType, activeDays, atRiskDays, vipVisits, newTenureDays,
+          address,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -161,6 +164,11 @@ export default function EditMerchantForm({ merchant }: Props) {
             onChange={(e) => setNewTenureDays(Number(e.target.value))} className={numInput} />
         </div>
       </div>
+
+      <h2 className="font-bold pt-2 border-t border-zinc-800">Adresse (proximité)</h2>
+      <input value={address} onChange={(e) => setAddress(e.target.value)}
+        placeholder="12 rue de la Paix, Genève"
+        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all" />
 
       {error && (
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-4 py-3 text-sm">

@@ -18,7 +18,7 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
   const supabase = await createClient();
   const { data: m } = await supabase
     .from("merchants")
-    .select("id, shop_name, email, primary_color, logo_url, enrollment_token, role, business_type, stamp_goal, segment_config")
+    .select("id, shop_name, email, primary_color, logo_url, enrollment_token, role, business_type, stamp_goal, segment_config, address")
     .eq("id", id)
     .maybeSingle();
 
@@ -55,6 +55,7 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
             stampGoal: cfg.stampGoal,
             businessType: m.business_type || "autre",
             thresholds: cfg.thresholds,
+            address: m.address,
           }}
         />
 
