@@ -3,6 +3,7 @@ export interface PassJsonInput {
   orgName: string; backgroundColor: string;
   passTypeIdentifier: string; teamIdentifier: string; barcodeMessage: string;
   webServiceURL?: string; authToken?: string; message?: string;
+  locations?: { latitude: number; longitude: number; relevantText: string }[];
 }
 
 export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
@@ -32,6 +33,9 @@ export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
   if (i.webServiceURL && i.authToken) {
     pass.webServiceURL = i.webServiceURL;
     pass.authenticationToken = i.authToken;
+  }
+  if (i.locations && i.locations.length > 0) {
+    pass.locations = i.locations;
   }
   return pass;
 }

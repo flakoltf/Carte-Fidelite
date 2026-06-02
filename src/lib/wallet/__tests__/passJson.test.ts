@@ -40,3 +40,18 @@ describe("buildPassJson — objectif de carte", () => {
     expect(f.value).toBe("3 / 10");
   });
 });
+
+describe("buildPassJson — locations (proximité)", () => {
+  const base = {
+    cardId: "c", customerName: "A", stamps: 3, stampGoal: 10, orgName: "Café",
+    backgroundColor: "rgb(0,0,0)", passTypeIdentifier: "pass.x", teamIdentifier: "T", barcodeMessage: "sig",
+  };
+  it("locations fournies -> champ top-level locations", () => {
+    const p = buildPassJson({ ...base, locations: [{ latitude: 46.2, longitude: 6.14, relevantText: "près" }] });
+    expect((p as { locations?: unknown[] }).locations).toEqual([{ latitude: 46.2, longitude: 6.14, relevantText: "près" }]);
+  });
+  it("sans locations -> pas de champ locations", () => {
+    const p = buildPassJson(base);
+    expect((p as { locations?: unknown[] }).locations).toBeUndefined();
+  });
+});
