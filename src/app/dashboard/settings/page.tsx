@@ -14,6 +14,9 @@ export default function Settings() {
   const [shopName, setShopName] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#10b981");
   const [logoUrl, setLogoUrl] = useState("");
+  const [address, setAddress] = useState("");
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [addrMsg, setAddrMsg] = useState("");
 
   // Utilisation du client SSR Browser
   const supabaseClient = createClient();
@@ -35,8 +38,24 @@ export default function Settings() {
       setShopName(data.shop_name);
       setPrimaryColor(data.primary_color || "#10b981");
       setLogoUrl(data.logo_url || "");
+      setAddress(data.address || "");
     }
     setLoading(false);
+  };
+
+  const saveAddress = async () => {
+    setSavingAddr(true); setAddrMsg("");
+    try {
+      const res = await fetch("/api/merchant/location", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setAddrMsg(json.error || "Erreur."); return; }
+      setAddrMsg(json.located ? "Position trouvée ✓ — vos clients seront alertés à proximité." : "Adresse enregistrée, mais non localisée. Vérifiez l'adresse.");
+    } catch {
+      setAddrMsg("Erreur de connexion.");
+    } finally { setSavingAddr(false); }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -161,6 +180,17 @@ export default function Settings() {
                     )}
                 </div>
             </form>
+          <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 space-y-4">
+            <h2 className="font-bold flex items-center gap-2"><Store className="w-4 h-4" /> Adresse & proximité</h2>
+            <p className="text-sm text-zinc-500">Vos clients verront leur carte sur leur écran verrouillé quand ils passent près de votre boutique (≈100 m).</p>
+            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, Genève"
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-sm outline-none focus:border-emerald-500" />
+            <button type="button" onClick={saveAddress} disabled={savingAddr || address.trim().length < 5}
+              className="bg-emerald-500 text-black rounded-xl px-5 py-2.5 font-bold disabled:opacity-50">
+              {savingAddr ? "Enregistrement…" : "Enregistrer l'adresse"}
+            </button>
+            {addrMsg && <p className="text-sm text-zinc-300">{addrMsg}</p>}
+          </div>
         </div>
 
         {/* Aperçu */}
