@@ -80,6 +80,7 @@ export async function buildApplePassBuffer({
 
   const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
   let stampGoal = 10;
+  let locations;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
     .select("merchant_id")
@@ -88,10 +89,14 @@ export async function buildApplePassBuffer({
   if (cardRow?.merchant_id) {
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("stamp_goal")
+      .select("stamp_goal, latitude, longitude")
       .eq("id", cardRow.merchant_id)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
+    if (mRow?.latitude != null && mRow?.longitude != null) {
+      const { proximityText } = await import("@/lib/geo/geocode");
+      locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
+    }
   }
 
   const passJson = buildPassJson({
@@ -107,6 +112,7 @@ export async function buildApplePassBuffer({
     webServiceURL,
     authToken,
     message,
+    locations,
   });
 
   // Buffer map initial pour PKPass : pass.json + icônes/logo.
