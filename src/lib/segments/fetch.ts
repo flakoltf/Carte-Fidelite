@@ -6,6 +6,7 @@ import { buildCustomerStats, type CustomerRow, type CardRow } from "./stats";
 import { classifyCustomer } from "./classify";
 import { summarizeSegments, type SegmentSummary } from "./summary";
 import { STAGE_KEYS, type StageKey, type CustomerStats, type Classification } from "./types";
+import { selectAudienceCardIds, type AudienceKey, type AudienceRow } from "./audience";
 
 type CustomerWithCards = CustomerRow & { loyalty_cards: CardRow[] | null };
 
@@ -14,7 +15,7 @@ export function isStageKey(s: string): s is StageKey {
 }
 
 // Charge tous les clients du marchand + agrège + classe. RLS limite déjà au marchand connecté.
-async function loadClassified(merchantId: string): Promise<{ stats: CustomerStats; cls: Classification }[]> {
+async function loadClassified(merchantId: string): Promise<{ stats: CustomerStats; cls: Classification; cardIds: string[] }[]> {
   const supabase = await createClient();
   const [{ data: customers }, { data: scans }] = await Promise.all([
     supabase
@@ -42,8 +43,9 @@ async function loadClassified(merchantId: string): Promise<{ stats: CustomerStat
   const cfg = await fetchMerchantConfig(merchantId);
   const now = new Date();
   return list.map((c) => {
-    const stats = buildCustomerStats(c, c.loyalty_cards ?? [], scanCounts, reachable);
-    return { stats, cls: classifyCustomer(stats, now, cfg) };
+    const cards = c.loyalty_cards ?? [];
+    const stats = buildCustomerStats(c, cards, scanCounts, reachable);
+    return { stats, cls: classifyCustomer(stats, now, cfg), cardIds: cards.map((k) => k.id) };
   });
 }
 
@@ -72,4 +74,14 @@ export async function fetchSegmentMembers(merchantId: string, stage: StageKey): 
       stamps: r.stats.maxStamps,
     }))
     .sort((a, b) => b.visits - a.visits);
+}
+
+export async function fetchAudienceCardIds(merchantId: string, audience: AudienceKey): Promise<string[]> {
+  const rows = await loadClassified(merchantId);
+  const audienceRows: AudienceRow[] = rows.map((r) => ({
+    stage: r.cls.stage,
+    recompenseReady: r.cls.flags.recompense_prete,
+    cardIds: r.cardIds,
+  }));
+  return selectAudienceCardIds(audienceRows, audience);
 }
