@@ -16,13 +16,13 @@ export function RetentionWidget({ range }: { range: RangeKey }) {
             <ResponsiveContainer width={120} height={120}>
               <PieChart>
                 <Pie data={[{ v: data.active }, { v: data.inactive }]} dataKey="v" innerRadius={36} outerRadius={56}>
-                  <Cell fill="#10b981" /><Cell fill="#3f3f46" />
+                  <Cell fill="#0D6B5E" /><Cell fill="#C4C6C8" />
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             <div className="text-sm">
-              <div className="text-emerald-400 font-bold">{data.activeRate}% actifs</div>
-              <div className="text-zinc-500">{data.active} actifs · {data.inactive} inactifs</div>
+              <div className="text-halo font-bold">{data.activeRate}% actifs</div>
+              <div className="text-galet-ink">{data.active} actifs · {data.inactive} inactifs</div>
             </div>
           </div>
         )}

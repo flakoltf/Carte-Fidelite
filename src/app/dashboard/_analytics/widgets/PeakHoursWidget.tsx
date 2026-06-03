@@ -15,9 +15,9 @@ export function PeakHoursWidget({ range }: { range: RangeKey }) {
       <div className="space-y-1">
         {data.map((row, d) => (
           <div key={d} className="flex items-center gap-1">
-            <span className="w-3 text-[10px] text-zinc-500">{DAYS[d]}</span>
+            <span className="w-3 text-[10px] text-galet-ink">{DAYS[d]}</span>
             <div className="grid flex-1 gap-[2px]" style={{ gridTemplateColumns: "repeat(24,1fr)" }}>
-              {row.map((v, h) => <div key={h} title={`${v}`} className="aspect-square rounded-[2px]" style={{ background: `rgba(16,185,129,${v / max})` }} />)}
+              {row.map((v, h) => <div key={h} title={`${v}`} className="aspect-square rounded-[2px]" style={{ background: v === 0 ? "#ECE7DB" : `rgba(13,107,94,${Math.max(0.15, v / max)})` }} />)}
             </div>
           </div>
         ))}

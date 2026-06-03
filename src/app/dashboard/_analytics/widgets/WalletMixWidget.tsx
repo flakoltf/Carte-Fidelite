@@ -8,7 +8,7 @@ function Bar({ label, pct, color }: { label: string; pct: number; color: string 
   return (
     <div className="mb-3">
       <div className="flex justify-between text-xs mb-1"><span>{label}</span><span>{pct}%</span></div>
-      <div className="h-2 bg-zinc-800 rounded-full"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div>
+      <div className="h-2 bg-line-warm rounded-full"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} /></div>
     </div>
   );
 }
@@ -19,7 +19,7 @@ export function WalletMixWidget({ range }: { range: RangeKey }) {
     <Card title="Adoption Wallet">
       {(isLoading || error || !data)
         ? <WidgetState loading={isLoading} error={error} />
-        : (<div><Bar label="Apple" pct={data.applePct} color="#e4e4e7" /><Bar label="Google" pct={data.googlePct} color="#10b981" /></div>)}
+        : (<div><Bar label="Apple" pct={data.applePct} color="#C4C6C8" /><Bar label="Google" pct={data.googlePct} color="#0D6B5E" /></div>)}
     </Card>
   );
 }

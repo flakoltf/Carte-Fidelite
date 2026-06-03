@@ -14,10 +14,10 @@ export function AcquisitionWidget({ range }: { range: RangeKey }) {
         : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={data}>
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#71717a" }} hide={data.length > 14} />
-              <YAxis tick={{ fontSize: 10, fill: "#71717a" }} width={28} />
-              <Tooltip contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 12 }} />
-              <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#6E7073" }} hide={data.length > 14} />
+              <YAxis tick={{ fontSize: 10, fill: "#6E7073" }} width={28} />
+              <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #E6E1D5", borderRadius: 12 }} />
+              <Bar dataKey="value" fill="#0D6B5E" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
