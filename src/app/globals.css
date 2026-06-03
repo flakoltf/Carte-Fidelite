@@ -26,6 +26,9 @@
   --color-halo: #0D6B5E;
   --color-halo-600: #0A574C;
   --color-halo-glow: #1FB89A;
+  --color-surface: #FFFFFF;
+  --color-line-warm: #E6E1D5;
+  --color-galet-ink: #6E7073;
 }
 
 @media (prefers-color-scheme: dark) {
