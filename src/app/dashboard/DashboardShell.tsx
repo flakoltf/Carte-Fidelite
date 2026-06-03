@@ -11,6 +11,7 @@ import {
   LogOut,
   Wallet,
   Bell,
+  Megaphone,
   Menu,
   X,
   ChevronRight,
@@ -35,6 +36,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     { name: "Clients", icon: Users, href: "/dashboard/customers" },
     { name: "Segments", icon: Layers, href: "/dashboard/segments" },
     { name: "Notifications", icon: Bell, href: "/dashboard/notifications" },
+    { name: "Campagnes", icon: Megaphone, href: "/dashboard/campaigns" },
     { name: "Scanner", icon: Scan, href: "/scan" },
     { name: "Paramètres", icon: Settings, href: "/dashboard/settings" },
   ];
