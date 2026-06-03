@@ -1,9 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
-import { 
-  Users, 
-  Search, 
+import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { RedeemCell } from "./RedeemCell";
+import {
+  Users,
+  Search,
   Filter,
-  MoreVertical,
   Mail,
   Smartphone,
   Calendar
@@ -15,15 +16,14 @@ export default async function Customers() {
   // 1. Récupérer le marchand
   const { data: { user } } = await supabase.auth.getUser();
   const { data: merchant } = await supabase
-    .from("merchants")
-    .select("id")
-    .eq("user_id", user?.id)
-    .single();
+    .from("merchants").select("id").eq("user_id", user?.id).single();
+
+  const stampGoal = merchant ? (await fetchMerchantConfig(merchant.id)).stampGoal : 10;
 
   // 2. Récupérer tous les clients de ce marchand
   const { data: customers } = await supabase
     .from("customers")
-    .select("*, loyalty_cards(stamps_count, last_scan)")
+    .select("*, loyalty_cards(id, stamps_count, last_scan)")
     .eq("merchant_id", merchant?.id)
     .order("created_at", { ascending: false });
 
@@ -81,11 +81,11 @@ export default async function Customers() {
                                 <td className="px-8 py-6">
                                     {customer.loyalty_cards && customer.loyalty_cards[0] ? (
                                         <div className="flex flex-col gap-1.5">
-                                            <div className="text-sm font-bold text-emerald-400">{customer.loyalty_cards[0].stamps_count} / 10 pts</div>
+                                            <div className="text-sm font-bold text-emerald-400">{customer.loyalty_cards[0].stamps_count} / {stampGoal} pts</div>
                                             <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-emerald-500" 
-                                                    style={{ width: `${(customer.loyalty_cards[0].stamps_count / 10) * 100}%` }}
+                                                <div
+                                                    className="h-full bg-emerald-500"
+                                                    style={{ width: `${Math.min(100, (customer.loyalty_cards[0].stamps_count / stampGoal) * 100)}%` }}
                                                 />
                                             </div>
                                         </div>
@@ -115,9 +115,12 @@ export default async function Customers() {
                                     </div>
                                 </td>
                                 <td className="px-8 py-6 text-right">
-                                    <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors">
-                                        <MoreVertical className="w-5 h-5 text-zinc-500" />
-                                    </button>
+                                    <RedeemCell
+                                        cardId={customer.loyalty_cards?.[0]?.id ?? null}
+                                        stampsCount={customer.loyalty_cards?.[0]?.stamps_count ?? null}
+                                        goal={stampGoal}
+                                        customerName={customer.full_name}
+                                    />
                                 </td>
                             </tr>
                         ))
