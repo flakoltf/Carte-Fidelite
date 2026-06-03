@@ -11,8 +11,8 @@ export default async function DashboardHome() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Bonjour, {merchant?.shop_name || "Commerçant"} 👋</h1>
-        <p className="text-zinc-500">Voici l'activité de votre programme de fidélité.</p>
+        <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Bonjour, {merchant?.shop_name || "Commerçant"} 👋</h1>
+        <p className="text-galet-ink">Voici l'activité de votre programme de fidélité.</p>
       </div>
       <AnalyticsGrid config={config} />
     </div>
