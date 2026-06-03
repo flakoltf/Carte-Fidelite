@@ -78,6 +78,7 @@ describe("classifyCustomer — étiquettes", () => {
 describe("classifyCustomer — config marchand custom", () => {
   const cfg: ResolvedMerchantConfig = {
     stampGoal: 8,
+    scanCooldownSeconds: 30,
     thresholds: { activeDays: 14, atRiskDays: 60, vipVisits: 5, newTenureDays: 7 },
   };
   it("at_risk_days=60 : 70j de récence -> inactif", () => {

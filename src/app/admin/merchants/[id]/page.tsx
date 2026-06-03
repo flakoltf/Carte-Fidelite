@@ -53,6 +53,7 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
             primaryColor: m.primary_color || "#10b981",
             logoUrl: m.logo_url,
             stampGoal: cfg.stampGoal,
+            scanCooldownSeconds: cfg.scanCooldownSeconds,
             businessType: m.business_type || "autre",
             thresholds: cfg.thresholds,
             address: m.address,

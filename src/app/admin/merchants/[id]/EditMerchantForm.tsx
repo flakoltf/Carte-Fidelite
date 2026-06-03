@@ -13,6 +13,7 @@ interface Props {
     primaryColor: string;
     logoUrl: string | null;
     stampGoal: number;
+    scanCooldownSeconds: number;
     businessType: string;
     thresholds: { activeDays: number; atRiskDays: number; vipVisits: number; newTenureDays: number };
     address: string | null;
@@ -25,6 +26,7 @@ export default function EditMerchantForm({ merchant }: Props) {
   const [primaryColor, setPrimaryColor] = useState(merchant.primaryColor);
   const [logoUrl, setLogoUrl] = useState(merchant.logoUrl || "");
   const [stampGoal, setStampGoal] = useState(merchant.stampGoal);
+  const [scanCooldownSeconds, setScanCooldownSeconds] = useState(merchant.scanCooldownSeconds);
   const [businessType, setBusinessType] = useState(merchant.businessType);
   const [activeDays, setActiveDays] = useState(merchant.thresholds.activeDays);
   const [atRiskDays, setAtRiskDays] = useState(merchant.thresholds.atRiskDays);
@@ -47,7 +49,7 @@ export default function EditMerchantForm({ merchant }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopName, primaryColor, logoUrl,
-          stampGoal, businessType, activeDays, atRiskDays, vipVisits, newTenureDays,
+          stampGoal, scanCooldownSeconds, businessType, activeDays, atRiskDays, vipVisits, newTenureDays,
           address,
         }),
       });
@@ -136,6 +138,11 @@ export default function EditMerchantForm({ merchant }: Props) {
           <label className="text-sm font-medium text-zinc-400 ml-1">Objectif carte (tampons)</label>
           <input type="number" min={1} max={50} value={stampGoal}
             onChange={(e) => setStampGoal(Number(e.target.value))} className={numInput} />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Délai mini entre 2 tampons (s)</label>
+          <input type="number" min={0} max={600} value={scanCooldownSeconds}
+            onChange={(e) => setScanCooldownSeconds(Number(e.target.value))} className={numInput} />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-400 ml-1">Métier</label>
