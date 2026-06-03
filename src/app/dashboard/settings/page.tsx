@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
+import { SecuritySection } from "./SecuritySection";
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -248,6 +249,8 @@ export default function Settings() {
         </div>
 
       </div>
+
+      <SecuritySection />
 
     </div>
   );
