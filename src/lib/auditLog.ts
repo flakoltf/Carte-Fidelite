@@ -11,7 +11,9 @@ export type AuditAction =
   | 'MERCHANT_UPDATED'
   | 'MERCHANT_TOKEN_ROTATED'
   | 'REWARD_REDEEMED'
-  | 'CUSTOMER_UPDATED';
+  | 'CUSTOMER_UPDATED'
+  | 'MFA_ENROLLED'
+  | 'MFA_DISABLED';
 
 interface AuditLogEntry {
   action: AuditAction;
