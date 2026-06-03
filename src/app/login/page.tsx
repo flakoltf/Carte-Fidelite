@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Wallet, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { HaloSymbol } from "@/components/halo/HaloMark";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -41,88 +42,75 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-6 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent">
-      
-      <motion.div 
+    <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-6">
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-4">
-                <Wallet className="text-emerald-400 w-8 h-8" />
-            </div>
-            <h1 className="text-3xl font-bold italic tracking-tighter">WalletCard</h1>
-            <p className="text-zinc-500 mt-2">Bon retour parmi nous</p>
+          <HaloSymbol size={44} className="mb-4 text-halo" />
+          <h1 className="font-display text-3xl tracking-[0.18em]">HALO</h1>
+          <p className="text-galet-ink mt-2 font-display text-xl">
+            Bon retour <em className="text-halo not-italic">parmi nous</em>
+          </p>
         </div>
 
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-8 backdrop-blur-xl shadow-2xl">
+        <div className="bg-surface border border-line-warm rounded-3xl p-8 shadow-[0_8px_30px_-12px_rgba(14,15,17,0.18)]">
           <form onSubmit={handleLogin} className="space-y-5">
-            
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400 ml-1">Email professionnel</label>
+              <label className="text-sm font-medium text-galet-ink ml-1">Email professionnel</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
-                <input 
-                  required
-                  type="email" 
-                  value={email}
+                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
+                <input
+                  required type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nom@entreprise.com"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-zinc-700"
+                  className="w-full bg-calcaire border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:ring-2 focus:ring-halo/25 focus:border-halo outline-none transition-all placeholder:text-galet"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between items-baseline px-1">
-                <label className="text-sm font-medium text-zinc-400">Mot de passe</label>
-                <Link href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">Oublié ?</Link>
+                <label className="text-sm font-medium text-galet-ink">Mot de passe</label>
+                <Link href="#" className="text-xs text-galet hover:text-onyx transition-colors">Oublié ?</Link>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
-                <input 
-                  required
-                  type="password" 
-                  value={password}
+                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
+                <input
+                  required type="password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-zinc-700"
+                  className="w-full bg-calcaire border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:ring-2 focus:ring-halo/25 focus:border-halo outline-none transition-all placeholder:text-galet"
                 />
               </div>
             </div>
 
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-2xl text-sm"
+              <motion.div
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                className="bg-red-500/10 border border-red-500/30 text-red-600 p-4 rounded-2xl text-sm"
               >
                 {error}
               </motion.div>
             )}
 
-            <button 
+            <button
               disabled={loading}
-              className="w-full bg-white text-black font-bold py-4 rounded-2xl hover:bg-zinc-200 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2 group"
+              className="w-full bg-halo text-white font-semibold py-4 rounded-2xl hover:bg-halo-600 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2 group"
             >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  Se connecter
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </>
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                <>Se connecter <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
               )}
             </button>
           </form>
 
-          <p className="text-center text-zinc-600 text-xs mt-8">
+          <p className="text-center text-galet text-xs mt-8">
             Les comptes marchands sont créés par l&apos;administrateur.
           </p>
         </div>
       </motion.div>
-
     </div>
   );
 }
