@@ -85,3 +85,11 @@ export async function fetchAudienceCardIds(merchantId: string, audience: Audienc
   }));
   return selectAudienceCardIds(audienceRows, audience);
 }
+
+// Map customerId → stage, pour colorer la liste Clients par segment. Réutilise loadClassified.
+export async function fetchCustomerStages(merchantId: string): Promise<Record<string, StageKey>> {
+  const rows = await loadClassified(merchantId);
+  const map: Record<string, StageKey> = {};
+  for (const r of rows) map[r.stats.customerId] = r.cls.stage;
+  return map;
+}
