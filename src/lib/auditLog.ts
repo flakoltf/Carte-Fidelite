@@ -10,7 +10,8 @@ export type AuditAction =
   | 'CUSTOMER_DELETED'
   | 'MERCHANT_UPDATED'
   | 'MERCHANT_TOKEN_ROTATED'
-  | 'REWARD_REDEEMED';
+  | 'REWARD_REDEEMED'
+  | 'CUSTOMER_UPDATED';
 
 interface AuditLogEntry {
   action: AuditAction;
