@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   ChevronRight,
-  Layers
+  Layers,
+  ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
@@ -36,6 +37,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     { name: "Clients", icon: Users, href: "/dashboard/customers" },
     { name: "Segments", icon: Layers, href: "/dashboard/segments" },
     { name: "Notifications", icon: Bell, href: "/dashboard/notifications" },
+    { name: "Sécurité", icon: ShieldAlert, href: "/dashboard/security" },
     { name: "Campagnes", icon: Megaphone, href: "/dashboard/campaigns" },
     { name: "Scanner", icon: Scan, href: "/scan" },
     { name: "Paramètres", icon: Settings, href: "/dashboard/settings" },
