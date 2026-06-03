@@ -1,12 +1,14 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Mail, Smartphone, Calendar, Users, Pencil, Trash2 } from "lucide-react";
+import { Search, Calendar, Users, Pencil, Trash2 } from "lucide-react";
 import { RedeemCell } from "./RedeemCell";
 import { EditCustomerModal, type EditableCustomer } from "./EditCustomerModal";
 import { filterCustomers, type CustomerListItem, type StatusFilter } from "@/lib/customers/filter";
+import { STAGE_STYLE, LEGEND_ORDER } from "@/lib/segments/stageStyle";
+import type { StageKey } from "@/lib/segments/types";
 
-export function CustomersTable({ customers, stampGoal }: { customers: CustomerListItem[]; stampGoal: number }) {
+export function CustomersTable({ customers, stampGoal, stageByCustomer }: { customers: CustomerListItem[]; stampGoal: number; stageByCustomer: Record<string, StageKey> }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -28,17 +30,17 @@ export function CustomersTable({ customers, stampGoal }: { customers: CustomerLi
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Base Clients</h1>
-          <p className="text-zinc-500">Gérez vos {customers.length} clients enregistrés.</p>
+          <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Base Clients</h1>
+          <p className="text-galet-ink">Gérez vos {customers.length} clients enregistrés.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-galet" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} type="text" placeholder="Rechercher..."
-              className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-emerald-500/50 outline-none transition-all w-full md:w-64" />
+              className="bg-surface border border-line-warm rounded-xl py-2 pl-10 pr-4 text-sm text-onyx focus:border-halo outline-none transition-all w-full md:w-64" />
           </div>
           <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}
-            className="bg-zinc-900 border border-zinc-800 rounded-xl py-2 px-3 text-sm text-zinc-300">
+            className="bg-surface border border-line-warm rounded-xl py-2 px-3 text-sm text-galet-ink">
             <option value="all">Tous</option>
             <option value="full">Carte pleine</option>
             <option value="nocard">Sans carte</option>
@@ -46,66 +48,71 @@ export function CustomersTable({ customers, stampGoal }: { customers: CustomerLi
         </div>
       </div>
 
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] overflow-hidden">
+      <div className="flex flex-wrap gap-4 text-xs text-galet-ink">
+        {LEGEND_ORDER.map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: STAGE_STYLE[k].color }} />
+            {STAGE_STYLE[k].label}
+          </span>
+        ))}
+      </div>
+
+      <div className="bg-surface border border-line-warm rounded-[32px] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-zinc-800 text-xs font-bold text-zinc-500 uppercase tracking-widest bg-zinc-950/20">
+              <tr className="border-b border-line-warm text-xs font-bold text-galet uppercase tracking-widest bg-[#F7F5EF]">
                 <th className="px-8 py-5">Client</th>
+                <th className="px-8 py-5">Dernière visite</th>
                 <th className="px-8 py-5">Fidélité</th>
-                <th className="px-8 py-5">Contact</th>
-                <th className="px-8 py-5">Dernière Visite</th>
                 <th className="px-8 py-5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-[#F2EEE4]">
               {filtered.length > 0 ? filtered.map((customer) => {
                 const card = customer.loyalty_cards?.[0];
+                const stage = stageByCustomer[customer.id];
+                const dot = stage ? STAGE_STYLE[stage].color : "#98999C";
                 return (
-                  <tr key={customer.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={customer.id} className="hover:bg-[#FBFAF6] transition-colors group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: dot }}
+                          title={stage ? STAGE_STYLE[stage].label : undefined}>
                           {customer.full_name[0]}
                         </div>
                         <div>
-                          <div className="font-bold">{customer.full_name}</div>
-                          <div className="text-xs text-zinc-500">ID: {customer.id.slice(0, 8)}</div>
+                          <div className="font-bold text-onyx">{customer.full_name}</div>
+                          <div className="text-xs text-galet">{customer.email || "Email non renseigné"}</div>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2 text-sm text-galet-ink">
+                        <Calendar className="w-4 h-4 text-galet" />
+                        {card?.last_scan ? new Date(card.last_scan).toLocaleDateString() : "—"}
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       {card ? (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="text-sm font-bold text-emerald-400">{card.stamps_count} / {stampGoal} pts</div>
-                          <div className="w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (card.stamps_count / stampGoal) * 100)}%` }} />
+                        <div className="flex items-center gap-3">
+                          <div className="w-24 h-1.5 bg-[#ECE7DB] rounded-full overflow-hidden">
+                            <div className="h-full bg-halo" style={{ width: `${Math.min(100, (card.stamps_count / stampGoal) * 100)}%` }} />
                           </div>
+                          <span className="text-sm text-galet-ink whitespace-nowrap">{card.stamps_count}/{stampGoal}</span>
                         </div>
-                      ) : (<span className="text-xs text-zinc-600 italic">Pas de carte active</span>)}
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-xs text-zinc-400"><Mail className="w-3 h-3" />{customer.email || "Non renseigné"}</div>
-                        <div className="flex items-center gap-2 text-xs text-zinc-400"><Smartphone className="w-3 h-3" />{customer.phone || "Non renseigné"}</div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2 text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4">
-                        <Calendar className="w-4 h-4" />
-                        {card?.last_scan ? new Date(card.last_scan).toLocaleDateString() : "—"}
-                      </div>
+                      ) : (<span className="text-xs text-galet italic">Pas de carte active</span>)}
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-2">
                         <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
                         <button onClick={() => setEditing({ id: customer.id, full_name: customer.full_name, email: customer.email, phone: customer.phone })}
-                          title="Modifier" className="p-2 rounded-lg border border-zinc-700 hover:bg-zinc-800">
-                          <Pencil className="w-4 h-4 text-zinc-400" />
+                          title="Modifier" className="p-2 rounded-lg border border-line-warm hover:bg-calcaire">
+                          <Pencil className="w-4 h-4 text-galet-ink" />
                         </button>
                         <button onClick={() => del(customer)} title="Supprimer"
                           className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10">
-                          <Trash2 className="w-4 h-4 text-red-400" />
+                          <Trash2 className="w-4 h-4 text-red-600" />
                         </button>
                       </div>
                     </td>
@@ -113,9 +120,9 @@ export function CustomersTable({ customers, stampGoal }: { customers: CustomerLi
                 );
               }) : (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-zinc-600">
-                      <Users className="w-12 h-12 opacity-20" />
+                  <td colSpan={4} className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-4 text-galet">
+                      <Users className="w-12 h-12 opacity-30" />
                       <p>Aucun client trouvé.</p>
                     </div>
                   </td>

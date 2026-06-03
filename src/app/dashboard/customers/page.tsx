@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { fetchCustomerStages } from "@/lib/segments/fetch";
 import { CustomersTable } from "./CustomersTable";
 import type { CustomerListItem } from "@/lib/customers/filter";
 
@@ -17,5 +18,7 @@ export default async function Customers() {
     .eq("merchant_id", merchant?.id)
     .order("created_at", { ascending: false });
 
-  return <CustomersTable customers={(customers ?? []) as CustomerListItem[]} stampGoal={stampGoal} />;
+  const stageByCustomer = merchant ? await fetchCustomerStages(merchant.id) : {};
+
+  return <CustomersTable customers={(customers ?? []) as CustomerListItem[]} stampGoal={stampGoal} stageByCustomer={stageByCustomer} />;
 }
