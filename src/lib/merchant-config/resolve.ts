@@ -1,4 +1,4 @@
-import { DEFAULT_STAMP_GOAL, DEFAULT_THRESHOLDS, type ResolvedMerchantConfig } from "./types";
+import { DEFAULT_STAMP_GOAL, DEFAULT_SCAN_COOLDOWN_SECONDS, DEFAULT_THRESHOLDS, type ResolvedMerchantConfig } from "./types";
 
 export type MerchantConfigRow = { stamp_goal: number | null; segment_config: unknown };
 
@@ -8,6 +8,7 @@ export function resolveMerchantConfig(row: MerchantConfigRow | null): ResolvedMe
   const sc = (row?.segment_config ?? {}) as Record<string, unknown>;
   return {
     stampGoal: num(row?.stamp_goal, DEFAULT_STAMP_GOAL),
+    scanCooldownSeconds: num(sc.scan_cooldown_seconds, DEFAULT_SCAN_COOLDOWN_SECONDS),
     thresholds: {
       activeDays: num(sc.active_days, DEFAULT_THRESHOLDS.activeDays),
       atRiskDays: num(sc.at_risk_days, DEFAULT_THRESHOLDS.atRiskDays),

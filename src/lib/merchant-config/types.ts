@@ -1,4 +1,5 @@
 export const DEFAULT_STAMP_GOAL = 10;
+export const DEFAULT_SCAN_COOLDOWN_SECONDS = 30;
 
 export type ResolvedSegmentThresholds = {
   activeDays: number;
@@ -16,11 +17,13 @@ export const DEFAULT_THRESHOLDS: ResolvedSegmentThresholds = {
 
 export type ResolvedMerchantConfig = {
   stampGoal: number;
+  scanCooldownSeconds: number;
   thresholds: ResolvedSegmentThresholds;
 };
 
 export const DEFAULT_MERCHANT_CONFIG: ResolvedMerchantConfig = {
   stampGoal: DEFAULT_STAMP_GOAL,
+  scanCooldownSeconds: DEFAULT_SCAN_COOLDOWN_SECONDS,
   thresholds: DEFAULT_THRESHOLDS,
 };
 

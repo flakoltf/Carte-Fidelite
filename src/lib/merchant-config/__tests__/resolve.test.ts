@@ -21,6 +21,10 @@ describe("resolveMerchantConfig", () => {
       stamp_goal: 12,
       segment_config: { active_days: 14, at_risk_days: 45, vip_visits: 6, new_tenure_days: 7 },
     });
-    expect(r).toEqual({ stampGoal: 12, thresholds: { activeDays: 14, atRiskDays: 45, vipVisits: 6, newTenureDays: 7 } });
+    expect(r).toEqual({ stampGoal: 12, scanCooldownSeconds: 30, thresholds: { activeDays: 14, atRiskDays: 45, vipVisits: 6, newTenureDays: 7 } });
+  });
+  it("lit scan_cooldown_seconds depuis segment_config", () => {
+    const r = resolveMerchantConfig({ stamp_goal: 10, segment_config: { scan_cooldown_seconds: 45 } });
+    expect(r.scanCooldownSeconds).toBe(45);
   });
 });

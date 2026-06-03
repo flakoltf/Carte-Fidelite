@@ -13,7 +13,7 @@ describe("validateMerchantConfig", () => {
     if (r.ok) {
       expect(r.value.stampGoal).toBe(10);
       expect(r.value.logoUrl).toBeNull();
-      expect(r.value.segmentConfig).toEqual({ active_days: 30, at_risk_days: 90, vip_visits: 10, new_tenure_days: 30 });
+      expect(r.value.segmentConfig).toEqual({ active_days: 30, at_risk_days: 90, vip_visits: 10, new_tenure_days: 30, scan_cooldown_seconds: 30 });
     }
   });
   it("stamp_goal hors bornes -> erreur", () => {
@@ -37,5 +37,13 @@ describe("validateMerchantConfig", () => {
   it("vip_visits / new_tenure_days < 1 -> erreur", () => {
     expect(validateMerchantConfig({ ...base, vipVisits: 0 }).ok).toBe(false);
     expect(validateMerchantConfig({ ...base, newTenureDays: 0 }).ok).toBe(false);
+  });
+  it("scanCooldownSeconds : défaut 30 si absent, bornes 0–600", () => {
+    expect(validateMerchantConfig(base).ok).toBe(true);
+    const r = validateMerchantConfig({ ...base, scanCooldownSeconds: 45 });
+    expect(r.ok && r.value.segmentConfig.scan_cooldown_seconds).toBe(45);
+    expect(validateMerchantConfig({ ...base, scanCooldownSeconds: -1 }).ok).toBe(false);
+    expect(validateMerchantConfig({ ...base, scanCooldownSeconds: 601 }).ok).toBe(false);
+    expect(validateMerchantConfig({ ...base, scanCooldownSeconds: 0 }).ok).toBe(true);
   });
 });

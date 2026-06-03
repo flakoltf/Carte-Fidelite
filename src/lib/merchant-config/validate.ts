@@ -3,11 +3,12 @@ import { BUSINESS_TYPES } from "./types";
 export type MerchantConfigInput = {
   stampGoal?: unknown; businessType?: unknown; primaryColor?: unknown; logoUrl?: unknown;
   activeDays?: unknown; atRiskDays?: unknown; vipVisits?: unknown; newTenureDays?: unknown;
+  scanCooldownSeconds?: unknown;
 };
 
 export type ValidatedMerchantConfig = {
   stampGoal: number; businessType: string; primaryColor: string; logoUrl: string | null;
-  segmentConfig: { active_days: number; at_risk_days: number; vip_visits: number; new_tenure_days: number };
+  segmentConfig: { active_days: number; at_risk_days: number; vip_visits: number; new_tenure_days: number; scan_cooldown_seconds: number };
 };
 
 export type ValidateResult = { ok: true; value: ValidatedMerchantConfig } | { ok: false; error: string };
@@ -35,6 +36,9 @@ export function validateMerchantConfig(input: MerchantConfigInput): ValidateResu
     return { ok: false, error: "Visites VIP invalide (≥ 1)." };
   if (!isInt(input.newTenureDays) || input.newTenureDays < 1)
     return { ok: false, error: "Ancienneté « nouveau » invalide (≥ 1)." };
+  const cd = input.scanCooldownSeconds === undefined ? 30 : input.scanCooldownSeconds;
+  if (!isInt(cd) || cd < 0 || cd > 600)
+    return { ok: false, error: "Délai mini invalide (0 à 600 s)." };
   return {
     ok: true,
     value: {
@@ -43,6 +47,7 @@ export function validateMerchantConfig(input: MerchantConfigInput): ValidateResu
       segmentConfig: {
         active_days: input.activeDays, at_risk_days: input.atRiskDays,
         vip_visits: input.vipVisits, new_tenure_days: input.newTenureDays,
+        scan_cooldown_seconds: cd,
       },
     },
   };
