@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { resolveMerchantConfig } from "@/lib/merchant-config/resolve";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import EnrollmentQR from "../../EnrollmentQR";
 import EditMerchantForm from "./EditMerchantForm";
 
@@ -25,6 +26,20 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
   if (!m || m.role !== "merchant") notFound();
 
   const cfg = resolveMerchantConfig({ stamp_goal: m.stamp_goal, segment_config: m.segment_config });
+
+  // Lecture best-effort des colonnes du programme (tolère leur absence avant migration).
+  const { data: lp } = await supabase
+    .from("merchants")
+    .select("loyalty_type, loyalty_config")
+    .eq("id", id)
+    .maybeSingle();
+  const program = resolveLoyaltyProgram({
+    loyalty_type: (lp as { loyalty_type?: string | null } | null)?.loyalty_type ?? null,
+    loyalty_config: (lp as { loyalty_config?: unknown } | null)?.loyalty_config ?? null,
+    stamp_goal: m.stamp_goal,
+  });
+  const milestones = program.type === "visit_based" ? program.config.milestones : [];
+  const tiers = program.type === "tiered" ? program.config.tiers : [];
 
   const h = await headers();
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
@@ -57,6 +72,9 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
             businessType: m.business_type || "autre",
             thresholds: cfg.thresholds,
             address: m.address,
+            loyaltyType: program.type,
+            milestones,
+            tiers,
           }}
         />
 

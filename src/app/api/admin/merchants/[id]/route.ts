@@ -39,6 +39,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       update.segment_config = v.value.segmentConfig;
     }
 
+    // Programme de fidélité (type + config). Additif : présent quand le formulaire l'envoie.
+    if (body.loyaltyType !== undefined) {
+      const { validateLoyaltyProgram } = await import("@/lib/loyalty/validate");
+      const v = validateLoyaltyProgram(body.loyaltyType, body.loyaltyConfig);
+      if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+      update.loyalty_type = v.program.type;
+      update.loyalty_config = v.program.config;
+      // Garder merchants.stamp_goal synchro pour la rétro-compat de l'UI tampons.
+      if (v.program.type === "stamp_card") update.stamp_goal = v.program.config.goal;
+    }
+
     // Adresse / position (géocodée) — traitée à part via le helper partagé.
     if (typeof body.address === "string" && body.address.trim()) {
       const { applyMerchantLocation } = await import("@/lib/geo/applyLocation");

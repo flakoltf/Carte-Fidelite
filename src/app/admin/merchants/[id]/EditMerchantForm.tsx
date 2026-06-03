@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Store, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { Loader2, Store, RefreshCw, Check, AlertCircle, Plus, Trash2 } from "lucide-react";
 
 const BUSINESS_OPTIONS = ["cafe", "restaurant", "boulangerie", "boutique", "salon", "sport", "autre"];
+
+type LoyaltyType = "stamp_card" | "visit_based" | "tiered";
 
 interface Props {
   merchant: {
@@ -17,6 +19,9 @@ interface Props {
     businessType: string;
     thresholds: { activeDays: number; atRiskDays: number; vipVisits: number; newTenureDays: number };
     address: string | null;
+    loyaltyType: LoyaltyType;
+    milestones: number[];
+    tiers: { name: string; at: number }[];
   };
 }
 
@@ -26,6 +31,11 @@ export default function EditMerchantForm({ merchant }: Props) {
   const [primaryColor, setPrimaryColor] = useState(merchant.primaryColor);
   const [logoUrl, setLogoUrl] = useState(merchant.logoUrl || "");
   const [stampGoal, setStampGoal] = useState(merchant.stampGoal);
+  const [loyaltyType, setLoyaltyType] = useState<LoyaltyType>(merchant.loyaltyType);
+  const [milestonesStr, setMilestonesStr] = useState(merchant.milestones.join(", "));
+  const [tiers, setTiers] = useState<{ name: string; at: number }[]>(
+    merchant.tiers.length ? merchant.tiers : [{ name: "", at: 1 }]
+  );
   const [scanCooldownSeconds, setScanCooldownSeconds] = useState(merchant.scanCooldownSeconds);
   const [businessType, setBusinessType] = useState(merchant.businessType);
   const [activeDays, setActiveDays] = useState(merchant.thresholds.activeDays);
@@ -43,6 +53,21 @@ export default function EditMerchantForm({ merchant }: Props) {
     setSaving(true);
     setError("");
     setMsg("");
+
+    // Construit la config du programme selon le type choisi (la validation serveur fait foi).
+    let loyaltyConfig: Record<string, unknown>;
+    if (loyaltyType === "visit_based") {
+      const milestones = milestonesStr
+        .split(",")
+        .map((s) => Number(s.trim()))
+        .filter((n) => Number.isFinite(n));
+      loyaltyConfig = { milestones };
+    } else if (loyaltyType === "tiered") {
+      loyaltyConfig = { tiers: tiers.map((t) => ({ name: t.name.trim(), at: Number(t.at) })) };
+    } else {
+      loyaltyConfig = { goal: stampGoal };
+    }
+
     try {
       const res = await fetch(`/api/admin/merchants/${merchant.id}`, {
         method: "PATCH",
@@ -51,6 +76,7 @@ export default function EditMerchantForm({ merchant }: Props) {
           shopName, primaryColor, logoUrl,
           stampGoal, scanCooldownSeconds, businessType, activeDays, atRiskDays, vipVisits, newTenureDays,
           address,
+          loyaltyType, loyaltyConfig,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -133,12 +159,65 @@ export default function EditMerchantForm({ merchant }: Props) {
 
       <h2 className="font-bold pt-2 border-t border-zinc-800">Programme &amp; segmentation</h2>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-400 ml-1">Type de programme</label>
+        <select value={loyaltyType} onChange={(e) => setLoyaltyType(e.target.value as LoyaltyType)} className={numInput}>
+          <option value="stamp_card">Carte à tampons (objectif)</option>
+          <option value="visit_based">Paliers de visites (récompenses successives)</option>
+          <option value="tiered">Niveaux de fidélité (statuts)</option>
+        </select>
+        <p className="text-xs text-zinc-500 ml-1">
+          {loyaltyType === "stamp_card" && "Cyclique : la carte se remplit jusqu'à l'objectif, puis se remet à zéro à l'encaissement."}
+          {loyaltyType === "visit_based" && "Cumulatif : une récompense est offerte à chaque palier de visites atteint, sans remise à zéro."}
+          {loyaltyType === "tiered" && "Cumulatif : le client gagne des niveaux permanents selon ses visites (pas d'encaissement)."}
+        </p>
+      </div>
+
+      {loyaltyType === "stamp_card" && (
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-400 ml-1">Objectif carte (tampons)</label>
           <input type="number" min={1} max={50} value={stampGoal}
             onChange={(e) => setStampGoal(Number(e.target.value))} className={numInput} />
         </div>
+      )}
+
+      {loyaltyType === "visit_based" && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Paliers de visites (séparés par des virgules)</label>
+          <input value={milestonesStr} onChange={(e) => setMilestonesStr(e.target.value)}
+            placeholder="Ex : 5, 20, 50" className={numInput} />
+          <p className="text-xs text-zinc-500 ml-1">Valeurs strictement croissantes, jusqu'à 10 paliers.</p>
+        </div>
+      )}
+
+      {loyaltyType === "tiered" && (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-zinc-400 ml-1">Niveaux (nom + nombre de visites)</label>
+          {tiers.map((t, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input value={t.name} maxLength={40} placeholder="Nom (ex : Argent)"
+                onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                className={`${numInput} flex-1`} />
+              <input type="number" min={1} value={t.at} placeholder="Seuil"
+                onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, at: Number(e.target.value) } : x)))}
+                className={`${numInput} w-28`} />
+              <button type="button" aria-label="Retirer le niveau"
+                onClick={() => setTiers(tiers.length > 1 ? tiers.filter((_, j) => j !== i) : tiers)}
+                className="p-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {tiers.length < 6 && (
+            <button type="button" onClick={() => setTiers([...tiers, { name: "", at: (tiers[tiers.length - 1]?.at ?? 0) + 1 }])}
+              className="flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 transition-colors ml-1">
+              <Plus className="w-4 h-4" /> Ajouter un niveau
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-zinc-400 ml-1">Délai mini entre 2 tampons (s)</label>
           <input type="number" min={0} max={600} value={scanCooldownSeconds}
