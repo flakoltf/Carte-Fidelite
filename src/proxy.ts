@@ -1,11 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { mfaStepUpRequired } from '@/lib/auth/mfa'
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -17,12 +16,8 @@ export default async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request: { headers: request.headers } })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -32,16 +27,34 @@ export default async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  const path = request.nextUrl.pathname
+  const isProtected =
+    path.startsWith('/dashboard') || path.startsWith('/scan') || path.startsWith('/admin')
 
-  // Protéger le dashboard, le scan et l'admin (présence de session ; le rôle est
-  // vérifié dans les layouts server).
-  if (!user && (request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/scan') || request.nextUrl.pathname.startsWith('/admin'))) {
+  // Pas de session → routes protégées renvoyées au login.
+  if (!user && isProtected) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Rediriger les utilisateurs connectés loin du login/signup
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup' || request.nextUrl.pathname === '/')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  if (user) {
+    // AAL : fail-open (si l'appel échoue, on ne bloque personne).
+    let needsStepUp = false
+    try {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      needsStepUp = mfaStepUpRequired(aal?.currentLevel, aal?.nextLevel)
+    } catch {
+      needsStepUp = false
+    }
+
+    if (needsStepUp) {
+      // 2FA active mais code non saisi : seule /login/mfa est accessible.
+      if (path !== '/login/mfa' && (isProtected || path === '/' || path === '/login' || path === '/signup')) {
+        return NextResponse.redirect(new URL('/login/mfa', request.url))
+      }
+    } else if (path === '/' || path === '/login' || path === '/login/mfa' || path === '/signup') {
+      // Session pleinement authentifiée : éloigner des pages d'entrée.
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
   }
 
   return response
