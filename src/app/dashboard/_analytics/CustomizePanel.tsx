@@ -29,27 +29,27 @@ export function CustomizePanel({ config, onClose, onSaved }: {
   };
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-end" onClick={onClose}>
-      <div className="w-80 bg-zinc-950 border-l border-zinc-800 p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold mb-4">Personnaliser</h3>
+      <div className="w-80 bg-surface border-l border-line-warm p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold mb-4 text-onyx">Personnaliser</h3>
         <ul className="space-y-2">
           {items.map((w, i) => (
-            <li key={w.key} className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2">
-              <label className="flex items-center gap-2 text-sm">
+            <li key={w.key} className="flex items-center justify-between bg-calcaire border border-line-warm rounded-xl px-3 py-2">
+              <label className="flex items-center gap-2 text-sm text-onyx">
                 <input type="checkbox" checked={w.visible} onChange={() => toggle(i)} />
                 {WIDGETS[w.key].label}
               </label>
               <span className="flex gap-1">
-                <button onClick={() => move(i, -1)} className="text-zinc-500 hover:text-white">↑</button>
-                <button onClick={() => move(i, 1)} className="text-zinc-500 hover:text-white">↓</button>
+                <button onClick={() => move(i, -1)} className="text-galet-ink hover:text-onyx">↑</button>
+                <button onClick={() => move(i, 1)} className="text-galet-ink hover:text-onyx">↓</button>
               </span>
             </li>
           ))}
         </ul>
         <button onClick={save} disabled={saving}
-          className="mt-4 w-full bg-emerald-500 text-black rounded-xl py-2 font-bold disabled:opacity-50">
+          className="mt-4 w-full bg-halo text-white rounded-xl py-2 font-bold disabled:opacity-50">
           {saving ? "Enregistrement…" : "Enregistrer"}
         </button>
-        {saveError && <p className="mt-2 text-sm text-red-400">{saveError}</p>}
+        {saveError && <p className="mt-2 text-sm text-red-500">{saveError}</p>}
       </div>
     </div>
   );

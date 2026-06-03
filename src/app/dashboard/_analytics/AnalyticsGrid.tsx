@@ -28,18 +28,18 @@ export function AnalyticsGrid({ config }: { config: DashboardConfig }) {
         <div className="flex gap-2">
           {RANGES.map((r) => (
             <button key={r} onClick={() => setRange(r)}
-              className={`px-3 py-1.5 rounded-xl text-sm ${range === r ? "bg-emerald-500 text-black" : "bg-zinc-900 text-zinc-400"}`}>
+              className={`px-3 py-1.5 rounded-xl text-sm ${range === r ? "bg-halo text-white" : "bg-surface border border-line-warm text-galet-ink"}`}>
               {r}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
           <a href={`/api/analytics/export/csv?type=clients&range=${range}`}
-            className="px-3 py-1.5 rounded-xl text-sm bg-zinc-900 text-zinc-400 hover:text-white">⬇ CSV</a>
+            className="px-3 py-1.5 rounded-xl text-sm bg-surface border border-line-warm text-galet-ink hover:text-onyx">⬇ CSV</a>
           <a href={`/api/analytics/export/pdf?range=${range}`}
-            className="px-3 py-1.5 rounded-xl text-sm bg-zinc-900 text-zinc-400 hover:text-white">⬇ PDF</a>
+            className="px-3 py-1.5 rounded-xl text-sm bg-surface border border-line-warm text-galet-ink hover:text-onyx">⬇ PDF</a>
           <button onClick={() => setOpen(true)}
-            className="px-3 py-1.5 rounded-xl text-sm bg-zinc-900 text-zinc-400 hover:text-white">⚙ Personnaliser</button>
+            className="px-3 py-1.5 rounded-xl text-sm bg-surface border border-line-warm text-galet-ink hover:text-onyx">⚙ Personnaliser</button>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
