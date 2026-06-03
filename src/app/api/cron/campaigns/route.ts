@@ -28,7 +28,9 @@ export async function POST(req: NextRequest) {
     try {
       const cardIds = await fetchAudienceCardIds(c.merchantId, c.audience);
       const res = await deliverToCards(c.merchantId, c.audience, cardIds, { title: c.title, body: c.body });
-      await recordCampaignSends(c.id, cardIds);
+      // On n'enregistre que les cartes réellement joignables (le cooldown récurrent
+      // ne doit pas "consommer" un client qui n'a pas encore installé sa carte Wallet).
+      await recordCampaignSends(c.id, res.reachableIds);
       await setLastRunOn(c.id, today);
       processed++; pushed += res.pushed;
     } catch (e) {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
       const recipients = selectRecurringRecipients(cardIds, lastSent, c.cooldownDays, now);
       if (recipients.length) {
         const res = await deliverToCards(c.merchantId, c.audience, recipients, { title: c.title, body: c.body });
-        await recordCampaignSends(c.id, recipients);
+        await recordCampaignSends(c.id, res.reachableIds);
         pushed += res.pushed;
       }
       await setLastRunOn(c.id, today);

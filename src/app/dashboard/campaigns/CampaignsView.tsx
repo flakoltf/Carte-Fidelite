@@ -12,7 +12,7 @@ export type CampaignListItem = {
 type Moment = "now" | "once" | "recurring";
 
 function statusLabel(c: CampaignListItem): string {
-  if (c.mode === "once") return c.run_on ? `Programmée le ${new Date(c.run_on).toLocaleDateString()}` : "Programmée";
+  if (c.mode === "once") return c.run_on ? `Programmée le ${new Date(`${c.run_on}T00:00:00`).toLocaleDateString()}` : "Programmée";
   return c.active ? "Récurrente • active" : "Récurrente • en pause";
 }
 

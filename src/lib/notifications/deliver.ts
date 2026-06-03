@@ -9,8 +9,8 @@ export async function deliverToCards(
   audience: AudienceKey,
   cardIds: string[],
   message: { title: string; body: string },
-): Promise<{ pushed: number; reachable: number }> {
-  if (!cardIds.length) return { pushed: 0, reachable: 0 };
+): Promise<{ pushed: number; reachable: number; reachableIds: string[] }> {
+  if (!cardIds.length) return { pushed: 0, reachable: 0, reachableIds: [] };
 
   const { data: regs } = await supabaseAdmin
     .from("wallet_device_registrations").select("serial_number").in("serial_number", cardIds);
@@ -23,5 +23,5 @@ export async function deliverToCards(
     .from("wallet_notifications")
     .insert({ merchant_id: merchantId, title: message.title, body: message.body, sent_count: pushed, audience });
 
-  return { pushed, reachable: reachable.length };
+  return { pushed, reachable: reachable.length, reachableIds: reachable };
 }

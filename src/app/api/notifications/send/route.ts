@@ -21,6 +21,6 @@ export async function POST(req: NextRequest) {
   if (!isAudienceKey(aud)) return NextResponse.json({ error: "bad audience" }, { status: 400 });
 
   const cardIds = await fetchAudienceCardIds(merchantId, aud);
-  const res = await deliverToCards(merchantId, aud, cardIds, { title, body });
-  return NextResponse.json(res);
+  const { pushed, reachable } = await deliverToCards(merchantId, aud, cardIds, { title, body });
+  return NextResponse.json({ pushed, reachable });
 }
