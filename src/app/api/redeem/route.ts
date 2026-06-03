@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { verifyQRCode } from "@/lib/qrSignature";
-import { canRedeem } from "@/lib/loyalty/stamp";
-import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { programCanRedeem } from "@/lib/loyalty/engine";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 
 export const runtime = "nodejs";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!actualCardId) return NextResponse.json({ error: "Carte invalide" }, { status: 400 });
 
   const { data: merchant } = await supabaseAdmin
-    .from("merchants").select("id").eq("user_id", user.id).single();
+    .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal").eq("user_id", user.id).single();
   if (!merchant) return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
 
   const { data: card } = await supabaseAdmin
@@ -39,9 +39,13 @@ export async function POST(req: NextRequest) {
   if (card.merchant_id !== merchant.id)
     return NextResponse.json({ error: "Cette carte appartient à un autre établissement" }, { status: 403 });
 
-  const { stampGoal } = await fetchMerchantConfig(merchant.id);
-  if (!canRedeem(card.stamps_count, stampGoal))
-    return NextResponse.json({ error: "Carte non complète" }, { status: 409 });
+  const program = resolveLoyaltyProgram(merchant);
+  if (!programCanRedeem(program, card.stamps_count))
+    return NextResponse.json(
+      { error: program.type === "stamp_card" ? "Carte non complète" : "Ce programme n'a pas d'encaissement." },
+      { status: 409 }
+    );
+  const stampGoal = program.type === "stamp_card" ? program.config.goal : 0;
 
   const { data: updatedCard, error } = await supabaseAdmin
     .from("loyalty_cards").update({ stamps_count: 0 }).eq("id", actualCardId).select("*, customers(*)").single();
