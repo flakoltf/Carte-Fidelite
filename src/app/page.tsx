@@ -71,53 +71,56 @@ const WHY: { Icon: LucideIcon; title: string; desc: string }[] = [
   { Icon: QrCode, title: "Scan en caisse", desc: "Validez un passage ou créditez des points d'un simple scan." },
 ];
 
+// Toutes les fonctionnalités sont incluses dans chaque palier — seul le volume de clients actifs change.
+const PLAN_FEATURES = [
+  "Toutes les fonctionnalités incluses",
+  "Carte 100% à votre image",
+  "Apple & Google Wallet (sans appli)",
+  "Notifications push & de proximité",
+  "Base clients & statistiques",
+  "Mise en service offerte",
+];
+
 const PRICING = [
   {
-    name: "Essentiel",
-    price: "69.90",
+    name: "Démarrage",
+    price: "49",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 300 clients",
-    featured: true,
-    cta: "Commencer",
+    tagline: "Jusqu'à 150 clients actifs",
+    featured: false,
+    cta: "Choisir",
     href: "/signup",
-    features: [
-      "Toutes les mécaniques de fidélité",
-      "Apple & Google Wallet (sans appli)",
-      "Carte 100% à votre image",
-      "Notifications push illimitées",
-      "Notifications de proximité",
-      "Tableau de bord & statistiques",
-      "Scan en caisse (QR / NFC)",
-    ],
+    features: PLAN_FEATURES,
+  },
+  {
+    name: "Essentiel",
+    price: "69",
+    unit: "CHF / mois",
+    tagline: "150 à 300 clients actifs",
+    featured: false,
+    cta: "Choisir",
+    href: "/signup",
+    features: PLAN_FEATURES,
   },
   {
     name: "Croissance",
-    price: "129", // placeholder — à ajuster
+    price: "99",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 1 000 clients",
-    featured: false,
-    cta: "Commencer",
+    tagline: "300 à 500 clients actifs",
+    featured: true,
+    cta: "Choisir",
     href: "/signup",
-    features: [
-      "Tout de l'offre Essentiel",
-      "Plus de clients actifs",
-      "Multi-établissements",
-      "Support prioritaire",
-    ],
+    features: PLAN_FEATURES,
   },
   {
-    name: "Sur-mesure",
-    price: "Sur devis",
-    unit: "",
-    tagline: "Au-delà de 1 000 clients",
+    name: "Performance",
+    price: "129",
+    unit: "CHF / mois",
+    tagline: "500 à 800 clients actifs",
     featured: false,
-    cta: "Nous contacter",
-    href: "mailto:hello@halo.ch",
-    features: [
-      "Volume de clients illimité",
-      "Accompagnement dédié",
-      "Accès API & intégrations",
-    ],
+    cta: "Choisir",
+    href: "/signup",
+    features: PLAN_FEATURES,
   },
 ];
 
@@ -365,9 +368,9 @@ export default function Home() {
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
               Un prix clair, <em className="italic text-halo-glow">sans surprise.</em>
             </h2>
-            <p className="mt-4 text-galet">Sans engagement, sans matériel. Le prix évolue avec votre nombre de clients.</p>
+            <p className="mt-4 text-galet">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de clients actifs.</p>
           </Reveal>
-          <div className="mt-14 grid gap-6 lg:grid-cols-3">
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PRICING.map((p, i) => (
               <Reveal key={p.name} delay={i * 0.08}>
                 <div
@@ -410,6 +413,15 @@ export default function Home() {
               </Reveal>
             ))}
           </div>
+          <Reveal>
+            <p className="mt-8 text-center text-sm text-galet">
+              Au-delà de 800 clients actifs : 129 CHF + 19 CHF par tranche de 200.
+              {" · "}
+              Engagement annuel : <span className="text-calcaire">2 mois offerts</span>.
+              <br />
+              Plusieurs commerces ? <span className="text-calcaire">Tarif sur demande</span>, établi selon votre réseau de points de vente.
+            </p>
+          </Reveal>
         </div>
       </section>
 
