@@ -11,7 +11,8 @@ export function RewardsWidget({ range }: { range: RangeKey }) {
       {(isLoading || error || !data)
         ? <WidgetState loading={isLoading} error={error} />
         : (<div><div className="text-3xl font-bold">{data.completedCards}</div>
-            <div className="text-sm text-zinc-500">{data.completionRate}% des cartes ({data.totalCards})</div></div>)}
+            <div className="text-sm text-zinc-500">{data.completionRate}% des cartes ({data.totalCards})</div>
+            <div className="text-sm text-emerald-400 mt-1">{data.redeemedCount} récompense(s) offerte(s)</div></div>)}
     </Card>
   );
 }

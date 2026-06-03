@@ -8,4 +8,14 @@ describe("computeRewards", () => {
     expect(r.totalCards).toBe(3);
     expect(r.completionRate).toBe(67);
   });
+
+  it("expose redeemedCount passé en argument", () => {
+    const r = computeRewards([{ stamps_count: 10 }], 10, 7);
+    expect(r.redeemedCount).toBe(7);
+  });
+
+  it("redeemedCount par défaut à 0", () => {
+    const r = computeRewards([{ stamps_count: 3 }], 10);
+    expect(r.redeemedCount).toBe(0);
+  });
 });
