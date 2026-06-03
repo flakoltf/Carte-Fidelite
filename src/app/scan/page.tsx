@@ -31,7 +31,8 @@ export default function ScanPage() {
     setRedeemed(false);
     try {
       const res = await fetch("/api/scan", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json", "idempotency-key": crypto.randomUUID() },
         body: JSON.stringify({ cardId })
       });
       const data = await res.json();

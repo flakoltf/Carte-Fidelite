@@ -5,6 +5,7 @@ import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
 import { verifyQRCode } from "@/lib/qrSignature";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { applyStamp } from "@/lib/loyalty/stamp";
+import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 
 export async function POST(req: Request) {
@@ -55,15 +56,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cette carte appartient à un autre établissement" }, { status: 403 });
     }
 
-    // 2. Règle de comptage (objectif configurable, plafonnement) — source unique applyStamp
-    const { stampGoal } = await fetchMerchantConfig(merchant.id);
-    const { newStamps, rewardReady, added } = applyStamp(card.stamps_count, stampGoal);
+    // 2. Config marchand + anti-spam (délai mini entre 2 tampons sur la même carte)
+    const cfg = await fetchMerchantConfig(merchant.id);
+    if (withinCooldown(card.last_scan, new Date(), cfg.scanCooldownSeconds)) {
+      return NextResponse.json(
+        { error: "Carte déjà scannée à l'instant. Patientez quelques secondes.", cooldown: true },
+        { status: 429 }
+      );
+    }
+    const { newStamps, rewardReady, added } = applyStamp(card.stamps_count, cfg.stampGoal);
 
     // Carte déjà pleine → aucun tampon ajouté : on propose juste d'encaisser.
     // (On ne met PAS en cache d'idempotence : aucun changement d'état.)
     if (!added) {
       return NextResponse.json({
-        success: true, card, rewardReady: true, rewardUnlocked: true, added: false, stampGoal,
+        success: true, card, rewardReady: true, rewardUnlocked: true, added: false, stampGoal: cfg.stampGoal,
       });
     }
 
@@ -94,7 +101,7 @@ export async function POST(req: Request) {
       details: { new_stamps: newStamps, reward_ready: rewardReady }, ...meta,
     });
 
-    const response = { success: true, card: updatedCard, rewardReady, rewardUnlocked: rewardReady, added: true, stampGoal };
+    const response = { success: true, card: updatedCard, rewardReady, rewardUnlocked: rewardReady, added: true, stampGoal: cfg.stampGoal };
     await setIdempotency(idempotencyKey, response);
     return NextResponse.json(response);
 
