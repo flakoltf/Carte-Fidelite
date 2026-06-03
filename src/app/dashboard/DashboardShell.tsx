@@ -9,7 +9,6 @@ import {
   Settings,
   Scan,
   LogOut,
-  Wallet,
   Bell,
   Megaphone,
   Menu,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
+import { HaloSymbol } from "@/components/halo/HaloMark";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,15 +42,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex overflow-hidden">
+    <div className="min-h-screen bg-calcaire text-onyx flex overflow-hidden">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col border-r border-zinc-900 bg-zinc-950 p-6">
+      <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-[#EFEBE1] p-6">
         <div className="flex items-center gap-3 mb-12 px-2">
-            <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center">
-                <Wallet className="text-emerald-400 w-5 h-5" />
-            </div>
-            <span className="text-xl font-bold italic tracking-tight">WalletCard</span>
+          <HaloSymbol size={32} className="text-halo" />
+          <span className="font-display text-xl tracking-[0.14em]">HALO</span>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -62,22 +60,22 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                         href={item.href}
                         className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
                             isActive
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+                            ? "bg-halo text-white"
+                            : "text-galet-ink hover:text-onyx hover:bg-[#E9E4D8]"
                         }`}
                     >
-                        <item.icon className={`w-5 h-5 ${isActive ? "text-emerald-400" : "group-hover:text-white"}`} />
+                        <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "group-hover:text-onyx"}`} />
                         <span className="font-medium">{item.name}</span>
-                        {isActive && <motion.div layoutId="activeNav" className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                        {isActive && <motion.div layoutId="activeNav" className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />}
                     </Link>
                 );
             })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-zinc-900">
+        <div className="mt-auto pt-6 border-t border-line-warm">
             <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-3 w-full text-zinc-500 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 w-full text-galet-ink hover:text-red-600 hover:bg-red-500/10 rounded-2xl transition-all"
             >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Déconnexion</span>
@@ -86,10 +84,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-6 z-50">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-50">
         <div className="flex items-center gap-2">
-            <Wallet className="text-emerald-400 w-5 h-5" />
-            <span className="font-bold italic">WalletCard</span>
+            <HaloSymbol size={22} className="text-halo" />
+            <span className="font-display tracking-[0.12em]">HALO</span>
         </div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -103,7 +101,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 initial={{ opacity: 0, x: -100 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                className="lg:hidden fixed inset-0 bg-zinc-950 z-40 p-6 pt-24"
+                className="lg:hidden fixed inset-0 bg-calcaire z-40 p-6 pt-24"
             >
                 <nav className="space-y-4">
                     {navItems.map((item) => (
@@ -111,18 +109,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                             key={item.href}
                             href={item.href}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="flex items-center justify-between px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl"
+                            className="flex items-center justify-between px-4 py-4 bg-surface border border-line-warm rounded-2xl"
                         >
                             <div className="flex items-center gap-4">
-                                <item.icon className="w-6 h-6 text-emerald-400" />
+                                <item.icon className="w-6 h-6 text-halo" />
                                 <span className="text-lg font-medium">{item.name}</span>
                             </div>
-                            <ChevronRight className="w-5 h-5 text-zinc-600" />
+                            <ChevronRight className="w-5 h-5 text-galet" />
                         </Link>
                     ))}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-4 px-4 py-4 w-full bg-red-400/5 border border-red-400/20 rounded-2xl text-red-400"
+                        className="flex items-center gap-4 px-4 py-4 w-full bg-red-500/10 border border-red-500/20 rounded-2xl text-red-600"
                     >
                         <LogOut className="w-6 h-6" />
                         <span className="text-lg font-medium">Déconnexion</span>
@@ -133,7 +131,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 h-screen overflow-y-auto lg:p-10 pt-24 p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-zinc-800/10 via-transparent to-transparent">
+      <main className="flex-1 h-screen overflow-y-auto lg:p-10 pt-24 p-6">
         <div className="max-w-6xl mx-auto">
             {children}
         </div>
