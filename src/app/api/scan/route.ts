@@ -4,7 +4,8 @@ import { rateLimit } from "@/lib/rateLimit";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
 import { verifyQRCode } from "@/lib/qrSignature";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
-import { applyStamp } from "@/lib/loyalty/stamp";
+import { applyScan } from "@/lib/loyalty/engine";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
     if (cachedResponse) return NextResponse.json(cachedResponse);
 
     const { data: merchant } = await supabaseAdmin
-      .from("merchants").select("id").eq("user_id", user.id).single();
+      .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal").eq("user_id", user.id).single();
     if (!merchant) return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
 
     // 1. Récupérer la carte
@@ -64,20 +65,22 @@ export async function POST(req: Request) {
         { status: 429 }
       );
     }
-    const { newStamps, rewardReady, added } = applyStamp(card.stamps_count, cfg.stampGoal);
+    const program = resolveLoyaltyProgram(merchant);
+    const { newCount, rewardReady, added, events } = applyScan(program, card.stamps_count);
 
-    // Carte déjà pleine → aucun tampon ajouté : on propose juste d'encaisser.
+    // stamp_card déjà pleine → aucun tampon ajouté : on propose juste d'encaisser.
     // (On ne met PAS en cache d'idempotence : aucun changement d'état.)
     if (!added) {
       return NextResponse.json({
-        success: true, card, rewardReady: true, rewardUnlocked: true, added: false, stampGoal: cfg.stampGoal,
+        success: true, card, rewardReady: true, rewardUnlocked: true, added: false,
+        stampGoal: cfg.stampGoal, loyaltyType: program.type, events: [],
       });
     }
 
     // 3. Incrémenter
     const { data: updatedCard, error: updateError } = await supabaseAdmin
       .from("loyalty_cards")
-      .update({ stamps_count: newStamps, last_scan: new Date().toISOString() })
+      .update({ stamps_count: newCount, last_scan: new Date().toISOString() })
       .eq("id", actualCardId).select("*, customers(*)").single();
     if (updateError) throw updateError;
 
@@ -98,10 +101,10 @@ export async function POST(req: Request) {
     await logAuditEvent({
       action: "CARD_SCANNED",
       merchant_id: merchant.id, user_id: user.id, card_id: actualCardId,
-      details: { new_stamps: newStamps, reward_ready: rewardReady }, ...meta,
+      details: { new_stamps: newCount, reward_ready: rewardReady, loyalty_type: program.type }, ...meta,
     });
 
-    const response = { success: true, card: updatedCard, rewardReady, rewardUnlocked: rewardReady, added: true, stampGoal: cfg.stampGoal };
+    const response = { success: true, card: updatedCard, rewardReady, rewardUnlocked: rewardReady, added: true, stampGoal: cfg.stampGoal, loyaltyType: program.type, events };
     await setIdempotency(idempotencyKey, response);
     return NextResponse.json(response);
 
