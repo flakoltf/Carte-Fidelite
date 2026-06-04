@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { signImpersonationToken, verifyImpersonationToken } from "../impersonation";
+import { signImpersonationToken, verifyImpersonationToken, resolveEffectiveMerchantId } from "../impersonation";
 
 beforeAll(() => {
   process.env.IMPERSONATION_SECRET = "test-secret-1234567890";
@@ -27,5 +27,29 @@ describe("token d'impersonation", () => {
     expect(verifyImpersonationToken(null)).toBe(null);
     expect(verifyImpersonationToken(undefined)).toBe(null);
     expect(verifyImpersonationToken("sans-point")).toBe(null);
+  });
+});
+
+describe("resolveEffectiveMerchantId", () => {
+  const base = { ownMerchantId: "own-1", impersonatedMerchantId: "imp-9", impersonatedExists: true };
+
+  it("admin + cookie valide + marchand existe → marchand impersonné", () => {
+    expect(resolveEffectiveMerchantId({ ...base, sessionRole: "admin" })).toBe("imp-9");
+  });
+
+  it("non-admin → ignore le cookie, renvoie son propre marchand", () => {
+    expect(resolveEffectiveMerchantId({ ...base, sessionRole: "merchant" })).toBe("own-1");
+  });
+
+  it("admin sans cookie → son propre marchand", () => {
+    expect(resolveEffectiveMerchantId({ ...base, sessionRole: "admin", impersonatedMerchantId: null })).toBe("own-1");
+  });
+
+  it("admin + cookie mais marchand inexistant → son propre marchand", () => {
+    expect(resolveEffectiveMerchantId({ ...base, sessionRole: "admin", impersonatedExists: false })).toBe("own-1");
+  });
+
+  it("session nulle → null", () => {
+    expect(resolveEffectiveMerchantId({ ...base, sessionRole: null, ownMerchantId: null })).toBe(null);
   });
 });

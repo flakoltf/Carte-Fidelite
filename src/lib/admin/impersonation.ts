@@ -22,3 +22,19 @@ export function verifyImpersonationToken(token: string | null | undefined): stri
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   return merchantId;
 }
+
+export type SessionRole = "admin" | "merchant" | null;
+
+export interface EffectiveMerchantArgs {
+  sessionRole: SessionRole;
+  ownMerchantId: string | null;
+  impersonatedMerchantId: string | null; // déjà vérifié HMAC
+  impersonatedExists: boolean;
+}
+
+export function resolveEffectiveMerchantId(a: EffectiveMerchantArgs): string | null {
+  if (a.sessionRole === "admin" && a.impersonatedMerchantId && a.impersonatedExists) {
+    return a.impersonatedMerchantId;
+  }
+  return a.ownMerchantId;
+}
