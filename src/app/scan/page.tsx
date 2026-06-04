@@ -8,7 +8,7 @@ export default function ScanPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "scanning" | "processing" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [cardDetails, setCardDetails] = useState<any>(null);
+  const [cardDetails, setCardDetails] = useState<{ stamps_count: number } | null>(null);
   const [goal, setGoal] = useState(10);
   const [rewardReady, setRewardReady] = useState(false);
   const [redeemed, setRedeemed] = useState(false);
@@ -83,24 +83,24 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-calcaire text-onyx flex flex-col items-center justify-center p-6 font-sans">
       <div className="max-w-md w-full">
         <div className="mb-8 text-center">
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-onyx">
                 Letaief Scanner
             </h1>
-            <p className="text-zinc-500 mt-2">Validez les tampons de vos clients en un clin d&apos;œil.</p>
+            <p className="text-galet mt-2">Validez les tampons de vos clients en un clin d&apos;œil.</p>
         </div>
 
-        <div className="relative aspect-square w-full bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden flex flex-col items-center justify-center">
+        <div className="relative aspect-square w-full bg-surface rounded-[32px] border border-line-warm shadow-sm overflow-hidden flex flex-col items-center justify-center">
 
           {status === "idle" && (
             <button onClick={() => setStatus("scanning")}
                 className="group flex flex-col items-center gap-4 transition-transform hover:scale-105">
-                <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
-                    <Camera className="w-10 h-10 text-emerald-400" />
+                <div className="w-20 h-20 bg-halo/10 rounded-full flex items-center justify-center border border-halo/20 group-hover:bg-halo/20 transition-colors">
+                    <Camera className="w-10 h-10 text-halo" />
                 </div>
-                <span className="font-semibold text-lg">Démarrer le Scan</span>
+                <span className="font-semibold text-lg text-onyx">Démarrer le Scan</span>
             </button>
           )}
 
@@ -108,27 +108,27 @@ export default function ScanPage() {
 
           {status === "processing" && (
             <div className="flex flex-col items-center gap-4">
-                <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
-                <span className="text-zinc-400 animate-pulse">Vérification de la carte...</span>
+                <Loader2 className="w-12 h-12 text-halo animate-spin" />
+                <span className="text-galet-ink animate-pulse">Vérification de la carte...</span>
             </div>
           )}
 
           {status === "success" && (
             <div className="flex flex-col items-center p-8 animate-in zoom-in duration-300 w-full">
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-lg ${rewardReady && !redeemed ? "bg-amber-500 shadow-amber-500/20" : "bg-emerald-500 shadow-emerald-500/20"}`}>
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-lg ${rewardReady && !redeemed ? "bg-halo shadow-halo/20" : "bg-halo shadow-halo/20"}`}>
                     {rewardReady && !redeemed ? <Gift className="w-12 h-12 text-white" /> : <CheckCircle className="w-12 h-12 text-white" />}
                 </div>
-                <h2 className="text-2xl font-bold mb-2">{rewardReady && !redeemed ? "Récompense prête 🎁" : "Validé !"}</h2>
-                <p className={`font-medium mb-4 text-center ${rewardReady && !redeemed ? "text-amber-400" : "text-emerald-400"}`}>{message}</p>
+                <h2 className="text-2xl font-bold mb-2 text-onyx">{rewardReady && !redeemed ? "Récompense prête 🎁" : "Validé !"}</h2>
+                <p className={`font-medium mb-4 text-center ${rewardReady && !redeemed ? "text-halo" : "text-halo"}`}>{message}</p>
 
                 {cardDetails && (
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 w-full mb-6">
+                    <div className="bg-surface border border-line-warm rounded-2xl p-4 w-full mb-6">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-zinc-500 text-xs uppercase tracking-widest font-bold">Solde</span>
-                            <span className="text-white font-mono text-lg">{cardDetails.stamps_count} / {goal}</span>
+                            <span className="text-galet text-xs uppercase tracking-widest font-bold">Solde</span>
+                            <span className="text-onyx font-mono text-lg">{cardDetails.stamps_count} / {goal}</span>
                         </div>
-                        <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-1000"
+                        <div className="w-full bg-[#ECE7DB] h-2 rounded-full overflow-hidden">
+                            <div className="h-full bg-halo transition-all duration-1000"
                                 style={{ width: `${Math.min(100, (cardDetails.stamps_count / goal) * 100)}%` }}></div>
                         </div>
                     </div>
@@ -136,14 +136,14 @@ export default function ScanPage() {
 
                 {rewardReady && !redeemed && (
                     <button onClick={handleRedeem} disabled={redeeming}
-                        className="flex items-center gap-2 bg-amber-500 text-black px-6 py-3 rounded-xl font-bold hover:bg-amber-400 transition-colors disabled:opacity-50 mb-3 w-full justify-center">
+                        className="flex items-center gap-2 bg-halo text-white px-6 py-3 rounded-xl font-bold hover:bg-halo-600 transition-colors disabled:opacity-50 mb-3 w-full justify-center">
                         <Gift className="w-4 h-4" />
                         {redeeming ? "…" : "Remettre la récompense"}
                     </button>
                 )}
 
                 <button onClick={resetScanner}
-                    className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors w-full justify-center">
+                    className="flex items-center gap-2 bg-surface border border-line-warm text-galet-ink px-6 py-3 rounded-xl font-bold hover:bg-calcaire transition-colors w-full justify-center">
                     <RefreshCw className="w-4 h-4" />
                     Scan Suivant
                 </button>
@@ -153,12 +153,12 @@ export default function ScanPage() {
           {status === "error" && (
             <div className="flex flex-col items-center p-8 animate-in shake duration-500">
                 <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/30">
-                    <AlertCircle className="w-12 h-12 text-red-500" />
+                    <AlertCircle className="w-12 h-12 text-red-600" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2 text-red-500">Oups !</h2>
-                <p className="text-zinc-400 mb-8 text-center">{message}</p>
+                <h2 className="text-2xl font-bold mb-2 text-red-600">Oups !</h2>
+                <p className="text-galet-ink mb-8 text-center">{message}</p>
                 <button onClick={resetScanner}
-                    className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-3 rounded-xl font-bold transition-all">
+                    className="bg-surface border border-line-warm hover:bg-calcaire text-galet-ink px-8 py-3 rounded-xl font-bold transition-all">
                     Réessayer
                 </button>
             </div>
@@ -167,8 +167,8 @@ export default function ScanPage() {
         </div>
 
         <div className="mt-8 flex justify-center gap-4">
-            <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <div className="flex items-center gap-2 text-galet text-sm">
+                <div className="w-2 h-2 rounded-full bg-halo animate-pulse"></div>
                 Serveur Opérationnel
             </div>
         </div>

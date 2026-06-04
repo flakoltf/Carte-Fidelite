@@ -31,13 +31,13 @@ describe("buildPassJson — objectif de carte", () => {
   };
   it("stampGoal fourni -> 'stamps / stampGoal'", () => {
     const p = buildPassJson({ ...base, stampGoal: 8 });
-    const f = p.storeCard.primaryFields.find((x: { key: string }) => x.key === "stamps");
-    expect(f.value).toBe("3 / 8");
+    const f = p.storeCard.primaryFields.find((x) => x.key === "stamps");
+    expect(f?.value).toBe("3 / 8");
   });
   it("stampGoal absent -> défaut 10", () => {
     const p = buildPassJson(base);
-    const f = p.storeCard.primaryFields.find((x: { key: string }) => x.key === "stamps");
-    expect(f.value).toBe("3 / 10");
+    const f = p.storeCard.primaryFields.find((x) => x.key === "stamps");
+    expect(f?.value).toBe("3 / 10");
   });
 });
 

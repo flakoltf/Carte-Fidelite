@@ -46,12 +46,12 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
   const googleUrl = cardId ? `/api/enroll/${cardId}?t=${token}&wallet=google` : "#";
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-8 shadow-xl"
+        className="w-full max-w-md bg-surface border border-line-warm rounded-3xl p-8 shadow-sm"
       >
         {/* En-tête / branding marchand */}
         <div className="flex flex-col items-center text-center mb-8">
@@ -66,8 +66,8 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
               <Store className="w-8 h-8 text-black" />
             </div>
           )}
-          <h1 className="text-2xl font-bold">{shopName}</h1>
-          <p className="text-zinc-400 text-sm mt-1">
+          <h1 className="font-display text-2xl font-bold text-onyx">{shopName}</h1>
+          <p className="text-galet-ink text-sm mt-1">
             {cardId ? "Votre carte est prête 🎉" : "Créez votre carte de fidélité"}
           </p>
         </div>
@@ -84,9 +84,9 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
             >
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-400 ml-1">Prénom</label>
+                  <label className="text-sm font-medium text-galet-ink ml-1">Prénom</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
+                    <User className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
                     <input
                       required
                       type="text"
@@ -94,12 +94,12 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                       onChange={(e) => setFirstName(e.target.value)}
                       maxLength={60}
                       placeholder="Marie"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-3 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-zinc-700"
+                      className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-3 focus:border-halo outline-none transition-all placeholder:text-galet"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-400 ml-1">Nom</label>
+                  <label className="text-sm font-medium text-galet-ink ml-1">Nom</label>
                   <input
                     required
                     type="text"
@@ -107,15 +107,15 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                     onChange={(e) => setLastName(e.target.value)}
                     maxLength={60}
                     placeholder="Dupont"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 px-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-zinc-700"
+                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 focus:border-halo outline-none transition-all placeholder:text-galet"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400 ml-1">Email</label>
+                <label className="text-sm font-medium text-galet-ink ml-1">Email</label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-emerald-400 transition-colors" />
+                  <Mail className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
                   <input
                     required
                     type="email"
@@ -123,7 +123,7 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                     onChange={(e) => setEmail(e.target.value)}
                     maxLength={254}
                     placeholder="marie.dupont@email.com"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-zinc-700"
+                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 focus:border-halo outline-none transition-all placeholder:text-galet"
                   />
                 </div>
               </div>
@@ -134,7 +134,7 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-4 py-3 text-sm"
+                    className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-600 rounded-2xl px-4 py-3 text-sm"
                   >
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     {error}
@@ -155,7 +155,7 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                 )}
               </button>
 
-              <p className="text-center text-xs text-zinc-600">
+              <p className="text-center text-xs text-galet">
                 En continuant, vous acceptez de recevoir votre carte de fidélité numérique.
               </p>
             </motion.form>
@@ -166,14 +166,14 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4"
             >
-              <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm mb-2">
+              <div className="flex items-center justify-center gap-2 text-halo text-sm mb-2">
                 <Check className="w-4 h-4" />
                 Carte créée. Ajoutez-la à votre téléphone :
               </div>
 
               <a
                 href={appleUrl}
-                className="flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-bold hover:bg-zinc-200 transition-all"
+                className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
               >
                 <Download className="w-5 h-5" />
                 Ajouter à Apple Wallet
@@ -183,13 +183,13 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                 href={googleUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-bold hover:bg-zinc-200 transition-all"
+                className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
               >
                 <Smartphone className="w-5 h-5" />
                 Ajouter à Google Wallet
               </a>
 
-              <p className="text-center text-xs text-zinc-600 pt-2">
+              <p className="text-center text-xs text-galet pt-2">
                 Présentez votre carte en caisse pour cumuler vos tampons.
               </p>
             </motion.div>

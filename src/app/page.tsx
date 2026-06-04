@@ -292,7 +292,7 @@ export default function Home() {
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
               Chaque commerce, <em className="italic text-halo-glow">sa carte.</em>
             </h2>
-            <p className="mt-4 text-galet">Trouvez votre métier — ou inspirez-vous d'un voisin. Tout est personnalisable.</p>
+            <p className="mt-4 text-galet">Trouvez votre métier — ou inspirez-vous d&apos;un voisin. Tout est personnalisable.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {SAMPLE_CARDS.map((c, i) => (
@@ -310,7 +310,7 @@ export default function Home() {
           <Reveal className="max-w-2xl">
             <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Pourquoi HALO</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Tout ce qu'il faut, <em className="italic text-halo-glow">rien de superflu.</em>
+              Tout ce qu&apos;il faut, <em className="italic text-halo-glow">rien de superflu.</em>
             </h2>
           </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

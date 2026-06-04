@@ -6,9 +6,15 @@ export interface PassJsonInput {
   locations?: { latitude: number; longitude: number; relevantText: string }[];
 }
 
-export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
-  storeCard: { backFields: { key: string; value: string; changeMessage?: string }[] };
-} {
+type PassField = { key: string; value: string; label?: string; changeMessage?: string; textAlignment?: string };
+type StoreCardShape = {
+  primaryFields: PassField[];
+  secondaryFields: PassField[];
+  backFields: PassField[];
+};
+export type PassJson = Record<string, unknown> & { storeCard: StoreCardShape };
+
+export function buildPassJson(i: PassJsonInput): PassJson {
   const pass = {
     formatVersion: 1,
     passTypeIdentifier: i.passTypeIdentifier,
@@ -28,7 +34,7 @@ export function buildPassJson(i: PassJsonInput): Record<string, unknown> & {
       backFields: [{ key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" }],
     },
     barcodes: [{ message: i.barcodeMessage, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1", altText: "Scannez pour valider vos tampons" }],
-  } as unknown as Record<string, unknown> & { storeCard: { backFields: { key: string; value: string; changeMessage?: string }[] } };
+  } as unknown as PassJson;
 
   if (i.webServiceURL && i.authToken) {
     pass.webServiceURL = i.webServiceURL;

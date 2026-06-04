@@ -67,46 +67,46 @@ export function SecuritySection() {
     } finally { setBusy(false); }
   };
 
-  const inputCls = "w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-4 text-sm";
+  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none";
 
   return (
-    <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 space-y-6">
-      <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+    <div className="bg-surface border border-line-warm rounded-3xl p-8 space-y-6 shadow-sm">
+      <div className="flex items-center gap-2 text-halo font-bold text-sm">
         <ShieldCheck className="w-4 h-4" /> SÉCURITÉ — DOUBLE AUTHENTIFICATION
       </div>
 
       {loading ? (
-        <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
+        <Loader2 className="w-5 h-5 animate-spin text-galet" />
       ) : factorId ? (
         <div className="space-y-3">
-          <p className="text-sm text-emerald-400">✅ Double authentification activée.</p>
-          <p className="text-xs text-zinc-500">Un code de votre appli d&apos;authentification sera demandé à chaque connexion.</p>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          <p className="text-sm text-halo">✅ Double authentification activée.</p>
+          <p className="text-xs text-galet-ink">Un code de votre appli d&apos;authentification sera demandé à chaque connexion.</p>
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button onClick={disable} disabled={busy}
-            className="px-5 py-2.5 rounded-xl border border-red-500/30 text-red-400 text-sm font-bold disabled:opacity-50">
+            className="px-5 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-bold disabled:opacity-50">
             {busy ? "…" : "Désactiver"}
           </button>
         </div>
       ) : enrolling ? (
         <div className="space-y-4">
-          <p className="text-sm text-zinc-300">1. Scannez ce QR avec votre appli (Google / Microsoft Authenticator) :</p>
+          <p className="text-sm text-galet-ink">1. Scannez ce QR avec votre appli (Google / Microsoft Authenticator) :</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={enrolling.qr} alt="QR code 2FA" className="w-44 h-44 bg-white rounded-xl p-2" />
-          <p className="text-xs text-zinc-500 break-all">Ou clé manuelle : <span className="font-mono text-zinc-300">{enrolling.secret}</span></p>
-          <p className="text-sm text-zinc-300">2. Entrez le code à 6 chiffres affiché :</p>
+          <p className="text-xs text-galet break-all">Ou clé manuelle : <span className="font-mono text-galet-ink">{enrolling.secret}</span></p>
+          <p className="text-sm text-galet-ink">2. Entrez le code à 6 chiffres affiché :</p>
           <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" className={inputCls} />
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={confirmEnroll} disabled={busy} className="px-5 py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-sm disabled:opacity-50">{busy ? "…" : "Confirmer"}</button>
-            <button onClick={cancelEnroll} disabled={busy} className="px-4 py-2.5 rounded-xl border border-zinc-700 text-sm">Annuler</button>
+            <button onClick={confirmEnroll} disabled={busy} className="px-5 py-2.5 rounded-xl bg-halo text-white font-bold text-sm disabled:opacity-50 hover:bg-halo-600 transition-all">{busy ? "…" : "Confirmer"}</button>
+            <button onClick={cancelEnroll} disabled={busy} className="px-4 py-2.5 rounded-xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink text-sm">Annuler</button>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-zinc-400">Protégez votre compte : en plus du mot de passe, un code temporaire de votre téléphone sera requis à la connexion.</p>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          <p className="text-sm text-galet-ink">Protégez votre compte : en plus du mot de passe, un code temporaire de votre téléphone sera requis à la connexion.</p>
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <button onClick={startEnroll} disabled={busy}
-            className="px-5 py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-sm disabled:opacity-50">
+            className="px-5 py-2.5 rounded-xl bg-halo text-white font-bold text-sm disabled:opacity-50 hover:bg-halo-600 transition-all">
             {busy ? "…" : "Activer la double authentification"}
           </button>
         </div>

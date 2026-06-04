@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Store, LogOut, ShieldCheck, Menu, X } from "lucide-react";
+import { LayoutDashboard, Store, LogOut, Menu, X, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
+import { HaloSymbol } from "@/components/halo/HaloMark";
 
 const navItems = [
   { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
@@ -26,16 +27,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const isActive = (href: string) => pathname === href || (href !== "/admin" && pathname.startsWith(href));
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex overflow-hidden">
+    <div className="min-h-screen bg-calcaire text-onyx flex overflow-hidden">
       {/* Sidebar desktop */}
-      <aside className="hidden lg:flex w-72 flex-col border-r border-zinc-900 bg-zinc-950 p-6">
+      <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-surface p-6">
         <div className="flex items-center gap-3 mb-12 px-2">
-          <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center">
-            <ShieldCheck className="text-amber-400 w-5 h-5" />
-          </div>
-          <span className="text-xl font-bold italic tracking-tight">
-            WalletCard <span className="text-amber-400 not-italic text-sm font-semibold">Admin</span>
-          </span>
+          <HaloSymbol size={32} className="text-halo" />
+          <span className="font-display text-xl tracking-[0.14em]">HALO</span>
+          <span className="ml-1 text-[11px] font-semibold bg-halo/10 text-halo border border-halo/20 rounded-full px-2 py-0.5 leading-none">Admin</span>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -43,10 +41,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
                 isActive(item.href)
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                  : "text-zinc-500 hover:text-white hover:bg-zinc-900"
+                  ? "bg-halo/10 text-halo border border-halo/20"
+                  : "text-galet-ink hover:text-onyx hover:bg-calcaire"
               }`}
             >
               <item.icon className="w-5 h-5" />
@@ -55,10 +53,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           ))}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-zinc-900">
+        <div className="mt-auto pt-6 border-t border-line-warm">
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 w-full text-zinc-500 hover:text-red-400 hover:bg-red-400/5 rounded-2xl transition-all"
+            className="flex items-center gap-3 px-4 py-3 w-full text-galet-ink hover:text-red-600 hover:bg-red-500/10 rounded-2xl transition-all"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Déconnexion</span>
@@ -67,10 +65,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </aside>
 
       {/* Header mobile */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-6 z-50">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-50">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="text-amber-400 w-5 h-5" />
-          <span className="font-bold italic">WalletCard Admin</span>
+          <HaloSymbol size={22} className="text-halo" />
+          <span className="font-display tracking-[0.12em]">HALO</span>
+          <span className="text-[10px] font-semibold bg-halo/10 text-halo border border-halo/20 rounded-full px-1.5 py-0.5 leading-none">Admin</span>
         </div>
         <button onClick={() => setOpen(!open)}>{open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
       </div>
@@ -81,7 +80,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="lg:hidden fixed inset-0 bg-zinc-950 z-40 p-6 pt-24"
+            className="lg:hidden fixed inset-0 bg-calcaire z-40 p-6 pt-24"
           >
             <nav className="space-y-4">
               {navItems.map((item) => (
@@ -89,15 +88,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-4 px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl"
+                  className="flex items-center justify-between px-4 py-4 bg-surface border border-line-warm rounded-2xl"
                 >
-                  <item.icon className="w-6 h-6 text-amber-400" />
-                  <span className="text-lg font-medium">{item.name}</span>
+                  <div className="flex items-center gap-4">
+                    <item.icon className="w-6 h-6 text-halo" />
+                    <span className="text-lg font-medium">{item.name}</span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-galet" />
                 </Link>
               ))}
               <button
                 onClick={logout}
-                className="flex items-center gap-4 px-4 py-4 w-full bg-red-400/5 border border-red-400/20 rounded-2xl text-red-400"
+                className="flex items-center gap-4 px-4 py-4 w-full bg-red-500/10 border border-red-500/20 rounded-2xl text-red-600"
               >
                 <LogOut className="w-6 h-6" />
                 <span className="text-lg font-medium">Déconnexion</span>
