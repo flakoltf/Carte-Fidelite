@@ -24,7 +24,7 @@
 | # | Sujet | Statut | Preuve / Note |
 |---|-------|--------|---------------|
 | I1 | Anti-fraude (détection patterns) | ✅ | `src/lib/antifraud/`, panel marchand + alertes admin |
-| I2 | Monitoring erreurs (Sentry) | ❌ | **Absent des dépendances.** Besoin d'un compte + DSN. Prochaine cible. |
+| I2 | Monitoring erreurs (Sentry) | ⏳ | **Scaffold livré** : `@sentry/nextjs` v10 + `src/instrumentation*.ts` + configs server/edge/client, `next.config` enveloppé. No-op sans DSN. Nettoyeur PII (`src/lib/monitoring/scrub.ts`) branché sur `beforeSend`. ⚠️ Besoin du **DSN** (voir ci-dessous). |
 | I3 | Masquage PII dans les logs | ⏳ | **Outil livré + testé** : `src/lib/log/mask.ts` (`maskEmail`/`maskName`/`redactPII`). Reste à l'adopter aux points de log existants. |
 | I4 | Dashboard commerçants | ✅ | `src/app/dashboard/*` (clients, segments, analytics, campagnes…) |
 | I5 | Notifications EMAIL clients | ✅ | **Ajouté** : `EmailChannel` via Resend (`src/lib/email/`), branché dans `getChannels()`. ⚠️ Nécessite `RESEND_API_KEY` + `EMAIL_FROM` (voir ci-dessous). |
@@ -39,6 +39,18 @@ RESEND_API_KEY=re_xxxxxxxxxxxx     # clé API depuis resend.com
 EMAIL_FROM="Café Lumen <fidelite@ton-domaine.ch>"   # expéditeur (domaine vérifié sur Resend)
 ```
 Sans ces variables, l'envoi est un **no-op sûr** (aucun plantage). Dès qu'elles sont présentes, **toutes** les notifications (envois manuels + cron campagnes) partent aussi par email aux clients qui ont un email — y compris ceux **sans** carte Apple/Google Wallet.
+
+> Modèle d'expéditeur **B** : l'email affiche le **nom de la boutique** (`shop_name`) comme expéditeur ; l'adresse technique reste `EMAIL_FROM` (domaine Resend vérifié) ; le **« Répondre à »** est l'email du commerçant (`merchants.email`).
+
+### ⚙️ Configuration Sentry (I2) — à faire par toi
+```
+NEXT_PUBLIC_SENTRY_DSN=https://xxxx@oyyyy.ingest.sentry.io/zzzz   # DSN du projet Sentry
+# Pour l'upload des source maps au build (optionnel mais recommandé) :
+SENTRY_ORG=ton-org
+SENTRY_PROJECT=carte-fidelite
+SENTRY_AUTH_TOKEN=sntrys_xxx
+```
+Sans `NEXT_PUBLIC_SENTRY_DSN`, Sentry est **désactivé** (`enabled:false`) : aucun envoi, aucun impact. Toutes les erreurs envoyées passent d'abord par le **nettoyeur PII** (en-têtes `Authorization`/`Cookie` retirés, emails/noms masqués).
 
 ---
 
@@ -71,7 +83,7 @@ Sans ces variables, l'envoi est un **no-op sûr** (aucun plantage). Dès qu'elle
 ## 🎯 Prochaines priorités (proposées)
 
 1. **Brancher Resend** (`RESEND_API_KEY` + `EMAIL_FROM`) pour activer l'email — code déjà prêt.
-2. **I2 — Sentry** : ajouter `@sentry/nextjs` + DSN (monitoring prod).
+2. **Brancher Sentry** (`NEXT_PUBLIC_SENTRY_DSN`) — scaffold déjà prêt, il ne manque que le DSN.
 3. **I3 — adopter le masquage** aux points de log sensibles existants.
 4. **B4 — confirmer le chiffrement au repos** côté Supabase.
 5. **Finir la refonte HALO Light** (écrans restants).

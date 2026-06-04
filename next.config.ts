@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.20.10.9", "localhost:3000"],
@@ -34,4 +35,11 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+// withSentryConfig : l'upload des source maps ne s'active que si SENTRY_AUTH_TOKEN
+// + org/project sont définis ; sinon le build reste normal (aucun blocage).
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+});
