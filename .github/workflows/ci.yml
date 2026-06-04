@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [feat/public-enrollment, main]
+  pull_request:
+
+# Annule les runs obsolètes d'une même branche/PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests (Vitest)
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Valeurs FACTICES non-secrètes : les clients Supabase/Upstash/QR sont
+          # instanciés au scope module (jettent si la var manque) mais ne sont
+          # jamais APPELÉS pendant le build → aucune vraie clé requise.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: ci-dummy-service-key
+          UPSTASH_REDIS_REST_URL: https://example.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: ci-dummy-token
+          QR_SIGNATURE_SECRET: ci-dummy-qr-secret
