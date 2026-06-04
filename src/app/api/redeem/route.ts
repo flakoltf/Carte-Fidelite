@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { verifyQRCode } from "@/lib/qrSignature";
-import { programCanRedeem } from "@/lib/loyalty/engine";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 
@@ -39,16 +38,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Cette carte appartient à un autre établissement" }, { status: 403 });
 
   const program = resolveLoyaltyProgram(merchant);
-  if (!programCanRedeem(program, card.stamps_count))
-    return NextResponse.json(
-      { error: program.type === "stamp_card" ? "Carte non complète" : "Ce programme n'a pas d'encaissement." },
-      { status: 409 }
-    );
-  const stampGoal = program.type === "stamp_card" ? program.config.goal : 0;
+  if (program.type !== "stamp_card")
+    return NextResponse.json({ error: "Ce programme n'a pas d'encaissement." }, { status: 409 });
+  const stampGoal = program.config.goal;
 
-  const { data: updatedCard, error } = await supabaseAdmin
-    .from("loyalty_cards").update({ stamps_count: 0 }).eq("id", actualCardId).select("*, customers(*)").single();
+  // Encaissement ATOMIQUE et CONDITIONNEL : ne remet à 0 que si la carte est PLEINE
+  // (stamps_count >= goal), en un seul UPDATE. Sur deux appels concurrents, un seul
+  // matche (le 2e voit stamps_count = 0 < goal) → pas de double-encaissement (SEC-01).
+  const { data: updatedRows, error } = await supabaseAdmin
+    .from("loyalty_cards")
+    .update({ stamps_count: 0 })
+    .eq("id", actualCardId)
+    .eq("merchant_id", merchant.id)
+    .gte("stamps_count", stampGoal)
+    .select("*, customers(*)");
   if (error) return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  const updatedCard = updatedRows?.[0];
+  if (!updatedCard)
+    return NextResponse.json({ error: "Carte non complète ou déjà encaissée" }, { status: 409 });
 
   await logAuditEvent({
     action: "REWARD_REDEEMED",
