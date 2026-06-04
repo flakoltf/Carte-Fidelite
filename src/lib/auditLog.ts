@@ -13,7 +13,9 @@ export type AuditAction =
   | 'REWARD_REDEEMED'
   | 'CUSTOMER_UPDATED'
   | 'MFA_ENROLLED'
-  | 'MFA_DISABLED';
+  | 'MFA_DISABLED'
+  | 'ADMIN_IMPERSONATION_START'
+  | 'ADMIN_IMPERSONATION_STOP';
 
 interface AuditLogEntry {
   action: AuditAction;
