@@ -1,4 +1,5 @@
 import { supabaseAdmin } from './supabaseAdmin';
+import { clientIp } from './clientIp';
 
 export type AuditAction =
   | 'CARD_GENERATED'
@@ -44,8 +45,9 @@ export async function logAuditEvent(entry: AuditLogEntry) {
 }
 
 export function extractRequestMeta(req: Request): { ip_address: string; user_agent: string } {
-  const xff = req.headers.get('x-forwarded-for');
-  const ip_address = xff?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+  // IP de confiance (non spoofable via X-Forwarded-For) — alimente l'audit ET les clés
+  // de rate-limit par IP (login-ip, enroll-ip, enroll-artifact).
+  const ip_address = clientIp(req.headers);
   const user_agent = req.headers.get('user-agent') || 'unknown';
   return { ip_address, user_agent };
 }
