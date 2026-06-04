@@ -51,12 +51,12 @@ export function HaloWordmark({
   return (
     <span
       className={clsx(
-        "inline-flex items-center font-display text-calcaire",
+        "inline-flex items-center font-display text-onyx",
         className,
       )}
     >
       <span className="tracking-[0.12em] text-[1.15em] leading-none">HAL</span>
-      <HaloSymbol size={symbolSize} ring="var(--color-calcaire)" className="mx-[0.04em]" />
+      <HaloSymbol size={symbolSize} ring="var(--color-halo)" className="mx-[0.04em]" />
     </span>
   );
 }
