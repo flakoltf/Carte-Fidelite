@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { createClient } from "@/utils/supabase/client";
 import { SecuritySection } from "./SecuritySection";
 
 export default function Settings() {
@@ -22,9 +21,6 @@ export default function Settings() {
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
 
-  // Utilisation du client SSR Browser
-  const supabaseClient = createClient();
-
   useEffect(() => {
     fetchMerchant();
     // Chargement unique au montage ; le client Supabase est recréé à chaque rendu.
@@ -32,12 +28,10 @@ export default function Settings() {
   }, []);
 
   const fetchMerchant = async () => {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data } = await supabaseClient
-      .from("merchants")
-      .select("*")
-      .eq("user_id", user?.id)
-      .single();
+    // Source du marchand : endpoint serveur qui respecte l'impersonation
+    // (admin concierge), au lieu de résoudre via le client navigateur.
+    const res = await fetch("/api/merchant/me");
+    const { merchant: data } = await res.json();
 
     if (data) {
       setMerchant(data);
@@ -73,16 +67,19 @@ export default function Settings() {
     setSaving(true);
     setSuccess(false);
 
-    const { error } = await supabaseClient
-      .from("merchants")
-      .update({
+    // Écriture via endpoint serveur (impersonation-safe : utilise currentMerchantId()
+    // côté serveur via supabaseAdmin, contourne la RLS own-row de `merchants`).
+    const res = await fetch("/api/merchant/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         shop_name: shopName,
         primary_color: primaryColor,
-        logo_url: logoUrl
-      })
-      .eq("id", merchant.id);
+        logo_url: logoUrl,
+      }),
+    });
 
-    if (!error) {
+    if (res.ok) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     }

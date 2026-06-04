@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { currentMerchantId } from "@/lib/analytics/merchant";
 import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
@@ -35,14 +36,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "customerName invalide (2-100 caractères)" }, { status: 400 });
     }
 
-    // Récupérer le marchand lié à cet utilisateur
-    const { data: merchant, error: merchError } = await supabaseAdmin
-      .from("merchants")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Récupérer le marchand effectif (respecte l'impersonation admin concierge)
+    const merchantId = await currentMerchantId();
 
-    if (merchError || !merchant) {
+    if (!merchantId) {
       return NextResponse.json({ error: "Profil marchand manquant pour cet utilisateur" }, { status: 400 });
     }
 
@@ -61,7 +58,7 @@ export async function POST(req: Request) {
     const { data: customer, error: custError } = await supabaseAdmin
       .from("customers")
       .insert({
-        merchant_id: merchant.id,
+        merchant_id: merchantId,
         full_name: customerName,
       })
       .select()
@@ -74,7 +71,7 @@ export async function POST(req: Request) {
       .from("loyalty_cards")
       .insert({
         customer_id: customer.id,
-        merchant_id: merchant.id,
+        merchant_id: merchantId,
         stamps_count: currentStamps,
         pass_type: 'google'
       })
@@ -86,7 +83,7 @@ export async function POST(req: Request) {
     const meta = extractRequestMeta(req);
     await logAuditEvent({
       action: "CARD_GENERATED",
-      merchant_id: merchant.id,
+      merchant_id: merchantId,
       user_id: user.id,
       card_id: card.id,
       details: { pass_type: "google", initial_stamps: currentStamps },
