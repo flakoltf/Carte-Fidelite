@@ -12,8 +12,7 @@ export async function POST(req: NextRequest) {
     // --- SÉCURITÉ : Authentification + Rate limiting ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Session expirée ou non trouvée. Veuillez vous reconnecter." }, { status: 401 });

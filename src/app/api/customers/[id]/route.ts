@@ -22,8 +22,7 @@ export async function DELETE(
 
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -111,8 +110,7 @@ export async function PATCH(
 
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
     const rateLimitResult = await rateLimit(`customer-update:${user.id}`, 30, 3600000); // 30/hour
