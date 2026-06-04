@@ -37,13 +37,22 @@ export default async function proxy(request: NextRequest) {
   }
 
   if (user) {
-    // AAL : fail-open (si l'appel échoue, on ne bloque personne).
+    // AAL : déterminer si un step-up MFA est requis.
     let needsStepUp = false
+    let aalError = false
     try {
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
       needsStepUp = mfaStepUpRequired(aal?.currentLevel, aal?.nextLevel)
     } catch {
-      needsStepUp = false
+      aalError = true
+    }
+
+    // Fail-CLOSED (SEC-18) : si le niveau MFA est invérifiable (panne Auth), on ne laisse PAS
+    // passer un utilisateur MFA non vérifié sur une route protégée → ré-authentification.
+    // (Re-login rétablit le bon AAL ; aucun blocage en boucle pour les comptes sans MFA.)
+    if (aalError) {
+      if (isProtected) return NextResponse.redirect(new URL('/login', request.url))
+      return response
     }
 
     if (needsStepUp) {
