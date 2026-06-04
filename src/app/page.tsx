@@ -140,12 +140,12 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-dvh bg-onyx font-sans text-calcaire selection:bg-halo/40 overflow-x-hidden">
+    <div className="min-h-dvh bg-calcaire font-sans text-onyx selection:bg-halo/40 overflow-x-hidden">
       {/* ---------------- NAV ---------------- */}
       <nav
         className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
           scrolled
-            ? "border-onyx-line bg-onyx/80 py-3 backdrop-blur-md"
+            ? "border-line-warm bg-calcaire/80 py-3 backdrop-blur-md"
             : "border-transparent bg-transparent py-5"
         }`}
       >
@@ -153,22 +153,22 @@ export default function Home() {
           <Link href="/" aria-label="HALO — accueil">
             <HaloWordmark className="text-lg" />
           </Link>
-          <div className="hidden items-center gap-8 text-sm text-galet md:flex">
-            <a href="#fonctionnement" className="transition-colors hover:text-calcaire">Fonctionnement</a>
-            <a href="#mecaniques" className="transition-colors hover:text-calcaire">Mécaniques</a>
-            <a href="#galerie" className="transition-colors hover:text-calcaire">Exemples</a>
-            <a href="#tarifs" className="transition-colors hover:text-calcaire">Tarifs</a>
+          <div className="hidden items-center gap-8 text-sm text-galet-ink md:flex">
+            <a href="#fonctionnement" className="transition-colors hover:text-onyx">Fonctionnement</a>
+            <a href="#mecaniques" className="transition-colors hover:text-onyx">Mécaniques</a>
+            <a href="#galerie" className="transition-colors hover:text-onyx">Exemples</a>
+            <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
           </div>
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="rounded-full px-4 py-2 text-sm font-medium text-galet transition-colors hover:text-calcaire focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+              className="rounded-full px-4 py-2 text-sm font-medium text-galet-ink transition-colors hover:text-onyx focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
             >
               Connexion
             </Link>
             <Link
               href="/signup"
-              className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+              className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
             >
               Créer ma carte
             </Link>
@@ -179,24 +179,24 @@ export default function Home() {
       {/* ---------------- HERO ---------------- */}
       <section className="relative px-6 pb-16 pt-36 sm:pt-44">
         <div
-          className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[560px] w-[900px] max-w-[110vw] -translate-x-1/2 rounded-full opacity-20 blur-[120px]"
+          className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[560px] w-[900px] max-w-[110vw] -translate-x-1/2 rounded-full opacity-[0.10] blur-[120px]"
           style={{ background: "radial-gradient(circle, var(--color-halo), transparent 62%)" }}
           aria-hidden
         />
         <div className="mx-auto max-w-3xl text-center">
           <Reveal>
-            <span className="mb-7 inline-block rounded-full border border-onyx-line bg-onyx-soft px-4 py-1.5 text-xs font-medium uppercase tracking-[0.22em] text-halo-glow">
+            <span className="mb-7 inline-block rounded-full border border-line-warm bg-surface px-4 py-1.5 text-xs font-medium uppercase tracking-[0.22em] text-halo">
               Cartes de fidélité numériques · Genève
             </span>
           </Reveal>
           <Reveal delay={0.05}>
             <h1 className="font-display text-5xl font-light leading-[1.05] tracking-tight sm:text-7xl">
               La fidélité des grandes
-              <br className="hidden sm:block" /> enseignes, <em className="italic text-halo-glow">à votre image.</em>
+              <br className="hidden sm:block" /> enseignes, <em className="italic text-halo">à votre image.</em>
             </h1>
           </Reveal>
           <Reveal delay={0.1}>
-            <p className="mx-auto mt-7 max-w-xl text-lg text-galet">
+            <p className="mx-auto mt-7 max-w-xl text-lg text-galet-ink">
               Lancez votre carte de fidélité dans Apple &amp; Google Wallet — sans
               appli à télécharger. Tampons, points, paliers, cashback : prête en
               quelques minutes.
@@ -206,14 +206,14 @@ export default function Home() {
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-2 rounded-full bg-halo px-7 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+                className="group inline-flex items-center gap-2 rounded-full bg-halo px-7 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
               >
                 Créer ma carte
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </Link>
               <a
                 href="#galerie"
-                className="rounded-full border border-onyx-line px-7 py-3.5 font-medium text-calcaire transition-colors hover:bg-onyx-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+                className="rounded-full border border-line-warm px-7 py-3.5 font-medium text-onyx transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
               >
                 Voir des exemples
               </a>
@@ -230,26 +230,26 @@ export default function Home() {
       </section>
 
       {/* ---------------- HOW IT WORKS ---------------- */}
-      <section id="fonctionnement" className="border-t border-onyx-line px-6 py-24">
+      <section id="fonctionnement" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Fonctionnement</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Fonctionnement</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Trois étapes, <em className="italic text-halo-glow">zéro complexité.</em>
+              Trois étapes, <em className="italic text-halo">zéro complexité.</em>
             </h2>
           </Reveal>
           <div className="mt-14 grid gap-8 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <Reveal key={s.title} delay={i * 0.08}>
-                <div className="flex h-full flex-col rounded-2xl border border-onyx-line bg-onyx-soft p-7">
+                <div className="flex h-full flex-col rounded-2xl border border-line-warm bg-surface p-7">
                   <div className="mb-5 flex items-center gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo">
                       <s.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                     </span>
-                    <span className="font-display text-2xl text-galet">0{i + 1}</span>
+                    <span className="font-display text-2xl text-galet-ink">0{i + 1}</span>
                   </div>
                   <h3 className="text-lg font-semibold">{s.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-galet">{s.desc}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-galet-ink">{s.desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -258,25 +258,25 @@ export default function Home() {
       </section>
 
       {/* ---------------- MECHANICS ---------------- */}
-      <section id="mecaniques" className="border-t border-onyx-line px-6 py-24">
+      <section id="mecaniques" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Les mécaniques</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Les mécaniques</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Cinq façons de <em className="italic text-halo-glow">fidéliser.</em>
+              Cinq façons de <em className="italic text-halo">fidéliser.</em>
             </h2>
-            <p className="mt-4 text-galet">Choisissez celle qui colle à votre métier. Changez quand vous voulez.</p>
+            <p className="mt-4 text-galet-ink">Choisissez celle qui colle à votre métier. Changez quand vous voulez.</p>
           </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {MECHANICS.map((m, i) => (
               <Reveal key={m.title} delay={i * 0.06}>
-                <div className="h-full rounded-2xl border border-onyx-line bg-onyx-soft p-6 transition-colors hover:border-halo/40">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                <div className="h-full rounded-2xl border border-line-warm bg-surface p-6 transition-colors hover:border-halo/40">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-halo/15 text-halo">
                     <m.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                   </span>
                   <h3 className="mt-4 text-lg font-semibold">{m.title}</h3>
-                  <p className="mt-1.5 text-sm text-galet">{m.desc}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.12em] text-galet/70">{m.ex}</p>
+                  <p className="mt-1.5 text-sm text-galet-ink">{m.desc}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.12em] text-galet-ink/70">{m.ex}</p>
                 </div>
               </Reveal>
             ))}
@@ -285,14 +285,14 @@ export default function Home() {
       </section>
 
       {/* ---------------- GALLERY ---------------- */}
-      <section id="galerie" className="border-t border-onyx-line px-6 py-24">
+      <section id="galerie" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Les exemples</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Les exemples</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Chaque commerce, <em className="italic text-halo-glow">sa carte.</em>
+              Chaque commerce, <em className="italic text-halo">sa carte.</em>
             </h2>
-            <p className="mt-4 text-galet">Trouvez votre métier — ou inspirez-vous d&apos;un voisin. Tout est personnalisable.</p>
+            <p className="mt-4 text-galet-ink">Trouvez votre métier — ou inspirez-vous d&apos;un voisin. Tout est personnalisable.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {SAMPLE_CARDS.map((c, i) => (
@@ -305,24 +305,24 @@ export default function Home() {
       </section>
 
       {/* ---------------- WHY HALO ---------------- */}
-      <section className="border-t border-onyx-line px-6 py-24">
+      <section className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Pourquoi HALO</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Pourquoi HALO</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Tout ce qu&apos;il faut, <em className="italic text-halo-glow">rien de superflu.</em>
+              Tout ce qu&apos;il faut, <em className="italic text-halo">rien de superflu.</em>
             </h2>
           </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {WHY.map((w, i) => (
               <Reveal key={w.title} delay={(i % 3) * 0.06}>
-                <div className="flex h-full gap-4 rounded-2xl border border-onyx-line bg-onyx-soft p-6">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-halo/15 text-halo-glow">
+                <div className="flex h-full gap-4 rounded-2xl border border-line-warm bg-surface p-6">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-halo/15 text-halo">
                     <w.Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                   </span>
                   <div>
                     <h3 className="font-semibold">{w.title}</h3>
-                    <p className="mt-1 text-sm text-galet">{w.desc}</p>
+                    <p className="mt-1 text-sm text-galet-ink">{w.desc}</p>
                   </div>
                 </div>
               </Reveal>
@@ -332,26 +332,26 @@ export default function Home() {
       </section>
 
       {/* ---------------- TESTIMONIALS ---------------- */}
-      <section className="border-t border-onyx-line px-6 py-24">
+      <section className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Ils utilisent HALO</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Ils utilisent HALO</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Des commerçants <em className="italic text-halo-glow">convaincus.</em>
+              Des commerçants <em className="italic text-halo">convaincus.</em>
             </h2>
-            <p className="mt-3 text-xs text-galet/60">Témoignages illustratifs — à remplacer par de vrais avis.</p>
+            <p className="mt-3 text-xs text-galet-ink/60">Témoignages illustratifs — à remplacer par de vrais avis.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <Reveal key={t.name} delay={i * 0.08}>
-                <figure className="flex h-full flex-col rounded-2xl border border-onyx-line bg-onyx-soft p-7">
-                  <Quote className="h-6 w-6 text-halo-glow" aria-hidden />
-                  <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-calcaire/90">
+                <figure className="flex h-full flex-col rounded-2xl border border-line-warm bg-surface p-7">
+                  <Quote className="h-6 w-6 text-halo" aria-hidden />
+                  <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-onyx/90">
                     « {t.quote} »
                   </blockquote>
                   <figcaption className="mt-5 text-sm">
                     <span className="font-semibold">{t.name}</span>
-                    <span className="text-galet"> — {t.role}</span>
+                    <span className="text-galet-ink"> — {t.role}</span>
                   </figcaption>
                 </figure>
               </Reveal>
@@ -361,14 +361,14 @@ export default function Home() {
       </section>
 
       {/* ---------------- PRICING ---------------- */}
-      <section id="tarifs" className="border-t border-onyx-line px-6 py-24">
+      <section id="tarifs" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet">Tarifs</p>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Tarifs</p>
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Un prix clair, <em className="italic text-halo-glow">sans surprise.</em>
+              Un prix clair, <em className="italic text-halo">sans surprise.</em>
             </h2>
-            <p className="mt-4 text-galet">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de clients actifs.</p>
+            <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de clients actifs.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PRICING.map((p, i) => (
@@ -376,8 +376,8 @@ export default function Home() {
                 <div
                   className={`flex h-full flex-col rounded-2xl border p-8 ${
                     p.featured
-                      ? "border-halo/60 bg-halo/[0.07] shadow-[0_0_40px_-12px_var(--color-halo)]"
-                      : "border-onyx-line bg-onyx-soft"
+                      ? "border-halo/40 bg-halo/[0.06] shadow-[0_16px_50px_-20px_rgba(13,107,94,0.35)]"
+                      : "border-line-warm bg-surface shadow-sm"
                   }`}
                 >
                   {p.featured && (
@@ -386,25 +386,25 @@ export default function Home() {
                     </span>
                   )}
                   <h3 className="font-display text-2xl">{p.name}</h3>
-                  <p className="mt-1 text-sm text-galet">{p.tagline}</p>
+                  <p className="mt-1 text-sm text-galet-ink">{p.tagline}</p>
                   <div className="mt-5 flex items-baseline gap-1.5">
                     <span className="font-display text-4xl font-light">{p.price}</span>
-                    {p.unit && <span className="text-sm text-galet">{p.unit}</span>}
+                    {p.unit && <span className="text-sm text-galet-ink">{p.unit}</span>}
                   </div>
                   <ul className="mt-7 flex-1 space-y-3">
                     {p.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-calcaire/90">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-halo-glow" aria-hidden />
+                      <li key={f} className="flex items-start gap-2.5 text-sm text-onyx/90">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-halo" aria-hidden />
                         {f}
                       </li>
                     ))}
                   </ul>
                   <Link
                     href={p.href}
-                    className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow ${
+                    className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo ${
                       p.featured
                         ? "bg-halo text-white hover:bg-halo-600"
-                        : "border border-onyx-line text-calcaire hover:bg-onyx"
+                        : "border border-line-warm text-onyx hover:bg-calcaire"
                     }`}
                   >
                     {p.cta}
@@ -414,30 +414,30 @@ export default function Home() {
             ))}
           </div>
           <Reveal>
-            <p className="mt-8 text-center text-sm text-galet">
+            <p className="mt-8 text-center text-sm text-galet-ink">
               Au-delà de 800 clients actifs : 129 CHF + 19 CHF par tranche de 200.
               {" · "}
-              Engagement annuel : <span className="text-calcaire">2 mois offerts</span>.
+              Engagement annuel : <span className="text-onyx">2 mois offerts</span>.
               <br />
-              Plusieurs commerces ? <span className="text-calcaire">Tarif sur demande</span>, établi selon votre réseau de points de vente.
+              Plusieurs commerces ? <span className="text-onyx">Tarif sur demande</span>, établi selon votre réseau de points de vente.
             </p>
           </Reveal>
         </div>
       </section>
 
       {/* ---------------- FINAL CTA ---------------- */}
-      <section className="border-t border-onyx-line px-6 py-28">
+      <section className="border-t border-line-warm px-6 py-28">
         <Reveal className="mx-auto max-w-3xl text-center">
-          <HaloSymbol size={48} ring="var(--color-calcaire)" className="mx-auto mb-8" />
+          <HaloSymbol size={48} ring="var(--color-halo)" className="mx-auto mb-8" />
           <h2 className="font-display text-4xl font-light tracking-tight sm:text-6xl">
-            Et la vôtre, elle ressemblerait <em className="italic text-halo-glow">à quoi&nbsp;?</em>
+            Et la vôtre, elle ressemblerait <em className="italic text-halo">à quoi&nbsp;?</em>
           </h2>
-          <p className="mx-auto mt-6 max-w-md text-galet">
+          <p className="mx-auto mt-6 max-w-md text-galet-ink">
             Créez votre carte de fidélité numérique en quelques minutes. Sans engagement.
           </p>
           <Link
             href="/signup"
-            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-halo px-8 py-4 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-glow"
+            className="group mt-9 inline-flex items-center gap-2 rounded-full bg-halo px-8 py-4 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
           >
             Créer ma carte
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
@@ -446,13 +446,13 @@ export default function Home() {
       </section>
 
       {/* ---------------- FOOTER ---------------- */}
-      <footer className="border-t border-onyx-line px-6 py-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-galet sm:flex-row">
+      <footer className="border-t border-line-warm px-6 py-12">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-galet-ink sm:flex-row">
           <HaloWordmark className="text-base" />
           <p>© 2026 HALO — Cartes de fidélité numériques · Genève</p>
           <div className="flex gap-6">
-            <Link href="/login" className="transition-colors hover:text-calcaire">Connexion</Link>
-            <a href="#tarifs" className="transition-colors hover:text-calcaire">Tarifs</a>
+            <Link href="/login" className="transition-colors hover:text-onyx">Connexion</Link>
+            <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
           </div>
         </div>
       </footer>
