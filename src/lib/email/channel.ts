@@ -26,13 +26,15 @@ export const EmailChannel: NotificationChannel = {
 
     const merchantId = rows.find((r) => r.merchant_id)?.merchant_id;
     let merchantName = "Votre commerçant";
+    let replyTo: string | undefined;
     if (merchantId) {
       const { data: m } = await supabaseAdmin
         .from("merchants")
-        .select("shop_name")
+        .select("shop_name, email")
         .eq("id", merchantId)
         .single();
       if (m?.shop_name) merchantName = m.shop_name as string;
+      if (m?.email) replyTo = m.email as string; // modèle B : les réponses arrivent au commerçant
     }
 
     const rendered = notificationEmail({ title: message.title, body: message.body, merchantName });
@@ -44,7 +46,8 @@ export const EmailChannel: NotificationChannel = {
 
     let pushed = 0;
     for (const to of targets) {
-      if (await sendEmail({ to, ...rendered })) pushed++;
+      // fromName = nom de la boutique affiché ; replyTo = email du commerçant.
+      if (await sendEmail({ to, ...rendered, fromName: merchantName, replyTo })) pushed++;
     }
     return { pushed };
   },

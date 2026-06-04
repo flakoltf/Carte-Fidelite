@@ -2,12 +2,17 @@
 // Sûr en dev : si RESEND_API_KEY est absent, l'envoi est un no-op (warn une fois)
 // au lieu de planter — on ne bloque jamais le flux principal (scan, campagne…).
 import { Resend } from "resend";
+import { formatSender } from "./sender";
 
 export interface OutgoingEmail {
   to: string;
   subject: string;
   html: string;
   text: string;
+  /** Nom affiché comme expéditeur (ex. nom de la boutique). L'adresse reste EMAIL_FROM. */
+  fromName?: string;
+  /** Adresse « Répondre à » (ex. email du commerçant). */
+  replyTo?: string;
 }
 
 let warned = false;
@@ -36,11 +41,12 @@ export async function sendEmail(email: OutgoingEmail): Promise<boolean> {
   }
   try {
     const { error } = await resend.emails.send({
-      from,
+      from: email.fromName ? formatSender(email.fromName, from) : from,
       to: email.to,
       subject: email.subject,
       html: email.html,
       text: email.text,
+      ...(email.replyTo ? { replyTo: email.replyTo } : {}),
     });
     if (error) {
       console.error("[email] échec Resend:", error.message);
