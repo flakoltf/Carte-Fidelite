@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
 import EnrollmentQR from "../EnrollmentQR";
+import ManageAsButton from "./ManageAsButton";
+import ManagementModeToggle from "./ManagementModeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export default async function AdminMerchants() {
 
   const { data: merchants } = await supabase
     .from("merchants")
-    .select("id, shop_name, email, enrollment_token, primary_color, created_at")
+    .select("id, shop_name, email, enrollment_token, primary_color, created_at, managed_by_concierge")
     .eq("role", "merchant")
     .order("created_at", { ascending: false });
 
@@ -78,6 +80,11 @@ export default async function AdminMerchants() {
                   <span className="text-2xl font-bold text-onyx">{countBy(scans, m.id)}</span>
                   <span className="text-galet-ink ml-1.5">scans</span>
                 </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mb-6">
+                <ManagementModeToggle merchantId={m.id} initial={m.managed_by_concierge ?? false} />
+                <ManageAsButton merchantId={m.id} />
               </div>
 
               <div className="border-t border-line-warm pt-6">
