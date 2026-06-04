@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { timingSafeEqualStr } from "@/lib/timingSafe";
 import { fetchAudienceCardIds } from "@/lib/segments/fetch";
 import { deliverToCards } from "@/lib/notifications/deliver";
 import { isCampaignDue } from "@/lib/campaigns/due";
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`)
+  // Comparaison en temps constant ; fail-closed si CRON_SECRET absent.
+  if (!secret || !timingSafeEqualStr(req.headers.get("authorization"), `Bearer ${secret}`))
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const now = new Date();

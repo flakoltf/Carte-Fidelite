@@ -2,12 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { WIDGET_KEYS, type RangeKey, type WidgetKey } from "@/lib/analytics/types";
 import { fetchWidget } from "@/lib/analytics";
 import { currentMerchantId } from "@/lib/analytics/merchant";
+import { rateLimit } from "@/lib/rateLimit";
 
 const RANGES: RangeKey[] = ["7j", "30j", "12m"];
 
 export async function GET(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const rl = await rateLimit(`analytics:${merchantId}`, 120, 60_000);
+  if (!rl.success) return NextResponse.json({ error: "Trop de requêtes." }, { status: 429 });
 
   const widget = req.nextUrl.searchParams.get("widget") as WidgetKey | null;
   const range = (req.nextUrl.searchParams.get("range") ?? "30j") as RangeKey;

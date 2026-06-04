@@ -13,7 +13,11 @@ if (!url || !key) {
 }
 
 const EMAIL = "admin-demo@walletcard.app";
-const PASSWORD = process.env.DEMO_ADMIN_PASSWORD || "admin-demo-walletcard-2026";
+const PASSWORD = process.env.DEMO_ADMIN_PASSWORD;
+if (!PASSWORD) {
+  console.error("DEMO_ADMIN_PASSWORD manquant. Usage : DEMO_ADMIN_PASSWORD='...' node scripts/reset-demo-admin-password.mjs");
+  process.exit(1);
+}
 
 const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 

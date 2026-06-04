@@ -3,11 +3,14 @@ import { createClient } from "@/utils/supabase/server";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { resolveRange } from "@/lib/analytics/range";
 import { toCsv } from "@/lib/analytics/csv";
+import { rateLimit } from "@/lib/rateLimit";
 import type { RangeKey } from "@/lib/analytics/types";
 
 export async function GET(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return new Response("unauthorized", { status: 401 });
+  const rl = await rateLimit(`analytics-csv:${merchantId}`, 20, 60_000);
+  if (!rl.success) return new Response("rate limited", { status: 429 });
   const type = req.nextUrl.searchParams.get("type") ?? "clients";
   if (type !== "clients" && type !== "visites") return new Response("bad type", { status: 400 });
   const range = (req.nextUrl.searchParams.get("range") ?? "30j") as RangeKey;

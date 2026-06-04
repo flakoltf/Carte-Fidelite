@@ -11,8 +11,7 @@ export async function POST(req: Request) {
     // --- SÉCURITÉ : Authentification + Rate limiting ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Session expirée ou non trouvée. Veuillez vous reconnecter." }, { status: 401 });
@@ -113,7 +112,8 @@ export async function POST(req: Request) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error("Erreur Google Wallet:", error);
+    // error.message uniquement : l'objet erreur peut contenir des fragments de clé privée.
+    console.error("Erreur Google Wallet:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "Erreur lors de la génération du lien Google Wallet" }, { status: 500 });
   }
 }

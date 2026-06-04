@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet, renderToBuffer } from "@react-p
 import React from "react";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { fetchKpis } from "@/lib/analytics/kpis";
+import { rateLimit } from "@/lib/rateLimit";
 import type { RangeKey } from "@/lib/analytics/types";
 
 export const runtime = "nodejs";
@@ -10,6 +11,9 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return new Response("unauthorized", { status: 401 });
+  // Rendu PDF coûteux → quota strict.
+  const rl = await rateLimit(`analytics-pdf:${merchantId}`, 10, 60_000);
+  if (!rl.success) return new Response("rate limited", { status: 429 });
   const range = (req.nextUrl.searchParams.get("range") ?? "30j") as RangeKey;
   if (!(["7j", "30j", "12m"] as RangeKey[]).includes(range)) return new Response("bad range", { status: 400 });
   const kpis = await fetchKpis(merchantId, range);

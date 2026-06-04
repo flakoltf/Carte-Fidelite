@@ -14,8 +14,7 @@ export async function POST(req: Request) {
     // --- SÉCURITÉ : Authentification ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
     // Rate limiting: 200 scans par minute par merchant

@@ -12,7 +12,11 @@ if (!url || !key) { console.error("env Supabase manquant dans .env.local"); proc
 const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 
 const EMAIL = (process.env.DEMO_EMAIL || "demo@walletcard.app").toLowerCase();
-const PASSWORD = process.env.DEMO_PASSWORD || "demo-walletcard-2026";
+const PASSWORD = process.env.DEMO_PASSWORD;
+if (!PASSWORD) {
+  console.error("DEMO_PASSWORD manquant. Usage : DEMO_PASSWORD='...' node scripts/seed-demo-merchant.mjs");
+  process.exit(1);
+}
 
 async function findUserByEmail(target) {
   for (let page = 1; ; page++) {

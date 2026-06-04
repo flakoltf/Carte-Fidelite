@@ -43,7 +43,7 @@ Cette table est utilisée dans plusieurs tâches. Elle est la source de vérité
 
 - [ ] **Step 1: Capturer les écrans « avant »**
 
-Démarrer le serveur si besoin (`npm run dev`), puis capturer login + dashboard pour comparaison ultérieure (réutiliser le venv Playwright `/tmp/pw-venv`). Sauver dans `/tmp/cf-shots/before-login.png` et `/tmp/cf-shots/before-dashboard.png` (login démo `demo@walletcard.app` / `demo-walletcard-2026`).
+Démarrer le serveur si besoin (`npm run dev`), puis capturer login + dashboard pour comparaison ultérieure (réutiliser le venv Playwright `/tmp/pw-venv`). Sauver dans `/tmp/cf-shots/before-login.png` et `/tmp/cf-shots/before-dashboard.png` (login démo `demo@walletcard.app` / `‹DEMO_PASSWORD›`).
 
 - [ ] **Step 2: Ajouter les 3 tokens light**
 
