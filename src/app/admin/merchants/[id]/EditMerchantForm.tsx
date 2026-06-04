@@ -186,7 +186,7 @@ export default function EditMerchantForm({ merchant }: Props) {
           <label className="text-sm font-medium text-zinc-400 ml-1">Paliers de visites (séparés par des virgules)</label>
           <input value={milestonesStr} onChange={(e) => setMilestonesStr(e.target.value)}
             placeholder="Ex : 5, 20, 50" className={numInput} />
-          <p className="text-xs text-zinc-500 ml-1">Valeurs strictement croissantes, jusqu'à 10 paliers.</p>
+          <p className="text-xs text-zinc-500 ml-1">Valeurs strictement croissantes, jusqu&apos;à 10 paliers.</p>
         </div>
       )}
 

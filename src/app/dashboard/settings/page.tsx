@@ -27,6 +27,8 @@ export default function Settings() {
 
   useEffect(() => {
     fetchMerchant();
+    // Chargement unique au montage ; le client Supabase est recréé à chaque rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMerchant = async () => {
@@ -225,6 +227,8 @@ export default function Settings() {
                             <div className="text-xl font-bold italic">{shopName || "Ma Boutique"}</div>
                         </div>
                         {logoUrl ? (
+                            // Logo marchand : URL externe dynamique, aperçu 40px — pas d'optimisation next/image nécessaire.
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={logoUrl} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm p-1 border border-white/20" alt="logo" />
                         ) : (
                             <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm" />

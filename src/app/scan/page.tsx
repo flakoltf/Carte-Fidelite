@@ -8,7 +8,7 @@ export default function ScanPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "scanning" | "processing" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const [cardDetails, setCardDetails] = useState<any>(null);
+  const [cardDetails, setCardDetails] = useState<{ stamps_count: number } | null>(null);
   const [goal, setGoal] = useState(10);
   const [rewardReady, setRewardReady] = useState(false);
   const [redeemed, setRedeemed] = useState(false);

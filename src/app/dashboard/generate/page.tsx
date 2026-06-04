@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Wallet, ArrowRight, CheckCircle, Loader2, AlertCircle, Sparkles, Smartphone } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import QRCode from "react-qr-code";
 
 export default function GeneratePage() {
@@ -33,7 +33,7 @@ export default function GeneratePage() {
       } else if (data.error) {
         setError(data.error);
       }
-    } catch (e: any) {
+    } catch {
       setError("Connexion au serveur impossible. Vérifiez votre réseau.");
     }
     setLoading(false);
@@ -47,7 +47,7 @@ export default function GeneratePage() {
             Générer une Carte
             <Sparkles className="w-6 h-6 text-emerald-400" />
         </h1>
-        <p className="text-zinc-500">Créez une nouvelle carte de fidélité numérique pour l'un de vos clients.</p>
+        <p className="text-zinc-500">Créez une nouvelle carte de fidélité numérique pour l&apos;un de vos clients.</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-12 items-start">
@@ -73,7 +73,7 @@ export default function GeneratePage() {
                     </div>
 
                     <div className="p-4 bg-zinc-950/50 border border-zinc-800 rounded-2xl text-xs text-zinc-500 leading-relaxed">
-                        <p>💡 La carte sera automatiquement configurée avec **0 points** et liée à votre boutique. Le client pourra l'ajouter instantanément à son Google Wallet.</p>
+                        <p>💡 La carte sera automatiquement configurée avec **0 points** et liée à votre boutique. Le client pourra l&apos;ajouter instantanément à son Google Wallet.</p>
                     </div>
 
                     {error && (
