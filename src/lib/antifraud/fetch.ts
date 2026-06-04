@@ -22,10 +22,12 @@ export type MerchantFlags = { merchantId: string; shopName: string; flags: Flag[
 
 export async function fetchAllMerchantsWithFlags(): Promise<MerchantFlags[]> {
   const { data: merchants } = await supabaseAdmin.from("merchants").select("id, shop_name").eq("role", "merchant");
-  const results: MerchantFlags[] = [];
-  for (const m of merchants ?? []) {
-    const flags = await fetchMerchantFlags(m.id as string);
-    if (flags.length) results.push({ merchantId: m.id as string, shopName: (m.shop_name as string) ?? "—", flags });
-  }
-  return results;
+  const evaluated = await Promise.all(
+    (merchants ?? []).map(async (m) => ({
+      merchantId: m.id as string,
+      shopName: (m.shop_name as string) ?? "—",
+      flags: await fetchMerchantFlags(m.id as string),
+    })),
+  );
+  return evaluated.filter((e) => e.flags.length > 0);
 }

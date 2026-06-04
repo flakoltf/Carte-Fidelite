@@ -1,4 +1,4 @@
-import { BUSINESS_TYPES } from "./types";
+import { BUSINESS_TYPES, DEFAULT_SCAN_COOLDOWN_SECONDS } from "./types";
 
 export type MerchantConfigInput = {
   stampGoal?: unknown; businessType?: unknown; primaryColor?: unknown; logoUrl?: unknown;
@@ -36,7 +36,7 @@ export function validateMerchantConfig(input: MerchantConfigInput): ValidateResu
     return { ok: false, error: "Visites VIP invalide (≥ 1)." };
   if (!isInt(input.newTenureDays) || input.newTenureDays < 1)
     return { ok: false, error: "Ancienneté « nouveau » invalide (≥ 1)." };
-  const cd = input.scanCooldownSeconds === undefined ? 30 : input.scanCooldownSeconds;
+  const cd = input.scanCooldownSeconds === undefined ? DEFAULT_SCAN_COOLDOWN_SECONDS : input.scanCooldownSeconds;
   if (!isInt(cd) || cd < 0 || cd > 600)
     return { ok: false, error: "Délai mini invalide (0 à 600 s)." };
   return {

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
-import { Store, Users, CreditCard, QrCode, ArrowRight } from "lucide-react";
+import { Store, Users, CreditCard, QrCode, ArrowRight, ShieldAlert } from "lucide-react";
+import { fetchAllMerchantsWithFlags } from "@/lib/antifraud/fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function AdminDashboard() {
     .eq("role", "merchant")
     .order("created_at", { ascending: false })
     .limit(5);
+
+  const flagged = await fetchAllMerchantsWithFlags();
 
   const stats = [
     { name: "Marchands", value: merchants.count || 0, icon: Store, color: "text-amber-400" },
@@ -55,6 +58,25 @@ export default async function AdminDashboard() {
             <div className="text-sm font-medium text-zinc-500">{stat.name}</div>
           </div>
         ))}
+      </div>
+
+      <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
+        <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-amber-400" /> Alertes anti-fraude (7 j)</h2>
+        {flagged.length === 0 ? (
+          <p className="text-emerald-400 text-sm">Aucune alerte. ✅</p>
+        ) : (
+          <div className="space-y-3">
+            {flagged.map((m) => (
+              <Link key={m.merchantId} href={`/admin/merchants/${m.merchantId}`}
+                className="block p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl hover:border-amber-500/40 transition-all">
+                <div className="font-bold text-amber-300">{m.shopName}</div>
+                <div className="text-xs text-zinc-400 mt-1">
+                  {m.flags.map((f) => `${f.label} (${f.count}/${f.threshold} en ${f.windowLabel})`).join(" · ")}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8">
