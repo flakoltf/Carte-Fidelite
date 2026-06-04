@@ -63,12 +63,12 @@ export async function DELETE(
       );
     }
 
-    // Audit AVANT suppression : la FK ON DELETE SET NULL effacera card_id,
-    // donc on capture le card_id ici pour la traçabilité.
+    // Capture des card_ids AVANT suppression (pour l'audit + la purge RGPD).
     const { data: cards } = await supabaseAdmin
       .from("loyalty_cards")
       .select("id")
       .eq("customer_id", id);
+    const cardIds = cards?.map((c) => c.id as string) ?? [];
 
     const meta = extractRequestMeta(req);
     await logAuditEvent({
@@ -77,11 +77,18 @@ export async function DELETE(
       user_id: user.id,
       details: {
         customer_id: id,
-        card_ids: cards?.map((c) => c.id) ?? [],
+        card_ids: cardIds,
         reason: "RGPD_ERASURE",
       },
       ...meta,
     });
+
+    // RGPD : purge des tables rattachées NON couvertes par le CASCADE DB
+    // (wallet_device_registrations et campaign_sends n'ont pas de FK vers loyalty_cards).
+    if (cardIds.length) {
+      await supabaseAdmin.from("wallet_device_registrations").delete().in("serial_number", cardIds);
+      await supabaseAdmin.from("campaign_sends").delete().in("card_id", cardIds);
+    }
 
     // Suppression définitive. CASCADE: customers → loyalty_cards → scan_history.
     const { error: delError } = await supabaseAdmin
