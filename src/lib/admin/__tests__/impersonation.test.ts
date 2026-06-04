@@ -28,6 +28,21 @@ describe("token d'impersonation", () => {
     expect(verifyImpersonationToken(undefined)).toBe(null);
     expect(verifyImpersonationToken("sans-point")).toBe(null);
   });
+
+  it("throw si aucun secret n'est défini (token non forgeable)", () => {
+    const savedImp = process.env.IMPERSONATION_SECRET;
+    const savedQr = process.env.QR_SIGNATURE_SECRET;
+    try {
+      delete process.env.IMPERSONATION_SECRET;
+      delete process.env.QR_SIGNATURE_SECRET;
+      expect(() => signImpersonationToken("x")).toThrow();
+    } finally {
+      if (savedImp === undefined) delete process.env.IMPERSONATION_SECRET;
+      else process.env.IMPERSONATION_SECRET = savedImp;
+      if (savedQr === undefined) delete process.env.QR_SIGNATURE_SECRET;
+      else process.env.QR_SIGNATURE_SECRET = savedQr;
+    }
+  });
 });
 
 describe("resolveEffectiveMerchantId", () => {

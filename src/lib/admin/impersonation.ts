@@ -2,7 +2,9 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 
 function secret(): string {
-  return process.env.IMPERSONATION_SECRET || process.env.QR_SIGNATURE_SECRET || "";
+  const s = process.env.IMPERSONATION_SECRET || process.env.QR_SIGNATURE_SECRET || "";
+  if (!s) throw new Error("IMPERSONATION_SECRET (ou QR_SIGNATURE_SECRET) doit être défini.");
+  return s;
 }
 
 /** "merchantId.signature" — HMAC-SHA256 du merchantId, base64url. */
