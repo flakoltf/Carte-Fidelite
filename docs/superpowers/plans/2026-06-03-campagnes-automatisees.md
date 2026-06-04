@@ -497,7 +497,7 @@ Expected: build OK, 79 tests existants toujours verts (+ 18 nouveaux des Tasks 3
 
 - [ ] **Step 4: Fumée 4a (compte démo)**
 
-Run: `npm run dev` puis se connecter (`demo@walletcard.app` / `demo-walletcard-2026`), onglet Notifications → envoyer « Tous mes clients » → réponse « Envoyé à N… » comme avant ; l'envoi apparaît dans l'historique. Comportement 4a inchangé.
+Run: `npm run dev` puis se connecter (`demo@walletcard.app` / `‹DEMO_PASSWORD›`), onglet Notifications → envoyer « Tous mes clients » → réponse « Envoyé à N… » comme avant ; l'envoi apparaît dans l'historique. Comportement 4a inchangé.
 
 - [ ] **Step 5: Commit**
 

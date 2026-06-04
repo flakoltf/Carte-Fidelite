@@ -831,7 +831,7 @@ Then in the `navItems` array, insert after the `Clients` entry:
     { name: "Segments", icon: Layers, href: "/dashboard/segments" },
 ```
 
-- [ ] **Step 4: Build + fumée** — Run: `npm run build` → OK (route `/dashboard/segments` listée). Puis `npm run dev`, se connecter (`demo@walletcard.app` / `demo-walletcard-2026`), ouvrir l'onglet **Segments** : les cartes affichent des effectifs ; cliquer un groupe charge la liste ; « Exporter CSV » télécharge le fichier.
+- [ ] **Step 4: Build + fumée** — Run: `npm run build` → OK (route `/dashboard/segments` listée). Puis `npm run dev`, se connecter (`demo@walletcard.app` / `‹DEMO_PASSWORD›`), ouvrir l'onglet **Segments** : les cartes affichent des effectifs ; cliquer un groupe charge la liste ; « Exporter CSV » télécharge le fichier.
 
 - [ ] **Step 5: Commit**
 

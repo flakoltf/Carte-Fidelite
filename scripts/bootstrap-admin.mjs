@@ -1,6 +1,6 @@
 // One-off : crée (ou promeut) le compte administrateur de la plateforme.
 // Usage : node scripts/bootstrap-admin.mjs   (lit .env.local)
-// ADMIN_EMAIL surcharge l'email par défaut.
+// ADMIN_EMAIL est REQUIS (email du compte admin à créer/promouvoir) — pas de valeur par défaut.
 import dotenv from "dotenv";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -15,7 +15,11 @@ if (!url || !key) {
 }
 
 const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-const email = (process.env.ADMIN_EMAIL || "thealphawa@gmail.com").toLowerCase();
+if (!process.env.ADMIN_EMAIL) {
+  console.error("ADMIN_EMAIL manquant. Usage : ADMIN_EMAIL='toi@exemple.com' node scripts/bootstrap-admin.mjs");
+  process.exit(1);
+}
+const email = process.env.ADMIN_EMAIL.toLowerCase();
 const tempPassword = crypto.randomBytes(12).toString("base64url");
 
 async function findUserByEmail(target) {
