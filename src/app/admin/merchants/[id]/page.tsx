@@ -51,13 +51,13 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
       <div>
         <Link
           href="/admin/merchants"
-          className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-white mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-galet-ink hover:text-onyx mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Retour aux marchands
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">{m.shop_name}</h1>
-        <p className="text-zinc-500">{m.email || "—"}</p>
+        <h1 className="font-display text-3xl text-onyx tracking-tight">{m.shop_name}</h1>
+        <p className="text-galet-ink">{m.email || "—"}</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -65,7 +65,7 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
           merchant={{
             id: m.id,
             shopName: m.shop_name,
-            primaryColor: m.primary_color || "#10b981",
+            primaryColor: m.primary_color || "#0D6B5E",
             logoUrl: m.logo_url,
             stampGoal: cfg.stampGoal,
             scanCooldownSeconds: cfg.scanCooldownSeconds,
@@ -78,9 +78,9 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
           }}
         />
 
-        <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 h-fit">
-          <h2 className="font-bold mb-1">Lien d&apos;enrôlement</h2>
-          <p className="text-xs text-zinc-500 mb-5">QR à afficher en boutique. Les clients le scannent pour créer leur carte.</p>
+        <div className="bg-surface border border-line-warm rounded-3xl p-6 h-fit shadow-sm">
+          <h2 className="font-bold text-onyx mb-1">Lien d&apos;enrôlement</h2>
+          <p className="text-xs text-galet-ink mb-5">QR à afficher en boutique. Les clients le scannent pour créer leur carte.</p>
           <EnrollmentQR
             url={`${origin}/enroll/${m.enrollment_token}`}
             fileName={`qr-${m.shop_name?.toLowerCase().replace(/\s+/g, "-") || "marchand"}`}

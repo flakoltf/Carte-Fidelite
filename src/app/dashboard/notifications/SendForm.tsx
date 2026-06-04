@@ -42,11 +42,11 @@ export function SendForm() {
   };
 
   return (
-    <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 max-w-xl space-y-4">
+    <div className="bg-surface border border-line-warm shadow-sm rounded-3xl p-6 max-w-xl space-y-4">
       <div className="space-y-1">
-        <label className="text-sm text-zinc-400">Audience</label>
+        <label className="text-sm text-galet-ink">Audience</label>
         <select value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm">
+          className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none">
           {AUDIENCE_KEYS.map((a) => {
             const n = sizeOf(a);
             return <option key={a} value={a}>{audienceLabel(a)}{n !== null ? ` (${n})` : ""}</option>;
@@ -54,14 +54,14 @@ export function SendForm() {
         </select>
       </div>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre (ex. Offre du week-end)"
-        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm" />
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none" />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3}
-        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm" />
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none" />
       <button onClick={send} disabled={sending || !title.trim() || !body.trim()}
-        className="bg-emerald-500 text-black rounded-xl px-5 py-2.5 font-bold disabled:opacity-50">
+        className="bg-halo text-white rounded-xl px-5 py-2.5 font-bold hover:bg-halo-600 disabled:opacity-50">
         {sending ? "Envoi…" : "Envoyer à mes clients"}
       </button>
-      {result && <p className="text-sm text-zinc-300">{result}</p>}
+      {result && <p className="text-sm text-galet-ink">{result}</p>}
     </div>
   );
 }

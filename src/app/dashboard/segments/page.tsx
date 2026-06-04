@@ -13,8 +13,8 @@ export default async function SegmentsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Segments</h1>
-        <p className="text-zinc-500">Votre clientèle, triée automatiquement. {summary.total} client(s).</p>
+        <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Segments</h1>
+        <p className="text-galet-ink">Votre clientèle, triée automatiquement. {summary.total} client(s).</p>
       </div>
       <SegmentsView summary={summary} />
     </div>

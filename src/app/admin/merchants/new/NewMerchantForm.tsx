@@ -49,35 +49,35 @@ export default function NewMerchantForm() {
 
   if (result) {
     return (
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 space-y-6">
-        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+      <div className="bg-surface border border-line-warm rounded-3xl shadow-sm p-8 space-y-6">
+        <div className="flex items-center gap-2 text-halo font-bold">
           <Check className="w-5 h-5" />
           Marchand créé
         </div>
-        <p className="text-sm text-zinc-400">
-          Transmettez ces identifiants au marchand. <strong className="text-amber-400">Le mot de passe ne sera plus affiché</strong> ensuite.
+        <p className="text-sm text-galet-ink">
+          Transmettez ces identifiants au marchand. <strong className="text-halo">Le mot de passe ne sera plus affiché</strong> ensuite.
         </p>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 space-y-2 font-mono text-sm">
+        <div className="bg-calcaire border border-line-warm rounded-2xl p-4 space-y-2 font-mono text-sm text-onyx">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-zinc-500" />
+            <Mail className="w-4 h-4 text-galet" />
             {result.email}
           </div>
           <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-zinc-500" />
+            <KeyRound className="w-4 h-4 text-galet" />
             {result.tempPassword}
           </div>
         </div>
         <div className="flex gap-3">
           <button
             onClick={copyCreds}
-            className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 px-4 py-3 rounded-2xl font-medium transition-colors"
+            className="flex items-center gap-2 bg-surface border border-line-warm hover:bg-calcaire text-galet-ink px-4 py-3 rounded-2xl font-medium transition-colors"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-halo" /> : <Copy className="w-4 h-4" />}
             {copied ? "Copié" : "Copier"}
           </button>
           <Link
             href="/admin/merchants"
-            className="flex items-center bg-amber-500 text-black font-bold px-5 py-3 rounded-2xl hover:bg-amber-400 transition-all"
+            className="flex items-center bg-halo text-white font-bold px-5 py-3 rounded-2xl hover:bg-halo-600 transition-all"
           >
             Terminer
           </Link>
@@ -87,26 +87,26 @@ export default function NewMerchantForm() {
   }
 
   return (
-    <form onSubmit={submit} className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 space-y-5">
+    <form onSubmit={submit} className="bg-surface border border-line-warm rounded-3xl shadow-sm p-8 space-y-5">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-400 ml-1">Nom de la boutique</label>
+        <label className="text-sm font-medium text-galet-ink ml-1">Nom de la boutique</label>
         <div className="relative group">
-          <Store className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-amber-400 transition-colors" />
+          <Store className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
           <input
             required
             value={shopName}
             onChange={(e) => setShopName(e.target.value)}
             maxLength={100}
             placeholder="Ex: Boulangerie du Coin"
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all placeholder:text-zinc-700"
+            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:border-halo outline-none transition-all placeholder:text-galet"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-400 ml-1">Email du marchand</label>
+        <label className="text-sm font-medium text-galet-ink ml-1">Email du marchand</label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-3.5 w-5 h-5 text-zinc-500 group-focus-within:text-amber-400 transition-colors" />
+          <Mail className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
           <input
             required
             type="email"
@@ -114,26 +114,26 @@ export default function NewMerchantForm() {
             onChange={(e) => setEmail(e.target.value)}
             maxLength={254}
             placeholder="marchand@boutique.com"
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3.5 pl-12 pr-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all placeholder:text-zinc-700"
+            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:border-halo outline-none transition-all placeholder:text-galet"
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-zinc-400 ml-1">Couleur de marque</label>
+        <label className="text-sm font-medium text-galet-ink ml-1">Couleur de marque</label>
         <div className="flex items-center gap-3">
           <input
             type="color"
             value={primaryColor}
             onChange={(e) => setPrimaryColor(e.target.value)}
-            className="w-12 h-12 rounded-xl bg-transparent border border-zinc-800 cursor-pointer"
+            className="w-12 h-12 rounded-xl bg-transparent border border-line-warm cursor-pointer"
           />
-          <span className="font-mono text-sm text-zinc-400">{primaryColor}</span>
+          <span className="font-mono text-sm text-galet-ink">{primaryColor}</span>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-4 py-3 text-sm">
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-600 rounded-2xl px-4 py-3 text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />
           {error}
         </div>
@@ -142,7 +142,7 @@ export default function NewMerchantForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-amber-500 text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-amber-400 transition-all disabled:opacity-50"
+        className="w-full bg-halo text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-halo-600 transition-all disabled:opacity-50"
       >
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Créer le marchand"}
       </button>

@@ -45,26 +45,26 @@ export default function EnrollmentQR({ url, fileName = "qr-enrolement" }: { url:
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div ref={wrapRef} className="bg-white p-3 rounded-xl">
+      <div ref={wrapRef} className="bg-white p-3 rounded-xl border border-line-warm">
         <QRCode value={url} size={140} />
       </div>
       <div className="flex gap-2">
         <button
           onClick={copy}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink transition-colors"
         >
-          {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+          {copied ? <Check className="w-4 h-4 text-halo" /> : <Copy className="w-4 h-4" />}
           {copied ? "Copié" : "Copier le lien"}
         </button>
         <button
           onClick={downloadPng}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink transition-colors"
         >
           <Download className="w-4 h-4" />
           QR PNG
         </button>
       </div>
-      <div className="text-[11px] text-zinc-500 break-all text-center max-w-[220px]">{url}</div>
+      <div className="text-[11px] text-galet break-all text-center max-w-[220px]">{url}</div>
     </div>
   );
 }
