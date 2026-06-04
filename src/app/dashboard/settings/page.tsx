@@ -32,12 +32,10 @@ export default function Settings() {
   }, []);
 
   const fetchMerchant = async () => {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    const { data } = await supabaseClient
-      .from("merchants")
-      .select("*")
-      .eq("user_id", user?.id)
-      .single();
+    // Source du marchand : endpoint serveur qui respecte l'impersonation
+    // (admin concierge), au lieu de résoudre via le client navigateur.
+    const res = await fetch("/api/merchant/me");
+    const { merchant: data } = await res.json();
 
     if (data) {
       setMerchant(data);
@@ -73,6 +71,11 @@ export default function Settings() {
     setSaving(true);
     setSuccess(false);
 
+    // TODO(concierge): écriture via le client navigateur. La RLS de `merchants`
+    // est `USING (auth.uid() = user_id)` (own-row), donc en mode impersonation
+    // (admin agissant pour un autre marchand) cette mise à jour sera refusée.
+    // Le cas marchand normal fonctionne ; pour rendre l'écriture impersonation-safe
+    // il faudra passer par un endpoint serveur utilisant `currentMerchantId()`.
     const { error } = await supabaseClient
       .from("merchants")
       .update({
