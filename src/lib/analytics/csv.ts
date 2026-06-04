@@ -1,5 +1,10 @@
 function cell(v: string | number): string {
-  const s = String(v);
+  // Les nombres ne sont jamais des formules (évite de casser ex. les négatifs).
+  if (typeof v === "number") return String(v);
+  // Anti formula-injection : une chaîne commençant par = + - @ (ou tab/CR) serait
+  // interprétée comme une formule par Excel/LibreOffice → on la préfixe d'une apostrophe.
+  let s = v;
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
