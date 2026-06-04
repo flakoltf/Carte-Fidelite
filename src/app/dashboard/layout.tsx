@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSessionRole } from "@/lib/adminAuth";
 import { readImpersonationCookie } from "@/lib/admin/impersonation";
 import DashboardShell from "./DashboardShell";
+import ImpersonationBanner from "./ImpersonationBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -13,5 +14,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const impersonating = await readImpersonationCookie();
     if (!impersonating) redirect("/admin"); // admin sans impersonation → back-office
   }
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <>
+      <ImpersonationBanner />
+      <DashboardShell>{children}</DashboardShell>
+    </>
+  );
 }
