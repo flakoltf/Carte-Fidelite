@@ -7,12 +7,16 @@
 // Sans ces variables, sendEmail() ne fait RIEN (retourne { sent: false, reason })
 // et n'échoue jamais — aucune dépendance npm, appel direct à l'API REST Resend.
 
+import { formatSender } from "./sender";
+
 export type EmailInput = {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  /** Modèle B : nom affiché comme expéditeur (ex. boutique). L'adresse reste EMAIL_FROM. */
+  fromName?: string;
 };
 
 export type EmailResult =
@@ -41,7 +45,7 @@ export async function sendEmail(input: EmailInput): Promise<EmailResult> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from,
+        from: input.fromName ? formatSender(input.fromName, from) : from,
         to: Array.isArray(input.to) ? input.to : [input.to],
         subject: input.subject,
         html: input.html,

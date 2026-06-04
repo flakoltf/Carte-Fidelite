@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendPush } from "./apns";
 import { EmailChannel } from "@/lib/email/channel";
-import { emailEnabled } from "@/lib/email/resend";
+import { isEmailConfigured } from "@/lib/email/send";
 
 export interface NotificationChannel {
   notify(cardIds: string[], message?: { title: string; body: string }): Promise<{ pushed: number }>;
@@ -36,6 +36,6 @@ export function getChannels(): NotificationChannel[] {
   const channels: NotificationChannel[] = [AppleChannel];
   if (process.env.GOOGLE_PUSH_ENABLED === "true") channels.push(GoogleChannel);
   // Canal email : actif dès que Resend est configuré (touche les clients sans Wallet).
-  if (emailEnabled()) channels.push(EmailChannel);
+  if (isEmailConfigured()) channels.push(EmailChannel);
   return channels;
 }

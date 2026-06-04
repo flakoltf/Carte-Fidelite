@@ -5,14 +5,14 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { NotificationChannel } from "@/lib/wallet/channel";
 import { notificationEmail } from "./templates";
-import { sendEmail, emailEnabled } from "./resend";
+import { sendEmail, isEmailConfigured } from "./send";
 
 // Garde-fou : on n'envoie pas plus de MAX_EMAILS par lot (anti-runaway).
 const MAX_EMAILS = 500;
 
 export const EmailChannel: NotificationChannel = {
   async notify(cardIds, message) {
-    if (!emailEnabled() || !message || !cardIds.length) return { pushed: 0 };
+    if (!isEmailConfigured() || !message || !cardIds.length) return { pushed: 0 };
 
     const { data: cards } = await supabaseAdmin
       .from("loyalty_cards")
@@ -47,7 +47,8 @@ export const EmailChannel: NotificationChannel = {
     let pushed = 0;
     for (const to of targets) {
       // fromName = nom de la boutique affiché ; replyTo = email du commerçant.
-      if (await sendEmail({ to, ...rendered, fromName: merchantName, replyTo })) pushed++;
+      const r = await sendEmail({ to, ...rendered, fromName: merchantName, replyTo });
+      if (r.sent) pushed++;
     }
     return { pushed };
   },

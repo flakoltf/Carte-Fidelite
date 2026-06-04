@@ -4,34 +4,37 @@ Statut au 2026-06-04. Ces deux chantiers sont **préparés mais inertes** tant q
 variables d'environnement ne sont pas fournies. Une fois que tu me donnes les clés,
 l'activation est rapide.
 
-## 1. Email transactionnel (Resend) — ✅ code prêt, inerte
+## 1. Email transactionnel (Resend) — ✅ code prêt ET branché, inerte sans clé
 
-- **Code en place** : `src/lib/email/send.ts` (`sendEmail()` + `isEmailConfigured()`).
+- **Transport** : `src/lib/email/send.ts` (`sendEmail()` + `isEmailConfigured()`).
   Aucune dépendance npm (appel direct à l'API REST Resend via `fetch`). Sans clé,
-  `sendEmail()` ne fait **rien** et n'échoue jamais (no-op). Testé (`src/lib/email/__tests__`).
+  `sendEmail()` ne fait **rien** et n'échoue jamais (no-op). Testé.
+- **Branché** : `src/lib/email/channel.ts` (`EmailChannel`) implémente la même interface
+  que le push Wallet et est ajouté dans `getChannels()`. Du coup **toutes** les notifications
+  (envois manuels + cron campagnes) partent **aussi par email** aux clients qui ont un email —
+  y compris ceux **sans** carte Apple/Google Wallet. Plus besoin de décider « quels emails » :
+  le canal suit déjà le système de notifications existant.
+- **Modèle d'expéditeur B** : l'email affiche le **nom de la boutique** (`shop_name`) ;
+  l'adresse technique reste `EMAIL_FROM` ; le « Répondre à » = email du commerçant
+  (`merchants.email`). Logique dans `src/lib/email/sender.ts` (`formatSender`, testé).
 - **À fournir** (dans Vercel → Settings → Environment Variables, + `.env.local` en local) :
   - `RESEND_API_KEY` — créer sur https://resend.com/api-keys
-  - `EMAIL_FROM` — expéditeur **sur un domaine vérifié** dans Resend, ex. `HALO <bonjour@tondomaine.ch>`
+  - `EMAIL_FROM` — adresse plateforme **sur un domaine vérifié** dans Resend, ex. `HALO <bonjour@tondomaine.ch>`
+    (le nom affiché sera de toute façon remplacé par celui de chaque boutique).
   - (Resend exige de **vérifier ton domaine** d'envoi : ajout d'enregistrements DNS.)
-- **Reste à décider avec toi (produit)** : QUELS emails envoyer ?
-  Candidats naturels : (a) email de bienvenue au client à l'enrôlement ; (b) reçu après
-  un encaissement de récompense ; (c) identifiants au marchand à la création (aujourd'hui
-  affichés à l'écran). Dis-moi le(s)quel(s) et je câble `sendEmail()` au bon endroit.
 
-## 2. Surveillance des erreurs (Sentry) — ⏳ à installer avec toi
+## 2. Surveillance des erreurs (Sentry) — ✅ scaffoldé, build vérifié, inerte sans DSN
 
-Contrairement à l'email, Sentry pour Next.js nécessite **le SDK `@sentry/nextjs`** (ajout
-de dépendance + fichiers de config `instrumentation.ts` / `sentry.*.config.ts` + wrap de
-`next.config`). C'est pourquoi je préfère le faire **quand tu as le compte**, pour vérifier
-le build de bout en bout plutôt que de laisser un demi-branchement fragile.
-
-- **À fournir** :
+- **En place** : `@sentry/nextjs` v10 + `src/instrumentation.ts` / `instrumentation-client.ts`
+  + `sentry.server.config.ts` / `sentry.edge.config.ts` + `next.config` enveloppé dans
+  `withSentryConfig`. **Init gardée par env** : sans DSN, `enabled:false` → Sentry est un
+  no-op complet (ne casse ni le dev, ni la CI, ni le build — **build de prod vérifié vert**).
+- **Nettoyage PII** : toutes les erreurs passent par `src/lib/monitoring/scrub.ts` (`beforeSend`) :
+  en-têtes `Authorization`/`Cookie` retirés, emails/noms masqués (réutilise `redactPII`). Testé.
+- **À fournir** pour l'activer :
   - `NEXT_PUBLIC_SENTRY_DSN` (et/ou `SENTRY_DSN`) — depuis ton projet Sentry (https://sentry.io)
   - `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` — pour l'upload des source maps au build
     (optionnel mais recommandé pour des stack traces lisibles).
-- **Ce que je ferai à ce moment** : `npm i @sentry/nextjs`, config init garde par env
-  (inerte si DSN absent → ne casse ni le dev ni la CI), capture serveur + client, puis build
-  vert vérifié. ~30 min.
 
 ## Rappel — autres points qui dépendent de toi
 - **Déploiement prod** : voir reco séparée (la prod est gelée sur un vieux déploiement manuel ;
