@@ -115,7 +115,8 @@ export async function POST(req: Request) {
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error("Erreur Google Wallet:", error);
+    // error.message uniquement : l'objet erreur peut contenir des fragments de clé privée.
+    console.error("Erreur Google Wallet:", error instanceof Error ? error.message : "unknown");
     return NextResponse.json({ error: "Erreur lors de la génération du lien Google Wallet" }, { status: 500 });
   }
 }

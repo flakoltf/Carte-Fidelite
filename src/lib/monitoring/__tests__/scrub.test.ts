@@ -29,4 +29,23 @@ describe("scrubSentryEvent", () => {
     expect(scrubSentryEvent(null)).toBe(null);
     expect(scrubSentryEvent({})).toEqual({});
   });
+
+  it("masque les emails dans event.message (texte libre)", () => {
+    const e = { message: "échec pour john@example.com au login" };
+    expect(scrubSentryEvent(e).message).toBe("échec pour j***@e***.com au login");
+  });
+
+  it("masque les emails dans les valeurs d'exception", () => {
+    const e = { exception: { values: [{ type: "Error", value: "no row for jane@acme.io" }] } };
+    const out = scrubSentryEvent(e);
+    expect(out.exception.values[0].value).toBe("no row for j***@a***.io");
+    expect(e.exception.values[0].value).toBe("no row for jane@acme.io"); // origine intacte
+  });
+
+  it("masque les emails dans les breadcrumbs (message + data)", () => {
+    const e = { breadcrumbs: [{ message: "user bob@x.com clicked", data: { email: "bob@x.com" } }] };
+    const out = scrubSentryEvent(e);
+    expect(out.breadcrumbs[0].message).toBe("user b***@x***.com clicked");
+    expect(out.breadcrumbs[0].data).toEqual({ email: "b***@x***.com" });
+  });
 });
