@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { createClient } from "@/utils/supabase/client";
 import { SecuritySection } from "./SecuritySection";
 
 export default function Settings() {
@@ -21,9 +20,6 @@ export default function Settings() {
   const [addrMsg, setAddrMsg] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
-
-  // Utilisation du client SSR Browser
-  const supabaseClient = createClient();
 
   useEffect(() => {
     fetchMerchant();
@@ -71,21 +67,19 @@ export default function Settings() {
     setSaving(true);
     setSuccess(false);
 
-    // TODO(concierge): écriture via le client navigateur. La RLS de `merchants`
-    // est `USING (auth.uid() = user_id)` (own-row), donc en mode impersonation
-    // (admin agissant pour un autre marchand) cette mise à jour sera refusée.
-    // Le cas marchand normal fonctionne ; pour rendre l'écriture impersonation-safe
-    // il faudra passer par un endpoint serveur utilisant `currentMerchantId()`.
-    const { error } = await supabaseClient
-      .from("merchants")
-      .update({
+    // Écriture via endpoint serveur (impersonation-safe : utilise currentMerchantId()
+    // côté serveur via supabaseAdmin, contourne la RLS own-row de `merchants`).
+    const res = await fetch("/api/merchant/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         shop_name: shopName,
         primary_color: primaryColor,
-        logo_url: logoUrl
-      })
-      .eq("id", merchant.id);
+        logo_url: logoUrl,
+      }),
+    });
 
-    if (!error) {
+    if (res.ok) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     }

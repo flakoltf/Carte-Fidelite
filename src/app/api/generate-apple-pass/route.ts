@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { currentMerchantId } from "@/lib/analytics/merchant";
 import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
@@ -38,11 +39,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "customerName invalide (2-100 caractères)" }, { status: 400 });
     }
 
-    // --- SÉCURITÉ : Récupérer le marchand lié à cet utilisateur (+ branding) ---
+    // --- SÉCURITÉ : Récupérer le marchand effectif (respecte l'impersonation) + branding ---
+    const merchantId = await currentMerchantId();
+
+    if (!merchantId) {
+      return NextResponse.json({ error: "Profil marchand manquant pour cet utilisateur" }, { status: 400 });
+    }
+
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
       .select("id, shop_name, primary_color")
-      .eq("user_id", user.id)
+      .eq("id", merchantId)
       .maybeSingle();
 
     if (merchError || !merchant) {
