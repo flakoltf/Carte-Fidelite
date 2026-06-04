@@ -9,6 +9,34 @@ import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 
+type AtomicScan = { status: "incremented" | "cooldown" | "full" | "notfound"; newCount: number };
+
+// Incrément ATOMIQUE via la fonction Postgres scan_increment (verrou de ligne → pas de
+// race ni de double-comptage). Fallback NON atomique tant que la migration
+// 20260604_scan_atomic_increment.sql n'est pas appliquée (à retirer ensuite).
+async function atomicScan(cardId: string, cap: number, cooldownSeconds: number): Promise<AtomicScan> {
+  const { data, error } = await supabaseAdmin.rpc("scan_increment", {
+    p_card_id: cardId, p_cap: cap, p_cooldown_seconds: cooldownSeconds,
+  });
+  if (!error && Array.isArray(data) && data[0]) {
+    const row = data[0] as { new_count: number; status: AtomicScan["status"] };
+    return { status: row.status, newCount: row.new_count };
+  }
+  if (error && !/scan_increment|function|does not exist|PGRST202|schema cache/i.test(error.message || "")) {
+    throw error; // vraie erreur DB (pas « fonction absente »)
+  }
+  console.warn("[scan] RPC scan_increment indisponible — fallback NON atomique (appliquez la migration).");
+  const { data: c } = await supabaseAdmin
+    .from("loyalty_cards").select("stamps_count, last_scan").eq("id", cardId).single();
+  if (!c) return { status: "notfound", newCount: 0 };
+  if (withinCooldown(c.last_scan, new Date(), cooldownSeconds)) return { status: "cooldown", newCount: c.stamps_count };
+  if (cap > 0 && c.stamps_count >= cap) return { status: "full", newCount: c.stamps_count };
+  const next = c.stamps_count + 1;
+  await supabaseAdmin.from("loyalty_cards")
+    .update({ stamps_count: next, last_scan: new Date().toISOString() }).eq("id", cardId);
+  return { status: "incremented", newCount: next };
+}
+
 export async function POST(req: Request) {
   try {
     // --- SÉCURITÉ : Authentification ---
@@ -56,32 +84,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cette carte appartient à un autre établissement" }, { status: 403 });
     }
 
-    // 2. Config marchand + anti-spam (délai mini entre 2 tampons sur la même carte)
+    // 2. Config marchand + incrément ATOMIQUE (cooldown + plafond appliqués sous verrou DB).
     const cfg = await fetchMerchantConfig(merchant.id);
-    if (withinCooldown(card.last_scan, new Date(), cfg.scanCooldownSeconds)) {
+    const program = resolveLoyaltyProgram(merchant);
+    const cap = program.type === "stamp_card" ? program.config.goal : 0; // 0 = illimité (visit/tiered)
+
+    const atomic = await atomicScan(actualCardId, cap, cfg.scanCooldownSeconds);
+
+    if (atomic.status === "cooldown") {
       return NextResponse.json(
         { error: "Carte déjà scannée à l'instant. Patientez quelques secondes.", cooldown: true },
         { status: 429 }
       );
     }
-    const program = resolveLoyaltyProgram(merchant);
-    const { newCount, rewardReady, added, events } = applyScan(program, card.stamps_count);
-
     // stamp_card déjà pleine → aucun tampon ajouté : on propose juste d'encaisser.
-    // (On ne met PAS en cache d'idempotence : aucun changement d'état.)
-    if (!added) {
+    if (atomic.status === "full") {
       return NextResponse.json({
         success: true, card, rewardReady: true, rewardUnlocked: true, added: false,
         stampGoal: cfg.stampGoal, loyaltyType: program.type, events: [],
       });
     }
+    if (atomic.status === "notfound") {
+      return NextResponse.json({ error: "Carte invalide ou introuvable" }, { status: 404 });
+    }
 
-    // 3. Incrémenter
-    const { data: updatedCard, error: updateError } = await supabaseAdmin
-      .from("loyalty_cards")
-      .update({ stamps_count: newCount, last_scan: new Date().toISOString() })
-      .eq("id", actualCardId).select("*, customers(*)").single();
-    if (updateError) throw updateError;
+    // status === "incremented" : la DB a déjà posé stamps_count = atomic.newCount.
+    const newCount = atomic.newCount;
+    // events/rewardReady de CETTE transition (fonction pure, ne touche pas la BDD).
+    const { rewardReady, events } = applyScan(program, newCount - 1);
+
+    // Relire la carte à jour pour la réponse.
+    const { data: updatedCard } = await supabaseAdmin
+      .from("loyalty_cards").select("*, customers(*)").eq("id", actualCardId).single();
 
     // 4. Historique du scan
     await supabaseAdmin.from("scan_history")
