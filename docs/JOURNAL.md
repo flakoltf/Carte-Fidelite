@@ -28,6 +28,7 @@
 - 🧠 Mis en place ce **système de mémoire multi-machine** : ce journal + hook
   `SessionStart` cross-platform + section §11 dans `CLAUDE.md`.
 - 🔀 Travail sur la branche `claude/serene-bell-BWIJn` → **PR #2** (brouillon).
+- 🤖 Rituel de session inscrit dans `CLAUDE.md` §11 : résumé auto au début, MAJ du journal + commit/push à la fin.
 
 **Décisions :**
 - Gestionnaire de paquets = **pnpm** (définitif).

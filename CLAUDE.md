@@ -213,3 +213,7 @@ Chaque programme = UNE mécanique. Stockée dans loyalty_programs.config (jsonb)
 **Ne se synchronise pas (à refaire par machine) :** authentification des serveurs MCP (`/mcp`), réglages perso `~/.claude/`. Aucun secret ne va jamais dans git.
 
 **Note :** la 1ʳᵉ fois sur une machine, Claude Code demande d'autoriser le hook du projet — c'est normal, accepte-le.
+
+**Comportement automatique attendu de l'agent (à appliquer sans qu'on le redemande) :**
+- **Au début de chaque session :** lire `docs/JOURNAL.md` + le briefing du hook, puis résumer en quelques lignes l'état du projet et la prochaine étape prévue, et **attendre le feu vert** avant de modifier du code.
+- **En fin de session** (dès que l'utilisateur signale qu'on s'arrête, ou avant tout `push` de fin) **:** ajouter une nouvelle entrée en haut de `docs/JOURNAL.md` (ce qui a été fait, décisions, prochaines étapes), puis `commit` + `push`.
