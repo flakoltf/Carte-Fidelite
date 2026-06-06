@@ -194,3 +194,22 @@ Chaque programme = UNE mécanique. Stockée dans loyalty_programs.config (jsonb)
 8. Tests automatisés + CI GitHub Actions
 9. Déploiement Infomaniak
 10. Onboarding merchant + landing page commerciale
+
+## 11. Mémoire & travail multi-machine
+
+> Objectif : repartir instantanément sur n'importe quelle machine (Mac, Windows) sans tout réexpliquer à l'agent.
+
+**Principe :** tout ce que l'agent doit « se rappeler » vit **dans le dépôt git** (synchronisé entre machines via `pull`/`push`). Les réglages locaux (`~/.claude/`, auth MCP) ne suivent PAS d'une machine à l'autre.
+
+**Les 3 supports de mémoire :**
+1. **`CLAUDE.md`** (ce fichier) — savoir durable : vision, archi, conventions, décisions.
+2. **`docs/JOURNAL.md`** — journal de bord : ce qui a été fait + prochaines étapes, une entrée par session (la plus récente en haut).
+3. **Hook `SessionStart`** (`.claude/hooks/session-context.mjs`, déclaré dans `.claude/settings.json`) — au démarrage de chaque session, injecte automatiquement dans le contexte : branche, 8 derniers commits, fin du journal. Cross-platform (Node pur → Mac/Windows/Linux).
+
+**Routine à chaque session :**
+- **Début :** `git pull` (le hook affiche ensuite « où on en est »).
+- **Fin :** mettre à jour `docs/JOURNAL.md` (fait + TODO) → `commit` → `push`.
+
+**Ne se synchronise pas (à refaire par machine) :** authentification des serveurs MCP (`/mcp`), réglages perso `~/.claude/`. Aucun secret ne va jamais dans git.
+
+**Note :** la 1ʳᵉ fois sur une machine, Claude Code demande d'autoriser le hook du projet — c'est normal, accepte-le.
