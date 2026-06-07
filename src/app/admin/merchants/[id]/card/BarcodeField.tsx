@@ -1,6 +1,7 @@
 'use client';
 
 import type { CardBarcode } from '@/lib/cardDesign/types';
+import { BARCODE_FORMATS, BARCODE_FORMAT_LABELS } from '@/lib/cardDesign/types';
 
 interface BarcodeFieldProps {
   value: CardBarcode;
@@ -18,21 +19,23 @@ export default function BarcodeField({ value, onChange }: BarcodeFieldProps) {
 
   return (
     <div className="space-y-3">
-      {/* Type — fixed to QR, shown read-only for clarity */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-medium text-galet-ink w-16 shrink-0">Type</span>
-        <div className="flex items-center gap-2 bg-calcaire border border-line-warm rounded-xl px-3 py-1.5">
-          {/* QR placeholder icon */}
-          <span
-            aria-hidden
-            className="w-5 h-5 rounded-sm"
-            style={{
-              background:
-                'repeating-conic-gradient(#0E0F11 0 25%, transparent 0 50%) center / 5px 5px',
-            }}
-          />
-          <span className="text-sm font-mono text-onyx">QR</span>
-        </div>
+      {/* Format selector */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-galet-ink ml-1">Format</label>
+        <select
+          value={value.type}
+          onChange={(e) => onChange({ ...value, type: e.target.value as CardBarcode['type'] })}
+          className={inputCls}
+        >
+          {BARCODE_FORMATS.map((fmt) => (
+            <option key={fmt} value={fmt}>
+              {BARCODE_FORMAT_LABELS[fmt]}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-galet ml-1">
+          QR &amp; Aztec : carrés, denses. PDF417 : rectangle (style carte d&apos;embarquement). Code 128 : barres 1D.
+        </p>
       </div>
 
       {/* Source selector */}
@@ -64,16 +67,28 @@ export default function BarcodeField({ value, onChange }: BarcodeFieldProps) {
       {/* Custom value input */}
       {value.source === 'custom' && (
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-galet-ink ml-1">Valeur du QR</label>
+          <label className="text-xs font-medium text-galet-ink ml-1">Valeur encodée</label>
           <input
             value={value.value ?? ''}
             onChange={(e) => onChange({ ...value, value: e.target.value })}
-            placeholder="Texte ou URL encodée dans le QR"
+            placeholder="Texte ou URL encodée dans le code-barres"
             maxLength={512}
             className={inputCls + ' placeholder:text-galet'}
           />
         </div>
       )}
+
+      {/* Alternative text */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-galet-ink ml-1">Texte alternatif (optionnel)</label>
+        <input
+          value={value.altText ?? ''}
+          onChange={(e) => onChange({ ...value, altText: e.target.value })}
+          placeholder="Affiché sous le code si le scan échoue"
+          maxLength={100}
+          className={inputCls + ' placeholder:text-galet'}
+        />
+      </div>
     </div>
   );
 }

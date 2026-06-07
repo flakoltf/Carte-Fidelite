@@ -27,7 +27,7 @@ export default async function CardDesignPage({ params }: { params: Promise<{ id:
 
   const design = await loadDesign(supabaseAdmin, id);
 
-  // Les assets logo sont des chemins Storage : on génère une URL signée pour l'aperçu initial.
+  // Les assets sont des chemins Storage : on génère des URLs signées pour l'aperçu initial.
   let initialLogoPreview: string | undefined;
   const logoPath = design.logo.assets?.google?.logo ?? design.logo.assets?.apple?.x1;
   if (logoPath) {
@@ -35,6 +35,16 @@ export default async function CardDesignPage({ params }: { params: Promise<{ id:
       initialLogoPreview = await signedUrl(logoPath);
     } catch {
       // chemin obsolète / asset supprimé → on ignore, l'aperçu retombe sur les initiales
+    }
+  }
+
+  let initialStripPreview: string | undefined;
+  const stripPath = design.logo.assets?.google?.hero ?? design.logo.assets?.apple?.strip1;
+  if (stripPath) {
+    try {
+      initialStripPreview = await signedUrl(stripPath);
+    } catch {
+      // asset absent → pas de bannière en aperçu
     }
   }
 
@@ -52,7 +62,12 @@ export default async function CardDesignPage({ params }: { params: Promise<{ id:
         <p className="text-galet-ink">{m.shop_name}</p>
       </div>
 
-      <CardEditor merchantId={id} initialDesign={design} initialLogoPreview={initialLogoPreview} />
+      <CardEditor
+        merchantId={id}
+        initialDesign={design}
+        initialLogoPreview={initialLogoPreview}
+        initialStripPreview={initialStripPreview}
+      />
     </div>
   );
 }

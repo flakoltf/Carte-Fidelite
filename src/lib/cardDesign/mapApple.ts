@@ -1,6 +1,17 @@
-import type { CardDesign, CardZone } from './types';
+import type { CardDesign, CardZone, BarcodeFormat } from './types';
 import { APPLE_ZONE_LIMITS } from './types';
 import { hexToRgbString } from './color';
+
+// Traduit un format générique vers la constante PKBarcodeFormat d'Apple Wallet.
+const APPLE_BARCODE_FORMAT: Record<BarcodeFormat, string> = {
+  QR: 'PKBarcodeFormatQR',
+  PDF417: 'PKBarcodeFormatPDF417',
+  AZTEC: 'PKBarcodeFormatAztec',
+  CODE128: 'PKBarcodeFormatCode128',
+};
+export function appleBarcodeFormat(type: BarcodeFormat): string {
+  return APPLE_BARCODE_FORMAT[type] ?? APPLE_BARCODE_FORMAT.QR;
+}
 type AppleField = { key: string; label: string; value: string };
 export type AppleFieldMap = {
   backgroundColor: string; foregroundColor: string; labelColor: string;

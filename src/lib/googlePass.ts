@@ -74,15 +74,20 @@ export async function buildGoogleSaveUrl({
   // created against it. This function only references the class id.
   const classId = merchantId ? classIdFor(merchantId) : fallbackClassId;
 
-  // Load the merchant's card design to get the points label.
-  // Falls back to the legacy default label if the design cannot be loaded.
+  // Load the merchant's card design for the points label + barcode settings.
+  // Falls back to legacy defaults if the design cannot be loaded.
   let pointsLabel = "Tampons";
+  let barcodeType = "QR_CODE";
+  let barcodeAltText = "";
   if (merchantId) {
     try {
       const design = await loadDesign(supabaseAdmin, merchantId);
-      pointsLabel = mapToGoogleObjectExtras(design).pointsLabel;
+      const extras = mapToGoogleObjectExtras(design);
+      pointsLabel = extras.pointsLabel;
+      barcodeType = extras.barcodeType;
+      barcodeAltText = extras.barcodeAltText;
     } catch {
-      // loadDesign failed — keep the default label.
+      // loadDesign failed — keep the defaults.
     }
   }
 
@@ -97,8 +102,9 @@ export async function buildGoogleSaveUrl({
       label: pointsLabel,
     },
     barcode: {
-      type: "QR_CODE",
+      type: barcodeType,
       value: signQRCode(cardId),
+      ...(barcodeAltText ? { alternateText: barcodeAltText } : {}),
     },
     ...(geoLocations ? { locations: geoLocations } : {}),
   };

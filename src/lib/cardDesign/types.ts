@@ -9,11 +9,32 @@ export type CardField = {
 };
 
 export type LogoAssets = {
-  apple?: { x1?: string; x2?: string; x3?: string; icon1?: string; icon2?: string; icon3?: string };
-  google?: { logo?: string };
+  apple?: {
+    x1?: string; x2?: string; x3?: string;
+    icon1?: string; icon2?: string; icon3?: string;
+    // Strip image (bannière horizontale sous l'en-tête du storeCard).
+    strip1?: string; strip2?: string; strip3?: string;
+  };
+  google?: { logo?: string; hero?: string };
 };
 
-export type CardBarcode = { type: 'QR'; source: 'card_token' | 'custom'; value?: string };
+// Formats de code-barres supportés par Apple Wallet ET Google Wallet.
+export type BarcodeFormat = 'QR' | 'PDF417' | 'AZTEC' | 'CODE128';
+export const BARCODE_FORMATS: readonly BarcodeFormat[] = ['QR', 'PDF417', 'AZTEC', 'CODE128'];
+export const BARCODE_FORMAT_LABELS: Record<BarcodeFormat, string> = {
+  QR: 'QR Code',
+  PDF417: 'PDF417',
+  AZTEC: 'Aztec',
+  CODE128: 'Code 128',
+};
+
+export type CardBarcode = {
+  type: BarcodeFormat;
+  source: 'card_token' | 'custom';
+  value?: string;
+  // Texte affiché sous le code-barres si le scan échoue.
+  altText?: string;
+};
 
 export type CardDesign = {
   colors: { background: string; foreground: string; label: string };

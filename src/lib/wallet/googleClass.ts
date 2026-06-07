@@ -44,10 +44,11 @@ export async function ensureLoyaltyClass(
   merchantId: string,
   design: CardDesign,
   logoPublicUrl?: string,
+  heroPublicUrl?: string,
 ): Promise<string> {
   const client = walletClient();
   const id = classIdFor(merchantId);
-  const patch = mapToGoogleClass(design, logoPublicUrl);
+  const patch = mapToGoogleClass(design, logoPublicUrl, heroPublicUrl);
 
   try {
     // loyaltyclass.get / loyaltyclass.patch are on the prototype (non-enumerable).

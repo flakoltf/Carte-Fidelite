@@ -8,14 +8,24 @@ import FieldList from './FieldList';
 import ColorField from './ColorField';
 import BarcodeField from './BarcodeField';
 import LogoUpload from './LogoUpload';
+import StripUpload from './StripUpload';
 import ApplePassPreview from './ApplePassPreview';
 import GooglePassPreview from './GooglePassPreview';
 
 interface CardEditorProps {
   merchantId: string;
   initialDesign: CardDesign;
-  // URL signée d'un logo déjà enregistré (sinon les chemins Storage ne s'affichent pas en <img>).
+  // URLs signées d'assets déjà enregistrés (sinon les chemins Storage ne s'affichent pas en <img>).
   initialLogoPreview?: string;
+  initialStripPreview?: string;
+}
+
+// Fusionne deux jeux d'assets sans écraser les sous-clés (logo vs strip).
+function mergeAssets(prev: LogoAssets | undefined, incoming: LogoAssets): LogoAssets {
+  return {
+    apple: { ...prev?.apple, ...incoming.apple },
+    google: { ...prev?.google, ...incoming.google },
+  };
 }
 
 type SaveResult = {
@@ -25,9 +35,10 @@ type SaveResult = {
 
 const sectionCls = 'bg-surface border border-line-warm rounded-3xl p-6 shadow-sm';
 
-export default function CardEditor({ merchantId, initialDesign, initialLogoPreview }: CardEditorProps) {
+export default function CardEditor({ merchantId, initialDesign, initialLogoPreview, initialStripPreview }: CardEditorProps) {
   const [design, setDesign] = useState<CardDesign>(initialDesign);
   const [logoPreview, setLogoPreview] = useState<string | undefined>(initialLogoPreview);
+  const [stripPreview, setStripPreview] = useState<string | undefined>(initialStripPreview);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<SaveResult | null>(null);
 
@@ -35,18 +46,31 @@ export default function CardEditor({ merchantId, initialDesign, initialLogoPrevi
   const validation = useMemo(() => validateDesign(design), [design]);
   const canSave = validation.errors.length === 0 && !saving;
 
-  // Les aperçus lisent logo.assets comme src <img>. On y injecte l'URL affichable
-  // (locale après upload, signée au chargement) sans toucher au design persisté.
+  // Les aperçus lisent logo.assets comme src <img>. On y injecte les URLs affichables
+  // (locales après upload, signées au chargement) sans toucher au design persisté.
   const previewDesign = useMemo<CardDesign>(() => {
-    const assets: LogoAssets = logoPreview
-      ? { apple: { x1: logoPreview }, google: { logo: logoPreview } }
-      : {};
+    const assets: LogoAssets = {
+      apple: {
+        ...(logoPreview ? { x1: logoPreview } : {}),
+        ...(stripPreview ? { strip1: stripPreview } : {}),
+      },
+      google: {
+        ...(logoPreview ? { logo: logoPreview } : {}),
+        ...(stripPreview ? { hero: stripPreview } : {}),
+      },
+    };
     return { ...design, logo: { ...design.logo, assets } };
-  }, [design, logoPreview]);
+  }, [design, logoPreview, stripPreview]);
 
   const handleLogoUploaded = (assets: LogoAssets, previewUrl: string) => {
-    setDesign((d) => ({ ...d, logo: { ...d.logo, assets } }));
+    setDesign((d) => ({ ...d, logo: { ...d.logo, assets: mergeAssets(d.logo?.assets, assets) } }));
     setLogoPreview(previewUrl);
+    setResult(null);
+  };
+
+  const handleStripUploaded = (assets: LogoAssets, previewUrl: string) => {
+    setDesign((d) => ({ ...d, logo: { ...d.logo, assets: mergeAssets(d.logo?.assets, assets) } }));
+    setStripPreview(previewUrl);
     setResult(null);
   };
 
@@ -113,6 +137,11 @@ export default function CardEditor({ merchantId, initialDesign, initialLogoPrevi
           <div className="mt-6">
             <p className="text-xs font-medium text-galet-ink mb-2">Logo</p>
             <LogoUpload merchantId={merchantId} onUploaded={handleLogoUploaded} />
+          </div>
+
+          <div className="mt-6">
+            <p className="text-xs font-medium text-galet-ink mb-2">Bannière (strip / hero)</p>
+            <StripUpload merchantId={merchantId} onUploaded={handleStripUploaded} />
           </div>
         </section>
 

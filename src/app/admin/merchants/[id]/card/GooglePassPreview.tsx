@@ -1,4 +1,5 @@
 import type { CardDesign } from '@/lib/cardDesign/types';
+import BarcodePreview from './BarcodePreview';
 
 // ─── Token resolution ─────────────────────────────────────────────────────────
 
@@ -18,22 +19,6 @@ function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return name.slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-// ─── QR placeholder ───────────────────────────────────────────────────────────
-
-function QrPlaceholder({ size = 80 }: { size?: number }) {
-  return (
-    <div
-      aria-label="QR code (aperçu)"
-      style={{
-        width: size,
-        height: size,
-        background: 'repeating-conic-gradient(#000 0 25%, #fff 0 50%) center / 14px 14px',
-        borderRadius: 4,
-      }}
-    />
-  );
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -58,6 +43,8 @@ export default function GooglePassPreview({ design, sample = {} }: GooglePassPre
     .sort((a, b) => a.order - b.order);
 
   const logoUrl = logo.assets?.google?.logo;
+  const heroUrl = logo.assets?.google?.hero;
+  const barcode = design.barcode ?? { type: 'QR' as const, source: 'card_token' as const };
 
   return (
     <div
@@ -115,6 +102,12 @@ export default function GooglePassPreview({ design, sample = {} }: GooglePassPre
         </div>
       </div>
 
+      {/* ── Hero image (bannière large) ──────────────────────────────────── */}
+      {heroUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={heroUrl} alt="Bannière" className="object-cover" style={{ width: '100%', height: 90, display: 'block' }} />
+      )}
+
       {/* ── Card body ──────────────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px' }}>
 
@@ -155,9 +148,9 @@ export default function GooglePassPreview({ design, sample = {} }: GooglePassPre
           </div>
         )}
 
-        {/* QR code */}
+        {/* Barcode */}
         <div className="flex justify-center mt-[10px]">
-          <QrPlaceholder size={80} />
+          <BarcodePreview format={barcode.type} altText={barcode.altText} size={80} />
         </div>
 
       </div>

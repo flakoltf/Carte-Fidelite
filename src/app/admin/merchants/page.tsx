@@ -25,6 +25,7 @@ export default async function AdminMerchants() {
   // Comptes par marchand calculés côté serveur (échelle modeste).
   const { data: customers } = await supabase.from("customers").select("merchant_id");
   const { data: scans } = await supabase.from("scan_history").select("merchant_id");
+  const { data: cards } = await supabase.from("loyalty_cards").select("merchant_id");
 
   const countBy = (rows: { merchant_id: string | null }[] | null, id: string) =>
     (rows || []).filter((r) => r.merchant_id === id).length;
@@ -72,6 +73,10 @@ export default async function AdminMerchants() {
               </div>
 
               <div className="flex gap-6 text-sm mb-6">
+                <div>
+                  <span className="text-2xl font-bold text-onyx">{countBy(cards, m.id)}</span>
+                  <span className="text-galet-ink ml-1.5">cartes actives</span>
+                </div>
                 <div>
                   <span className="text-2xl font-bold text-onyx">{countBy(customers, m.id)}</span>
                   <span className="text-galet-ink ml-1.5">clients</span>

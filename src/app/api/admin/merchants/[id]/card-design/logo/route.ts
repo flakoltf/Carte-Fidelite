@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/adminAuth';
-import { resizeLogo } from '@/lib/cardDesign/imageSizes';
+import { resizeLogo, resizeStrip } from '@/lib/cardDesign/imageSizes';
 import { uploadAsset, applePath, googlePath } from '@/lib/cardDesign/storage';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
@@ -39,9 +39,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
-    const out = await resizeLogo(buf);
+    const kind = (formData.get('kind') as string | null) ?? 'logo';
 
-    // Upload de toutes les tailles en parallèle
+    // ── Strip / bannière : tailles strip Apple + hero Google ──────────────────
+    if (kind === 'strip') {
+      const out = await resizeStrip(buf);
+      const [strip1, strip2, strip3, hero] = await Promise.all([
+        uploadAsset(applePath(id, 'strip.png'), out.apple_strip1),
+        uploadAsset(applePath(id, 'strip@2x.png'), out.apple_strip2),
+        uploadAsset(applePath(id, 'strip@3x.png'), out.apple_strip3),
+        uploadAsset(googlePath(id, 'hero.png'), out.google_hero),
+      ]);
+      return NextResponse.json({
+        assets: { apple: { strip1, strip2, strip3 }, google: { hero } },
+      });
+    }
+
+    // ── Logo (par défaut) : tailles logo + icône ──────────────────────────────
+    const out = await resizeLogo(buf);
     const [x1, x2, x3, icon1, icon2, icon3, logo] = await Promise.all([
       uploadAsset(applePath(id, 'logo.png'), out.apple_x1),
       uploadAsset(applePath(id, 'logo@2x.png'), out.apple_x2),

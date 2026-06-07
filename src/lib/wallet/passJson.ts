@@ -1,5 +1,5 @@
 import type { CardDesign } from '@/lib/cardDesign/types';
-import { mapToAppleFields } from '@/lib/cardDesign/mapApple';
+import { mapToAppleFields, appleBarcodeFormat } from '@/lib/cardDesign/mapApple';
 
 export interface PassJsonInput {
   cardId: string; customerName: string; stamps: number; stampGoal?: number;
@@ -87,6 +87,15 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       auxiliaryFields: m.auxiliaryFields,
       backFields: m.backFields,
     };
+    // Code-barres piloté par le design : format + valeur (jeton ou custom) + texte alternatif.
+    const bc = i.design.barcode;
+    const message = bc?.source === 'custom' && bc.value ? bc.value : i.barcodeMessage;
+    (pass as Record<string, unknown>).barcodes = [{
+      message,
+      format: appleBarcodeFormat(bc?.type ?? 'QR'),
+      messageEncoding: 'iso-8859-1',
+      ...(bc?.altText ? { altText: bc.altText } : {}),
+    }];
   }
 
   return pass;

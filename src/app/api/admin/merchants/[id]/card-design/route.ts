@@ -65,7 +65,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     try {
       const logoPath = design.logo?.assets?.google?.logo;
       const logoUrl = logoPath ? await signedUrl(logoPath) : undefined;
-      const googleClassId = await ensureLoyaltyClass(id, design, logoUrl);
+      const heroPath = design.logo?.assets?.google?.hero;
+      const heroUrl = heroPath ? await signedUrl(heroPath) : undefined;
+      const googleClassId = await ensureLoyaltyClass(id, design, logoUrl, heroUrl);
 
       await supabaseAdmin
         .from('card_designs')

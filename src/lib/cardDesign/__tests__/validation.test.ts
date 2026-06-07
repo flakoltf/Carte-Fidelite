@@ -11,4 +11,21 @@ describe('validateDesign', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.warnings.some((w) => w.includes('logo'))).toBe(true);
   });
+  it('bloque un format de code-barres invalide', () => {
+    const r = validateDesign({ ...DEFAULT_CARD_DESIGN, barcode: { type: 'EAN13' as any, source: 'card_token' } });
+    expect(r.errors).toContain('Format de code-barres invalide.');
+  });
+  it('accepte PDF417 / Aztec / Code128', () => {
+    for (const type of ['PDF417', 'AZTEC', 'CODE128'] as const) {
+      expect(validateDesign({ ...DEFAULT_CARD_DESIGN, barcode: { type, source: 'card_token' } }).errors).toHaveLength(0);
+    }
+  });
+  it('bloque une valeur custom vide', () => {
+    const r = validateDesign({ ...DEFAULT_CARD_DESIGN, barcode: { type: 'QR', source: 'custom', value: '  ' } });
+    expect(r.errors.some((e) => e.includes('personnalisée'))).toBe(true);
+  });
+  it('bloque un texte alternatif trop long', () => {
+    const r = validateDesign({ ...DEFAULT_CARD_DESIGN, barcode: { type: 'QR', source: 'card_token', altText: 'x'.repeat(101) } });
+    expect(r.errors.some((e) => e.includes('alternatif'))).toBe(true);
+  });
 });

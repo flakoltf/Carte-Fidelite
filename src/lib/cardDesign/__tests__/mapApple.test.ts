@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mapToAppleFields } from '../mapApple';
+import { mapToAppleFields, appleBarcodeFormat } from '../mapApple';
 import type { CardDesign } from '../types';
 const base: CardDesign = {
   colors: { background: '#0D6B5E', foreground: '#FFFFFF', label: '#BFEEE6' },
@@ -27,5 +27,13 @@ describe('mapToAppleFields', () => {
     const r = mapToAppleFields(many);
     expect(r.auxiliaryFields).toHaveLength(4);
     expect(r.backFields.length).toBeGreaterThanOrEqual(2);
+  });
+});
+describe('appleBarcodeFormat', () => {
+  it('mappe chaque format vers la constante PKBarcodeFormat', () => {
+    expect(appleBarcodeFormat('QR')).toBe('PKBarcodeFormatQR');
+    expect(appleBarcodeFormat('PDF417')).toBe('PKBarcodeFormatPDF417');
+    expect(appleBarcodeFormat('AZTEC')).toBe('PKBarcodeFormatAztec');
+    expect(appleBarcodeFormat('CODE128')).toBe('PKBarcodeFormatCode128');
   });
 });

@@ -132,6 +132,7 @@ export async function buildApplePassBuffer({
     const assetMap: [string, string][] = [
       ["x1", "logo.png"], ["x2", "logo@2x.png"], ["x3", "logo@3x.png"],
       ["icon1", "icon.png"], ["icon2", "icon@2x.png"], ["icon3", "icon@3x.png"],
+      ["strip1", "strip.png"], ["strip2", "strip@2x.png"], ["strip3", "strip@3x.png"],
     ];
     try {
       const { downloadAsset } = await import("@/lib/cardDesign/storage");

@@ -1,4 +1,5 @@
 import type { CardDesign } from '@/lib/cardDesign/types';
+import BarcodePreview from './BarcodePreview';
 
 // ─── Token resolution ─────────────────────────────────────────────────────────
 
@@ -18,22 +19,6 @@ function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return name.slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-// ─── QR placeholder ───────────────────────────────────────────────────────────
-
-function QrPlaceholder({ size = 84 }: { size?: number }) {
-  return (
-    <div
-      aria-label="QR code (aperçu)"
-      style={{
-        width: size,
-        height: size,
-        background: 'repeating-conic-gradient(#000 0 25%, #fff 0 50%) center / 14px 14px',
-        borderRadius: 4,
-      }}
-    />
-  );
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -66,6 +51,8 @@ export default function ApplePassPreview({ design, sample = {} }: ApplePassPrevi
     .sort((a, b) => a.order - b.order);
 
   const logoUrl = logo.assets?.apple?.x1;
+  const stripUrl = logo.assets?.apple?.strip1;
+  const barcode = design.barcode ?? { type: 'QR' as const, source: 'card_token' as const };
 
   return (
     <div
@@ -122,6 +109,17 @@ export default function ApplePassPreview({ design, sample = {} }: ApplePassPrevi
           <span className="text-[11px]" style={{ opacity: 0.7 }}>●●●</span>
         </div>
 
+        {/* ── Strip image (bannière pleine largeur) ────────────────────────── */}
+        {stripUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={stripUrl}
+            alt="Bannière"
+            className="object-cover"
+            style={{ width: 'calc(100% + 32px)', marginLeft: -16, marginRight: -16, marginTop: 12, height: 84, display: 'block' }}
+          />
+        )}
+
         {/* ── Primary field ────────────────────────────────────────────────── */}
         {primaryField && (
           <div className="flex justify-between items-end mt-[18px]">
@@ -173,12 +171,12 @@ export default function ApplePassPreview({ design, sample = {} }: ApplePassPrevi
           </div>
         )}
 
-        {/* ── QR code ──────────────────────────────────────────────────────── */}
+        {/* ── Barcode ──────────────────────────────────────────────────────── */}
         <div
           className="mt-[14px] flex justify-center rounded-lg p-2"
           style={{ background: '#ffffff' }}
         >
-          <QrPlaceholder size={84} />
+          <BarcodePreview format={barcode.type} altText={barcode.altText} size={84} />
         </div>
 
       </div>
