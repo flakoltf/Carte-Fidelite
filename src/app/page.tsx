@@ -83,20 +83,10 @@ const PLAN_FEATURES = [
 
 const PRICING = [
   {
-    name: "Démarrage",
+    name: "Essentiel",
     price: "49",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 150 clients actifs",
-    featured: false,
-    cta: "Choisir",
-    href: "/signup",
-    features: PLAN_FEATURES,
-  },
-  {
-    name: "Essentiel",
-    price: "69",
-    unit: "CHF / mois",
-    tagline: "150 à 300 clients actifs",
+    tagline: "Jusqu'à 100 cartes actives",
     featured: false,
     cta: "Choisir",
     href: "/signup",
@@ -104,19 +94,19 @@ const PRICING = [
   },
   {
     name: "Croissance",
-    price: "99",
+    price: "89",
     unit: "CHF / mois",
-    tagline: "300 à 500 clients actifs",
+    tagline: "Jusqu'à 500 cartes actives",
     featured: true,
     cta: "Choisir",
     href: "/signup",
     features: PLAN_FEATURES,
   },
   {
-    name: "Performance",
-    price: "129",
+    name: "Premium",
+    price: "149",
     unit: "CHF / mois",
-    tagline: "500 à 800 clients actifs",
+    tagline: "Cartes actives illimitées",
     featured: false,
     cta: "Choisir",
     href: "/signup",
@@ -368,9 +358,9 @@ export default function Home() {
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
               Un prix clair, <em className="italic text-halo">sans surprise.</em>
             </h2>
-            <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de clients actifs.</p>
+            <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de cartes actives.</p>
           </Reveal>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {PRICING.map((p, i) => (
               <Reveal key={p.name} delay={i * 0.08}>
                 <div
@@ -415,8 +405,6 @@ export default function Home() {
           </div>
           <Reveal>
             <p className="mt-8 text-center text-sm text-galet-ink">
-              Au-delà de 800 clients actifs : 129 CHF + 19 CHF par tranche de 200.
-              {" · "}
               Engagement annuel : <span className="text-onyx">2 mois offerts</span>.
               <br />
               Plusieurs commerces ? <span className="text-onyx">Tarif sur demande</span>, établi selon votre réseau de points de vente.
