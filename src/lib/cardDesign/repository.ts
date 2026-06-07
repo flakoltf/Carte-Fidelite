@@ -52,6 +52,20 @@ export async function loadDesign(supabase: any, merchantId: string): Promise<Car
   return data ? rowToDesign(data) : DEFAULT_CARD_DESIGN;
 }
 
+/**
+ * Like loadDesign but returns null when no design row exists in the DB.
+ * Use this when you need to distinguish "no design saved" from the default design,
+ * e.g. to preserve legacy pass-generation behavior when merchants haven't set up a design.
+ */
+export async function loadDesignOrNull(supabase: any, merchantId: string): Promise<CardDesign | null> {
+  const { data } = await supabase
+    .from('card_designs')
+    .select('*')
+    .eq('merchant_id', merchantId)
+    .maybeSingle();
+  return data ? rowToDesign(data) : null;
+}
+
 export async function saveDesign(
   supabase: any,
   merchantId: string,

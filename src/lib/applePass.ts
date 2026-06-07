@@ -81,21 +81,61 @@ export async function buildApplePassBuffer({
   const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
   let stampGoal = 10;
   let locations;
+  let merchantId: string | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
     .select("merchant_id")
     .eq("id", cardId)
     .single();
   if (cardRow?.merchant_id) {
+    merchantId = cardRow.merchant_id;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
       .select("stamp_goal, latitude, longitude")
-      .eq("id", cardRow.merchant_id)
+      .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
     if (mRow?.latitude != null && mRow?.longitude != null) {
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
+    }
+  }
+
+  // Load the merchant's saved card design (null = no design row → legacy behavior preserved).
+  let design: import("@/lib/cardDesign/types").CardDesign | undefined;
+  if (merchantId) {
+    try {
+      const { loadDesignOrNull } = await import("@/lib/cardDesign/repository");
+      const d = await loadDesignOrNull(supabaseAdmin, merchantId);
+      if (d) design = d;
+    } catch {
+      // Design load failed — keep undefined so legacy pass output is used.
+    }
+  }
+
+  // Download design logo assets from Storage when available; fall back gracefully.
+  const designLogoBuffers: Record<string, Buffer> = {};
+  if (design?.logo?.assets?.apple) {
+    const apple = design.logo.assets.apple;
+    const assetMap: [string, string][] = [
+      ["x1", "logo.png"], ["x2", "logo@2x.png"], ["x3", "logo@3x.png"],
+      ["icon1", "icon.png"], ["icon2", "icon@2x.png"], ["icon3", "icon@3x.png"],
+    ];
+    try {
+      const { downloadAsset } = await import("@/lib/cardDesign/storage");
+      await Promise.all(
+        assetMap.map(async ([assetKey, bufferName]) => {
+          const storagePath = (apple as Record<string, string | undefined>)[assetKey];
+          if (!storagePath) return;
+          try {
+            designLogoBuffers[bufferName] = await downloadAsset(storagePath);
+          } catch {
+            // Individual asset download failed — public fallback will be used for this file.
+          }
+        })
+      );
+    } catch {
+      // storage module unavailable — all assets fall back to public defaults.
     }
   }
 
@@ -113,20 +153,29 @@ export async function buildApplePassBuffer({
     authToken,
     message,
     locations,
+    design,
   });
 
-  // Buffer map initial pour PKPass : pass.json + icônes/logo.
-  // icon.png et icon@2x.png sont les seuls vraiment requis par iOS.
+  // Buffer map for PKPass: pass.json + icon/logo assets.
+  // Design Storage assets take priority; public/pass-assets are the fallback.
   const buffers: Record<string, Buffer> = {
     "pass.json": Buffer.from(JSON.stringify(passJson), "utf-8"),
   };
 
   const assetsPath = path.join(process.cwd(), "public", "pass-assets");
-  for (const name of ["icon.png", "icon@2x.png", "icon@3x.png", "logo.png", "logo@2x.png"]) {
-    try {
-      buffers[name] = await fs.readFile(path.join(assetsPath, name));
-    } catch {
-      // Asset optionnel absent — on continue (icon.png + icon@2x.png suffisent au minimum).
+  const allAssets = new Set([
+    "icon.png", "icon@2x.png", "icon@3x.png", "logo.png", "logo@2x.png",
+    ...Object.keys(designLogoBuffers),
+  ]);
+  for (const name of allAssets) {
+    if (designLogoBuffers[name]) {
+      buffers[name] = designLogoBuffers[name];
+    } else {
+      try {
+        buffers[name] = await fs.readFile(path.join(assetsPath, name));
+      } catch {
+        // Asset optionnel absent — on continue (icon.png + icon@2x.png suffisent au minimum).
+      }
     }
   }
 
