@@ -54,7 +54,8 @@ async function extractBlob(
 
 interface LogoUploadProps {
   merchantId: string;
-  onUploaded: (assets: LogoAssets) => void;
+  // `assets` = chemins Storage (à persister) ; `previewUrl` = URL locale affichable tout de suite.
+  onUploaded: (assets: LogoAssets, previewUrl: string) => void;
 }
 
 type UploadState = 'idle' | 'cropping' | 'uploading' | 'done' | 'error';
@@ -98,7 +99,6 @@ export default function LogoUpload({ merchantId, onUploaded }: LogoUploadProps) 
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) loadFile(file);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpload = async () => {
@@ -130,7 +130,7 @@ export default function LogoUpload({ merchantId, onUploaded }: LogoUploadProps) 
         return;
       }
 
-      if (json.assets) onUploaded(json.assets);
+      if (json.assets) onUploaded(json.assets, URL.createObjectURL(blob));
       setState('done');
     } catch {
       setErrorMsg('Erreur de connexion.');
