@@ -6,7 +6,7 @@ export function validateDesign(design: CardDesign): ValidationResult {
   const warnings: string[] = [];
   if (!design.programName || !design.programName.trim()) errors.push('Le nom du programme est obligatoire.');
   if (!design.fields.some((f) => f.zone === 'primary')) errors.push('Il faut au moins un champ principal (primary), ex. les points.');
-  if (!design.logo.assets?.apple?.x1 && !design.logo.originalPath) warnings.push('Aucun logo : le pass utilisera un logo par défaut.');
+  if (!design.logo?.assets?.apple?.x1 && !design.logo?.originalPath) warnings.push('Aucun logo : le pass utilisera un logo par défaut.');
   if (contrastRatio(design.colors.background, design.colors.foreground) < 4.5) warnings.push('Le contraste texte/fond est faible (< 4.5:1, WCAG AA).');
   if (contrastRatio(design.colors.background, design.colors.label) < 4.5) warnings.push('Le contraste des libellés/fond est faible (< 4.5:1).');
   return { errors, warnings };

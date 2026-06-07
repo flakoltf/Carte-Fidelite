@@ -2,13 +2,12 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { requireAdminApi } from '@/lib/adminAuth';
+import { requireAdminApi, getSessionRole } from '@/lib/adminAuth';
 import { logAuditEvent, extractRequestMeta } from '@/lib/auditLog';
 import { loadDesign, saveDesign } from '@/lib/cardDesign/repository';
 import { validateDesign } from '@/lib/cardDesign/validation';
 import { signedUrl } from '@/lib/cardDesign/storage';
 import { ensureLoyaltyClass } from '@/lib/wallet/googleClass';
-import { createClient } from '@/utils/supabase/server';
 
 // GET /api/admin/merchants/[id]/card-design — lit le design courant du commerçant.
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -31,16 +30,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (denied) return denied;
 
   try {
-    // Récupère l'utilisateur courant via le client RLS (contexte auth)
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const userId = user?.id ?? 'unknown';
+    // Récupère l'utilisateur courant (réutilise getSessionRole pour éviter un double appel)
+    const { userId } = await getSessionRole();
+    if (!userId) {
+      return NextResponse.json({ error: 'Session expirée' }, { status: 401 });
+    }
 
     const { id } = await params;
     const body = await req.json();
     const { design } = body;
+
+    // Garde : corps invalide → 400
+    if (!design || typeof design !== 'object' || Array.isArray(design)) {
+      return NextResponse.json({ error: 'Corps invalide : "design" manquant ou mal formé' }, { status: 400 });
+    }
 
     // Validation
     const { errors, warnings } = validateDesign(design);
