@@ -16,7 +16,9 @@ export type AuditAction =
   | 'MFA_ENROLLED'
   | 'MFA_DISABLED'
   | 'ADMIN_IMPERSONATION_START'
-  | 'ADMIN_IMPERSONATION_STOP';
+  | 'ADMIN_IMPERSONATION_STOP'
+  | 'CARD_DESIGN_UPDATED'
+  | 'CARD_CLASS_SYNCED';
 
 interface AuditLogEntry {
   action: AuditAction;
