@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, type DragEvent } from 'react';
 import ReactCrop, {
   centerCrop,
   makeAspectCrop,
+  convertToPixelCrop,
   type Crop,
   type PixelCrop,
 } from 'react-image-crop';
@@ -91,7 +92,12 @@ export default function LogoUpload({ merchantId, onUploaded }: LogoUploadProps) 
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    setCrop(defaultCropForImage(img));
+    const initial = defaultCropForImage(img);
+    setCrop(initial);
+    // ReactCrop ne déclenche `onComplete` qu'à la première interaction : sans ça,
+    // `completedCrop` reste indéfini et le bouton « Valider » est grisé. On amorce
+    // donc le crop en pixels dès le chargement (dimensions affichées de l'image).
+    setCompletedCrop(convertToPixelCrop(initial, img.width, img.height));
   };
 
   const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
