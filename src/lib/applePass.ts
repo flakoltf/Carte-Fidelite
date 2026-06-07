@@ -62,10 +62,12 @@ export async function buildApplePassBuffer({
     );
   }
 
-  const orgName = branding?.shopName || "WalletCard";
+  const orgName = branding?.shopName || "HALO";
   const backgroundColor = hexToRgb(branding?.primaryColor) || "rgb(23, 23, 23)";
-  const passTypeIdentifier = process.env.APPLE_PASS_TYPE_ID || "pass.com.tamarque.fidelite";
-  const teamIdentifier = process.env.APPLE_TEAM_ID || "ABCDE12345";
+  // Fallbacks = valeurs réelles du certificat Apple (UID + OU de certs/signerCert.pem) ;
+  // l'env doit les surcharger en prod, mais ces défauts garantissent une signature valide.
+  const passTypeIdentifier = process.env.APPLE_PASS_TYPE_ID || "pass.com.walletcard.fidelite";
+  const teamIdentifier = process.env.APPLE_TEAM_ID || "XD83DMP848";
 
   // pass.json push-ready (webServiceURL + authenticationToken + champ message),
   // construit par le builder pur partagé.
