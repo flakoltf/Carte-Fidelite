@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import fs from "fs/promises";
 import path from "path";
 import { signQRCode } from "@/lib/qrSignature";
+import { classIdFor } from "@/lib/wallet/googleClass";
+import { loadDesign } from "@/lib/cardDesign/repository";
+import { mapToGoogleObjectExtras } from "@/lib/cardDesign/mapGoogle";
 
 export interface GooglePassInput {
   cardId: string;
@@ -39,7 +42,8 @@ export async function buildGoogleSaveUrl({
   };
 
   const issuerId = process.env.GOOGLE_ISSUER_ID || "REMPLACE_PAR_TON_ISSUER_ID";
-  const classId = `${issuerId}.ma_classe_fidelite_template`;
+  // Fallback class kept for the rare case where merchant lookup fails.
+  const fallbackClassId = `${issuerId}.ma_classe_fidelite_template`;
 
   const allowedOrigins = process.env.GOOGLE_WALLET_ORIGINS
     ? process.env.GOOGLE_WALLET_ORIGINS.split(",")
@@ -50,14 +54,35 @@ export async function buildGoogleSaveUrl({
   const objectId = `${issuerId}.${sanitizedCardId}`;
 
   const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
+
+  // Resolve merchantId from the card row.
+  let merchantId: string | undefined;
   let geoLocations: { latitude: number; longitude: number }[] | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards").select("merchant_id").eq("id", cardId).single();
   if (cardRow?.merchant_id) {
+    merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
-      .from("merchants").select("latitude, longitude").eq("id", cardRow.merchant_id).single();
+      .from("merchants").select("latitude, longitude").eq("id", merchantId).single();
     if (mRow?.latitude != null && mRow?.longitude != null) {
       geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
+    }
+  }
+
+  // NOTE: The LoyaltyClass identified by classId must be ensured/published via
+  // ensureLoyaltyClass (Task 14, API card-design route) before objects can be
+  // created against it. This function only references the class id.
+  const classId = merchantId ? classIdFor(merchantId) : fallbackClassId;
+
+  // Load the merchant's card design to get the points label.
+  // Falls back to the legacy default label if the design cannot be loaded.
+  let pointsLabel = "Tampons";
+  if (merchantId) {
+    try {
+      const design = await loadDesign(supabaseAdmin, merchantId);
+      pointsLabel = mapToGoogleObjectExtras(design).pointsLabel;
+    } catch {
+      // loadDesign failed — keep the default label.
     }
   }
 
@@ -69,7 +94,7 @@ export async function buildGoogleSaveUrl({
     accountName: customerName,
     loyaltyPoints: {
       balance: { int: stamps },
-      label: "Tampons",
+      label: pointsLabel,
     },
     barcode: {
       type: "QR_CODE",
