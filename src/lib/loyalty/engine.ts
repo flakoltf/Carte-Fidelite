@@ -1,7 +1,7 @@
 import { applyStamp, canRedeem } from "./stamp";
 import type { LoyaltyProgram, ScanResult, Tier } from "./types";
 
-function currentTier(tiers: Tier[], count: number): Tier | null {
+export function currentTier(tiers: Tier[], count: number): Tier | null {
   let result: Tier | null = null;
   for (const t of [...tiers].sort((a, b) => a.at - b.at)) if (count >= t.at) result = t;
   return result;

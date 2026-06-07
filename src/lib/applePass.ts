@@ -82,6 +82,7 @@ export async function buildApplePassBuffer({
   let stampGoal = 10;
   let locations;
   let merchantId: string | undefined;
+  let palier: string | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
     .select("merchant_id")
@@ -91,7 +92,7 @@ export async function buildApplePassBuffer({
     merchantId = cardRow.merchant_id;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("stamp_goal, latitude, longitude")
+      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config")
       .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
@@ -99,6 +100,17 @@ export async function buildApplePassBuffer({
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
     }
+    // Resolve the customer's current tier name for {palier} token substitution.
+    // Only applies to tiered loyalty programs; for all other types the token stays literal.
+    if (mRow?.loyalty_type === "tiered") {
+      const rawTiers = (mRow.loyalty_config as Record<string, unknown> | null)?.tiers;
+      if (Array.isArray(rawTiers) && rawTiers.length > 0) {
+        const { currentTier } = await import("@/lib/loyalty/engine");
+        palier = currentTier(rawTiers as { name: string; at: number }[], stamps)?.name;
+      }
+    }
+    // If not tiered or tier data unavailable, palier remains undefined →
+    // buildPassJson passes it through as undefined → resolveTokens keeps {palier} literal.
   }
 
   // Load the merchant's saved card design (null = no design row → legacy behavior preserved).
@@ -154,6 +166,7 @@ export async function buildApplePassBuffer({
     message,
     locations,
     design,
+    palier,
   });
 
   // Buffer map for PKPass: pass.json + icon/logo assets.
