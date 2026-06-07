@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
 import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
 /* ---------- motion helper (respects reduced-motion) ---------- */
 function Reveal({
@@ -446,16 +447,7 @@ export default function Home() {
       </section>
 
       {/* ---------------- FOOTER ---------------- */}
-      <footer className="border-t border-line-warm px-6 py-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-galet-ink sm:flex-row">
-          <HaloWordmark className="text-base" />
-          <p>© 2026 HALO — Cartes de fidélité numériques · Genève</p>
-          <div className="flex gap-6">
-            <Link href="/login" className="transition-colors hover:text-onyx">Connexion</Link>
-            <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
