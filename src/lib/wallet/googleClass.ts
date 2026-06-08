@@ -1,14 +1,21 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { google } from 'googleapis';
 import type { CardDesign } from '@/lib/cardDesign/types';
 import { mapToGoogleClass } from '@/lib/cardDesign/mapGoogle';
 
 // ---------------------------------------------------------------------------
 // Auth helpers — mirrors the credential-reading pattern from googlePass.ts:
-// GOOGLE_CREDENTIALS_JSON may be raw JSON or base64-encoded JSON.
+// GOOGLE_CREDENTIALS_JSON may be raw JSON or base64-encoded JSON ; en local,
+// fallback sur le fichier gitignoré certs/credentials.json (sinon ensureLoyaltyClass
+// plantait quand l'env n'était pas défini, faisant échouer la synchro de classe).
 // ---------------------------------------------------------------------------
 
 function credentials() {
-  const raw = process.env.GOOGLE_CREDENTIALS_JSON!;
+  let raw = process.env.GOOGLE_CREDENTIALS_JSON;
+  if (!raw || raw.trim().length === 0) {
+    raw = fs.readFileSync(path.join(process.cwd(), 'certs', 'credentials.json'), 'utf8');
+  }
   return JSON.parse(
     raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'),
   ) as { client_email: string; private_key: string };
