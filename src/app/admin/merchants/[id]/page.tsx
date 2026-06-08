@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { ArrowLeft, CreditCard, BarChart3 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { resolveMerchantConfig } from "@/lib/merchant-config/resolve";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
@@ -58,13 +58,22 @@ export default async function EditMerchantPage({ params }: { params: Promise<{ i
         </Link>
         <h1 className="font-display text-3xl text-onyx tracking-tight">{m.shop_name}</h1>
         <p className="text-galet-ink">{m.email || "—"}</p>
-        <Link
-          href={`/admin/merchants/${m.id}/card`}
-          className="inline-flex items-center gap-2 mt-4 bg-halo text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-halo-600 transition-colors"
-        >
-          <CreditCard className="w-4 h-4" />
-          Personnaliser la carte
-        </Link>
+        <div className="flex flex-wrap items-center gap-3 mt-4">
+          <Link
+            href={`/admin/merchants/${m.id}/insights`}
+            className="inline-flex items-center gap-2 bg-surface border border-line-warm text-onyx text-sm font-medium px-4 py-2 rounded-xl hover:bg-calcaire transition-colors"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Vue d&apos;ensemble
+          </Link>
+          <Link
+            href={`/admin/merchants/${m.id}/card`}
+            className="inline-flex items-center gap-2 bg-halo text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-halo-600 transition-colors"
+          >
+            <CreditCard className="w-4 h-4" />
+            Personnaliser la carte
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
