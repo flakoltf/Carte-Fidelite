@@ -15,7 +15,6 @@ export type MerchantListItem = {
 
 export type TriState = "all" | "yes" | "no";
 export type MerchantSort = "recent" | "name";
-export const MERCHANT_SORTS: MerchantSort[] = ["recent", "name"];
 export const MERCHANTS_PAGE_SIZE = 12;
 
 export type MerchantFilters = {
