@@ -14,15 +14,15 @@
 export const company = {
   raisonSociale: "HaloCard-Letaief", // nom de société décidé (juin 2026)
   formeJuridique: "Raison individuelle",
-  adresse: null as string | null, // ex. « Rue de … 12 »
-  npa: null as string | null, // ex. « 1200 »
-  localite: "Genève",
+  adresse: "Genève", // ⚠️ pas de rue+numéro fournis — à préciser si nécessaire
+  npa: "1223",
+  localite: "Cologny",
   pays: "Suisse",
   ide: null as string | null, // ex. « CHE-123.456.789 »
   emailContact: "contact@halocard.ch", // domaine halocard.ch acquis (juin 2026)
-  emailDpo: null as string | null, // ex. « privacy@halo.swiss »
-  telephone: null as string | null,
-  responsablePublication: null as string | null, // ex. « Adam Letaief »
+  emailDpo: "contact@halocard.ch",
+  telephone: "+41 79 939 24 69",
+  responsablePublication: "HaloCard-Letaief",
   siteWeb: null as string | null, // ex. « https://halo.swiss »
   dateMaj: "6 juin 2026",
 };
