@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import { Camera, RefreshCw, CheckCircle, AlertCircle, Loader2, Gift } from "lucide-react";
 
 export default function ScanPage() {
@@ -15,15 +15,41 @@ export default function ScanPage() {
   const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
-    if (status === "scanning") {
-        const scanner = new Html5QrcodeScanner("reader", {
-            fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0
-        }, false);
-        scanner.render(onScanSuccess, onScanFailure);
-        function onScanSuccess(decodedText: string) { scanner.clear(); handleProcessScan(decodedText); }
-        function onScanFailure() { /* ignore */ }
-        return () => { scanner.clear(); };
-    }
+    if (status !== "scanning") return;
+
+    // On utilise Html5Qrcode (pas Html5QrcodeScanner) pour ouvrir la caméra
+    // directement via le prompt natif du navigateur, sans panneau de contrôle.
+    const scanner = new Html5Qrcode("reader");
+    let handled = false;
+
+    const stopScanner = async () => {
+      try { await scanner.stop(); } catch { /* déjà arrêté */ }
+      try { scanner.clear(); } catch { /* ignore */ }
+    };
+
+    scanner
+      .start(
+        { facingMode: "environment" }, // caméra arrière (mobile) ; PC : 1re dispo
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        (decodedText) => {
+          if (handled) return;
+          handled = true;
+          stopScanner().finally(() => handleProcessScan(decodedText));
+        },
+        () => { /* échec de décodage par frame : ignoré */ },
+      )
+      .catch((err) => {
+        setStatus("error");
+        setMessage(
+          "Impossible d'ouvrir la caméra. Autorisez l'accès à la caméra dans votre navigateur, puis réessayez.",
+        );
+        console.error("Échec démarrage caméra:", err);
+      });
+
+    return () => {
+      handled = true;
+      void stopScanner();
+    };
   }, [status]);
 
   const handleProcessScan = async (cardId: string) => {
@@ -176,7 +202,6 @@ export default function ScanPage() {
 
       <style jsx global>{`
         #reader__scan_region { background: transparent !important; }
-        #reader__dashboard { display: none !important; }
         #reader video { border-radius: 20px !important; object-fit: cover !important; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
