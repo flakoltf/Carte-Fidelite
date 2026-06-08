@@ -1,10 +1,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { Plus, Pencil } from "lucide-react";
-import EnrollmentQR from "../EnrollmentQR";
-import ManageAsButton from "./ManageAsButton";
-import ManagementModeToggle from "./ManagementModeToggle";
+import { Plus } from "lucide-react";
+import MerchantsGrid from "./MerchantsGrid";
+import type { MerchantListItem } from "@/lib/admin/merchantsFilter";
 
 export const dynamic = "force-dynamic";
 
@@ -18,17 +17,34 @@ export default async function AdminMerchants() {
 
   const { data: merchants } = await supabase
     .from("merchants")
-    .select("id, shop_name, email, enrollment_token, primary_color, created_at, managed_by_concierge")
+    .select("id, shop_name, email, enrollment_token, primary_color, created_at, managed_by_concierge, business_type")
     .eq("role", "merchant")
     .order("created_at", { ascending: false });
 
-  // Comptes par marchand calculés côté serveur (échelle modeste).
+  // Données dérivées (échelle modeste — comptage en mémoire, comme la liste actuelle).
   const { data: customers } = await supabase.from("customers").select("merchant_id");
   const { data: scans } = await supabase.from("scan_history").select("merchant_id");
   const { data: cards } = await supabase.from("loyalty_cards").select("merchant_id");
+  const { data: designs } = await supabase.from("card_designs").select("merchant_id");
 
   const countBy = (rows: { merchant_id: string | null }[] | null, id: string) =>
     (rows || []).filter((r) => r.merchant_id === id).length;
+  const withCard = new Set((designs || []).map((d) => d.merchant_id));
+
+  const items: MerchantListItem[] = (merchants || []).map((m) => ({
+    id: m.id,
+    shop_name: m.shop_name,
+    email: m.email,
+    primary_color: m.primary_color,
+    enrollment_token: m.enrollment_token,
+    business_type: m.business_type ?? null,
+    managed_by_concierge: m.managed_by_concierge ?? false,
+    created_at: m.created_at,
+    has_card: withCard.has(m.id),
+    customer_count: countBy(customers, m.id),
+    scan_count: countBy(scans, m.id),
+    card_count: countBy(cards, m.id),
+  }));
 
   return (
     <div className="space-y-8">
@@ -46,66 +62,7 @@ export default async function AdminMerchants() {
         </Link>
       </div>
 
-      {merchants && merchants.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
-          {merchants.map((m) => (
-            <div key={m.id} className="bg-surface border border-line-warm rounded-3xl p-6 shadow-sm">
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white"
-                    style={{ backgroundColor: m.primary_color || "#0D6B5E" }}
-                  >
-                    {(m.shop_name || "?")[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="font-bold text-onyx">{m.shop_name}</div>
-                    <div className="text-xs text-galet-ink">{m.email || "—"}</div>
-                  </div>
-                </div>
-                <Link
-                  href={`/admin/merchants/${m.id}`}
-                  className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                  Éditer
-                </Link>
-              </div>
-
-              <div className="flex gap-6 text-sm mb-6">
-                <div>
-                  <span className="text-2xl font-bold text-onyx">{countBy(cards, m.id)}</span>
-                  <span className="text-galet-ink ml-1.5">cartes actives</span>
-                </div>
-                <div>
-                  <span className="text-2xl font-bold text-onyx">{countBy(customers, m.id)}</span>
-                  <span className="text-galet-ink ml-1.5">clients</span>
-                </div>
-                <div>
-                  <span className="text-2xl font-bold text-onyx">{countBy(scans, m.id)}</span>
-                  <span className="text-galet-ink ml-1.5">scans</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 mb-6">
-                <ManagementModeToggle merchantId={m.id} initial={m.managed_by_concierge ?? false} />
-                <ManageAsButton merchantId={m.id} />
-              </div>
-
-              <div className="border-t border-line-warm pt-6">
-                <EnrollmentQR
-                  url={`${origin}/enroll/${m.enrollment_token}`}
-                  fileName={`qr-${m.shop_name?.toLowerCase().replace(/\s+/g, "-") || "marchand"}`}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 text-galet border-2 border-dashed border-line-warm rounded-3xl">
-          Aucun marchand. Créez-en un avec « Nouveau marchand ».
-        </div>
-      )}
+      <MerchantsGrid items={items} origin={origin} />
     </div>
   );
 }

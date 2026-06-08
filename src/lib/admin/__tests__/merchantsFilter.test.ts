@@ -18,6 +18,7 @@ const mk = (over: Partial<MerchantListItem>): MerchantListItem => ({
   has_card: true,
   customer_count: 0,
   scan_count: 0,
+  card_count: 0,
   ...over,
 });
 

@@ -10,6 +10,7 @@ export type MerchantListItem = {
   has_card: boolean;
   customer_count: number;
   scan_count: number;
+  card_count: number; // cartes de fidélité (loyalty_cards) — « cartes actives »
 };
 
 export type TriState = "all" | "yes" | "no";

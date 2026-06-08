@@ -163,6 +163,10 @@ export default function MerchantsGrid({
 
                 <div className="flex gap-6 text-sm mb-6">
                   <div>
+                    <span className="text-2xl font-bold text-onyx">{m.card_count}</span>
+                    <span className="text-galet-ink ml-1.5">cartes actives</span>
+                  </div>
+                  <div>
                     <span className="text-2xl font-bold text-onyx">{m.customer_count}</span>
                     <span className="text-galet-ink ml-1.5">clients</span>
                   </div>
