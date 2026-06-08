@@ -45,16 +45,18 @@ export default async function MerchantInsightsPage({ params }: { params: Promise
   const activation = computeActivation({ hasCard, customerCount, scanCount });
 
   // Métriques réutilisées (chacune dégrade indépendamment).
-  const kpis = await fetchKpis(id, "30j").catch(() => null);
-  const segments = await fetchSegmentCounts(id).catch(() => null);
-  const visits: Point[] = await fetchVisits(id, "30j").catch(() => []);
+  const [kpis, segments, visits] = await Promise.all([
+    fetchKpis(id, "30j").catch(() => null),
+    fetchSegmentCounts(id).catch(() => null),
+    fetchVisits(id, "30j").catch((): Point[] => []),
+  ]);
 
   const notLive = customerCount === 0 && scanCount === 0;
   const riskShare =
     segments && segments.total > 0
       ? (segments.stages.inactif.count + segments.stages.en_train_de_partir.count) / segments.total
       : 0;
-  const atRisk = !notLive && ((kpis?.visits === 0) || riskShare > 0.5);
+  const atRisk = !notLive && (kpis?.visits === 0 || riskShare > 0.5);
 
   const num = (n: number | undefined) => (n === undefined ? "—" : String(n));
 
@@ -156,7 +158,12 @@ function ActivationChecklist({ activation }: { activation: ActivationStatus }) {
           </li>
         ))}
       </ul>
-      {activation.isLive && <div className="text-xs text-halo font-medium">✓ Marchand opérationnel</div>}
+      {activation.isLive && (
+        <div className="flex items-center gap-1 text-xs text-halo font-medium">
+          <Check className="w-3 h-3" />
+          Marchand opérationnel
+        </div>
+      )}
     </div>
   );
 }
