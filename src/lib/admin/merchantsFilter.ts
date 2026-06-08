@@ -47,11 +47,12 @@ export function filterMerchants(
     return true;
   });
 
-  // ISO strings → comparaison lexicographique = chronologique.
+  // Tri : nom via collation FR (gère les accents) ; récent via comparaison ISO
+  // explicite (les chaînes ISO 8601 s'ordonnent lexicographiquement = chronologiquement).
   return [...filtered].sort((a, b) =>
     sort === "name"
       ? a.shop_name.localeCompare(b.shop_name, "fr")
-      : b.created_at.localeCompare(a.created_at),
+      : b.created_at < a.created_at ? -1 : b.created_at > a.created_at ? 1 : 0,
   );
 }
 

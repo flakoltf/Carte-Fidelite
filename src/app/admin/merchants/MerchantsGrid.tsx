@@ -34,12 +34,10 @@ export default function MerchantsGrid({
   const [sort, setSort] = useState<MerchantSort>("recent");
   const [page, setPage] = useState(1);
 
-  const filters: MerchantFilters = { businessType, concierge, hasCard };
-
-  const filtered = useMemo(
-    () => filterMerchants(items, query, filters, sort),
-    [items, query, businessType, concierge, hasCard, sort],
-  );
+  const filtered = useMemo(() => {
+    const filters: MerchantFilters = { businessType, concierge, hasCard };
+    return filterMerchants(items, query, filters, sort);
+  }, [items, query, businessType, concierge, hasCard, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / MERCHANTS_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -70,6 +68,7 @@ export default function MerchantsGrid({
             value={query}
             onChange={(e) => onCriteriaChange(setQuery)(e.target.value)}
             placeholder="Rechercher un marchand (nom, email)…"
+            aria-label="Rechercher un marchand"
             className="w-full bg-surface border border-line-warm rounded-xl pl-9 pr-3 py-2 text-sm text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet"
           />
         </div>
@@ -190,10 +189,10 @@ export default function MerchantsGrid({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 pt-2">
+            <nav aria-label="Pagination" className="flex items-center justify-center gap-4 pt-2">
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => setPage(Math.max(1, safePage - 1))}
                 disabled={safePage <= 1}
                 className="flex items-center gap-1 text-sm px-3 py-2 rounded-xl border border-line-warm text-galet-ink hover:bg-calcaire disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
@@ -202,13 +201,13 @@ export default function MerchantsGrid({
               <span className="text-sm text-galet-ink">Page {safePage} / {totalPages}</span>
               <button
                 type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
                 disabled={safePage >= totalPages}
                 className="flex items-center gap-1 text-sm px-3 py-2 rounded-xl border border-line-warm text-galet-ink hover:bg-calcaire disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Suivant <ChevronRight className="w-4 h-4" />
               </button>
-            </div>
+            </nav>
           )}
         </>
       )}
