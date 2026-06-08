@@ -70,7 +70,9 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // /enroll/* (page publique d'enrôlement) et /api/enroll* sont exclus :
-  // ce sont des routes publiques, sans session, identifiées par enrollment_token.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|enroll|api/enroll|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // Routes publiques sans session, exclues du proxy :
+  //   /c/*        page publique d'enrôlement par slug commerçant
+  //   /enroll/*   ancienne URL par token (redirige vers /c/*)
+  //   /api/enroll* soumission du formulaire d'enrôlement
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|c/|enroll|api/enroll|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
