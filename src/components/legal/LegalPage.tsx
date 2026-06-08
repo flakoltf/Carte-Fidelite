@@ -29,7 +29,7 @@ export function LegalPage({ content }: { content: string }) {
           <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Document en cours de finalisation : les éléments{" "}
             <mark className="rounded bg-amber-100 px-1 font-medium text-amber-800">surlignés</mark>{" "}
-            seront complétés dès l'enregistrement de la société.
+            seront complétés dès l&apos;enregistrement de la société.
           </div>
         )}
         <article className="text-[15px]">

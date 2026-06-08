@@ -1,4 +1,5 @@
-import type { CardDesign } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { CardDesign, LogoAssets, CardField, CardBarcode } from './types';
 import { DEFAULT_CARD_DESIGN } from './types';
 
 type Row = {
@@ -7,9 +8,9 @@ type Row = {
   label_color: string;
   program_name: string;
   logo_original_path: string | null;
-  logo_assets: any;
-  fields: any;
-  barcode: any;
+  logo_assets: LogoAssets | null;
+  fields: CardField[] | null;
+  barcode: CardBarcode | null;
   google_class_id: string | null;
 };
 
@@ -43,7 +44,7 @@ export function designToRow(d: CardDesign) {
   };
 }
 
-export async function loadDesign(supabase: any, merchantId: string): Promise<CardDesign> {
+export async function loadDesign(supabase: SupabaseClient, merchantId: string): Promise<CardDesign> {
   const { data } = await supabase
     .from('card_designs')
     .select('*')
@@ -57,7 +58,7 @@ export async function loadDesign(supabase: any, merchantId: string): Promise<Car
  * Use this when you need to distinguish "no design saved" from the default design,
  * e.g. to preserve legacy pass-generation behavior when merchants haven't set up a design.
  */
-export async function loadDesignOrNull(supabase: any, merchantId: string): Promise<CardDesign | null> {
+export async function loadDesignOrNull(supabase: SupabaseClient, merchantId: string): Promise<CardDesign | null> {
   const { data } = await supabase
     .from('card_designs')
     .select('*')
@@ -67,7 +68,7 @@ export async function loadDesignOrNull(supabase: any, merchantId: string): Promi
 }
 
 export async function saveDesign(
-  supabase: any,
+  supabase: SupabaseClient,
   merchantId: string,
   userId: string,
   design: CardDesign,

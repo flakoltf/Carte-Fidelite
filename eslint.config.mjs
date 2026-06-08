@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Scripts Node utilitaires (require() légitime, hors graphe applicatif).
     "scripts/**",
+    // Worktrees et état local de Claude Code (contiennent des builds .next).
+    ".claude/**",
   ]),
   // Autorise les paramètres/variables préfixés `_` (intentionnellement inutilisés).
   {
@@ -22,6 +24,13 @@ const eslintConfig = defineConfig([
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
+    },
+  },
+  // Fichiers de test : les mocks et cas limites utilisent légitimement `any`.
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ]);
