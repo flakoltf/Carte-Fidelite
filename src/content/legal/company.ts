@@ -12,14 +12,14 @@
 // ────────────────────────────────────────────────────────────────────────
 
 export const company = {
-  raisonSociale: null as string | null, // ex. « Letaief Solution, Adam Letaief »
+  raisonSociale: "HaloCard-Letaief", // nom de société décidé (juin 2026)
   formeJuridique: "Raison individuelle",
   adresse: null as string | null, // ex. « Rue de … 12 »
   npa: null as string | null, // ex. « 1200 »
   localite: "Genève",
   pays: "Suisse",
   ide: null as string | null, // ex. « CHE-123.456.789 »
-  emailContact: null as string | null, // ex. « contact@halo.swiss »
+  emailContact: "contact@halocard.ch", // domaine halocard.ch acquis (juin 2026)
   emailDpo: null as string | null, // ex. « privacy@halo.swiss »
   telephone: null as string | null,
   responsablePublication: null as string | null, // ex. « Adam Letaief »
