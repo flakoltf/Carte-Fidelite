@@ -1,8 +1,23 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { mfaStepUpRequired } from '@/lib/auth/mfa'
+import { resolveHostRouting, isMarketingHost, isAppPath } from '@/lib/routing/host'
 
 export default async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  const host = request.headers.get('host')
+
+  // 1) Routage par sous-domaine (jamais sur /api/*, ni en dev/preview).
+  const hostRedirect = resolveHostRouting(host, path)
+  if (hostRedirect) {
+    return NextResponse.redirect(new URL(hostRedirect, request.url))
+  }
+
+  // 2) Sur le domaine vitrine, les pages publiques ne requièrent ni session ni MFA.
+  if (isMarketingHost(host ?? '') && !isAppPath(path)) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
@@ -27,7 +42,6 @@ export default async function proxy(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const path = request.nextUrl.pathname
   const isProtected =
     path.startsWith('/dashboard') || path.startsWith('/scan') || path.startsWith('/admin')
 
@@ -71,8 +85,9 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   // Routes publiques sans session, exclues du proxy :
-  //   /c/*        page publique d'enrôlement par slug commerçant
-  //   /enroll/*   ancienne URL par token (redirige vers /c/*)
+  //   /c/*         page publique d'enrôlement par slug commerçant
+  //   /enroll/*    ancienne URL par token (redirige vers /c/*)
   //   /api/enroll* soumission du formulaire d'enrôlement
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|c/|enroll|api/enroll|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  //   /api/wallet* webhooks Apple/Google appelés par leurs serveurs (jamais de session)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|c/|enroll|api/enroll|api/wallet|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
