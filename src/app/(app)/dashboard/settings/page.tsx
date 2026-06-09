@@ -9,8 +9,9 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  // merchant : on stocke la donnée chargée (setter utilisé) sans la lire dans le rendu.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [merchant, setMerchant] = useState<any>(null);
+  const [, setMerchant] = useState<any>(null);
 
   const [shopName, setShopName] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#10b981");
