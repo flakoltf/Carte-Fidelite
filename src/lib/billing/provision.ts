@@ -30,8 +30,8 @@ export async function provisionMerchant(input: ProvisionInput, deps: ProvisionDe
     user_id: user.id,
     email,
     // shop_name est NOT NULL : valeur par défaut dérivée de l'email, modifiable
-    // ensuite par le commerçant. Sur retry webhook (même stripe_customer_id,
-    // avant tout login), ré-écrire cette valeur par défaut est bénin.
+    // ensuite par le commerçant. Sur retry webhook (même email, avant tout
+    // login), ré-écrire cette valeur par défaut est bénin.
     shop_name: email.split("@")[0],
     plan: input.plan,
     card_limit: cardLimit,
@@ -65,7 +65,11 @@ export function prodDeps(): ProvisionDeps {
     upsertMerchant: async (row) => {
       const { data, error } = await supabaseAdmin
         .from("merchants")
-        .upsert(row, { onConflict: "stripe_customer_id" })
+        // onConflict: "email" — merchants.email a une contrainte UNIQUE complète
+        // (arbitre ON CONFLICT valide). L'index partiel sur stripe_customer_id ne
+        // peut PAS servir d'arbitre (Postgres refuse les index partiels) ; il reste
+        // un garde d'intégrité. Sur email existant → rattachement (idempotent).
+        .upsert(row, { onConflict: "email" })
         .select("id, shop_name")
         .single();
       if (error || !data) throw new Error(`upsertMerchant: ${error?.message}`);
