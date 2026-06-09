@@ -89,5 +89,6 @@ export const config = {
   //   /enroll/*    ancienne URL par token (redirige vers /c/*)
   //   /api/enroll* soumission du formulaire d'enrôlement
   //   /api/wallet* webhooks Apple/Google appelés par leurs serveurs (jamais de session)
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|c/|enroll|api/enroll|api/wallet|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  //   /api/webhooks* webhooks Stripe appelés par les serveurs Stripe (jamais de session)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|c/|enroll|api/enroll|api/wallet|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }
