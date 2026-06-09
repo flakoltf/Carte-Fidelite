@@ -21,16 +21,21 @@ jobs:
           node-version: 22
           cache: npm
 
-      # Bug npm/cli#4828 : un package-lock.json généré sur macOS n'installe pas
-      # les binaires natifs Linux (rolldown/vitest, @next/swc, sharp, oxide,
-      # lightningcss, @unrs) sur le runner — même avec `npm install`, qui honore
-      # le lock. Le workaround documenté est de régénérer depuis package.json sur
-      # le runner : on retire le lock puis `npm install` résout la bonne
-      # plateforme. (Le lock committé reste utilisé en local et par Vercel.)
+      # Install déterministe depuis le lock (versions figées → pas de dérive).
       - name: Install dependencies
+        run: npm ci
+
+      # Bug npm/cli#4828 : un package-lock.json généré sur macOS ne référence pas
+      # les binaires natifs Linux (rolldown/vitest, @next/swc, sharp, oxide,
+      # lightningcss, @unrs, @rollup) → ils manquent sur le runner après `npm ci`.
+      # On les ajoute explicitement aux versions DÉJÀ figées dans le lock : la
+      # liste est dérivée du lock (donc auto-maintenue) et node_modules est déjà
+      # peuplé par `npm ci`, donc aucune autre dépendance n'est modifiée.
+      - name: Ajoute les binaires natifs Linux manquants (npm/cli#4828)
         run: |
-          rm -f package-lock.json
-          npm install --no-audit --no-fund
+          PKGS=$(node -e 'const l=require("./package-lock.json").packages;const out=[];for(const k of Object.keys(l)){if(!k.endsWith("-darwin-arm64"))continue;const base=k.slice("node_modules/".length,-"-darwin-arm64".length);out.push((base.startsWith("@img/sharp")?base+"-linux-x64":base+"-linux-x64-gnu")+"@"+l[k].version);}process.stdout.write(out.join(" "));')
+          echo "Binaires Linux ajoutés : $PKGS"
+          npm install --no-save --no-package-lock --no-audit --no-fund $PKGS
 
       - name: Lint
         run: npm run lint
