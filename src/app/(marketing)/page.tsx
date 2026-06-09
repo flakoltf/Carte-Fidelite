@@ -73,45 +73,56 @@ const WHY: { Icon: LucideIcon; title: string; desc: string }[] = [
 ];
 
 // Toutes les fonctionnalités sont incluses dans chaque palier — seul le volume de clients actifs change.
-const PLAN_FEATURES = [
-  "Toutes les fonctionnalités incluses",
-  "Carte 100% à votre image",
-  "Apple & Google Wallet (sans appli)",
-  "Notifications push & de proximité",
-  "Base clients & statistiques",
-  "Mise en service offerte",
-];
-
 const PRICING = [
   {
     name: "Essentiel",
-    price: "49",
+    price: "99",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 100 cartes actives",
+    tagline: "Jusqu'à 300 cartes actives",
     featured: false,
     cta: "Choisir",
-    href: "/signup",
-    features: PLAN_FEATURES,
+    href: "/contact",
+    features: [
+      "Apple & Google Wallet (sans appli)",
+      "Mises à jour illimitées",
+      "Carte de fidélité à tampons",
+      "Branding de base (logo + couleurs)",
+      "2 campagnes push / mois",
+      "Statistiques de base",
+      "Support e-mail",
+    ],
   },
   {
-    name: "Croissance",
-    price: "89",
+    name: "Pro",
+    price: "179",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 500 cartes actives",
+    tagline: "Jusqu'à 1 200 cartes actives",
     featured: true,
     cta: "Choisir",
-    href: "/signup",
-    features: PLAN_FEATURES,
+    href: "/contact",
+    features: [
+      "Tout l'Essentiel, plus :",
+      "Toutes les mécaniques + multi-programmes",
+      "Branding complet (visuels avancés)",
+      "Notifications push illimitées + ciblage",
+      "Statistiques avancées",
+      "Support prioritaire",
+    ],
   },
   {
-    name: "Premium",
-    price: "149",
+    name: "Business",
+    price: "299",
     unit: "CHF / mois",
-    tagline: "Cartes actives illimitées",
+    tagline: "Jusqu'à 4 000 cartes actives",
     featured: false,
     cta: "Choisir",
-    href: "/signup",
-    features: PLAN_FEATURES,
+    href: "/contact",
+    features: [
+      "Tout le Pro, plus :",
+      "Export des données",
+      "White-label",
+      "Support dédié + onboarding",
+    ],
   },
 ];
 
