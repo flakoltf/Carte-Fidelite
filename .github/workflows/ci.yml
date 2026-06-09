@@ -35,7 +35,9 @@ jobs:
         run: |
           PKGS=$(node -e 'const l=require("./package-lock.json").packages;const out=[];for(const k of Object.keys(l)){if(!k.endsWith("-darwin-arm64"))continue;const base=k.slice("node_modules/".length,-"-darwin-arm64".length);out.push((base.startsWith("@img/sharp")?base+"-linux-x64":base+"-linux-x64-gnu")+"@"+l[k].version);}process.stdout.write(out.join(" "));')
           echo "Binaires Linux ajoutés : $PKGS"
-          npm install --no-save --no-package-lock --no-audit --no-fund $PKGS
+          # PAS de --no-package-lock : on garde le lock comme référence pour figer
+          # toutes les autres deps (sinon npm ré-résout et dérive le tooling lint).
+          npm install --no-save --no-audit --no-fund $PKGS
 
       - name: Lint
         run: npm run lint
