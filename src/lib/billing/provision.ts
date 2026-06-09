@@ -71,11 +71,13 @@ export function prodDeps(): ProvisionDeps {
       if (error || !data) throw new Error(`upsertMerchant: ${error?.message}`);
       return data as { id: string; shop_name: string };
     },
-    generateInviteLink: async (email, userExists) => {
-      // Cast nécessaire : TypeScript ne peut pas discriminer le type union
-      // "recovery" | "invite" à la compilation avec l'opérateur ternaire.
+    generateInviteLink: async (email, _userExists) => {
+      // Le compte existe toujours ici (createUser a déjà tourné pour les nouveaux)
+      // → on utilise TOUJOURS 'recovery' : 'invite' échouerait sur un email déjà
+      // existant. Le lien de récupération valide l'email ET permet de définir le
+      // mot de passe (= Option A).
       const params = {
-        type: userExists ? "recovery" : "invite",
+        type: "recovery",
         email,
         options: { redirectTo: `${BASE_URL}/definir-mot-de-passe` },
       } as GenerateLinkParams;
