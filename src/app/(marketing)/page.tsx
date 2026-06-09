@@ -24,6 +24,8 @@ import {
 import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
 import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import type { PlanKey } from "@/lib/billing/plans";
+import { ChoosePlanButton } from "./ChoosePlanButton";
 
 /* ---------- motion helper (respects reduced-motion) ---------- */
 function Reveal({
@@ -84,33 +86,33 @@ const PLAN_FEATURES = [
 
 const PRICING = [
   {
-    name: "Essentiel",
-    price: "49",
+    planKey: "starter" as PlanKey,
+    name: "Starter",
+    price: "69",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 100 cartes actives",
+    tagline: "Jusqu'à 250 cartes actives",
     featured: false,
     cta: "Choisir",
-    href: "/signup",
     features: PLAN_FEATURES,
   },
   {
-    name: "Croissance",
-    price: "89",
+    planKey: "pro" as PlanKey,
+    name: "Pro",
+    price: "129",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 500 cartes actives",
+    tagline: "Jusqu'à 1 000 cartes actives",
     featured: true,
     cta: "Choisir",
-    href: "/signup",
     features: PLAN_FEATURES,
   },
   {
-    name: "Premium",
-    price: "149",
+    planKey: "business" as PlanKey,
+    name: "Business",
+    price: "199",
     unit: "CHF / mois",
-    tagline: "Cartes actives illimitées",
+    tagline: "Jusqu'à 3 000 cartes actives",
     featured: false,
     cta: "Choisir",
-    href: "/signup",
     features: PLAN_FEATURES,
   },
 ];
@@ -390,16 +392,9 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href={p.href}
-                    className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo ${
-                      p.featured
-                        ? "bg-halo text-white hover:bg-halo-600"
-                        : "border border-line-warm text-onyx hover:bg-calcaire"
-                    }`}
-                  >
-                    {p.cta}
-                  </Link>
+                  <div className="mt-8">
+                    <ChoosePlanButton plan={p.planKey} label={p.cta} />
+                  </div>
                 </div>
               </Reveal>
             ))}
