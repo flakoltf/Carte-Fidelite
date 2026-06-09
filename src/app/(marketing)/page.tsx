@@ -370,7 +370,7 @@ export default function Home() {
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
               Un prix clair, <em className="italic text-halo">sans surprise.</em>
             </h2>
-            <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de cartes actives.</p>
+            <p className="mt-4 text-galet-ink">Sans matériel. Le palier évolue avec votre nombre de cartes actives et les fonctionnalités dont vous avez besoin.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {PRICING.map((p, i) => (
@@ -417,9 +417,9 @@ export default function Home() {
           </div>
           <Reveal>
             <p className="mt-8 text-center text-sm text-galet-ink">
-              Engagement annuel : <span className="text-onyx">2 mois offerts</span>.
+              Engagement annuel : <span className="text-onyx">2 mois offerts</span>. Mise en service <span className="text-onyx">250 CHF</span> — offerte en annuel et pour les partenaires de lancement.
               <br />
-              Plusieurs commerces ? <span className="text-onyx">Tarif sur demande</span>, établi selon votre réseau de points de vente.
+              Plusieurs commerces ? <span className="text-onyx">Tarif dégressif sur devis</span>, dès +99 CHF / établissement.
             </p>
           </Reveal>
         </div>
