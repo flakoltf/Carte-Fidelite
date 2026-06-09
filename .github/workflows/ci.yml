@@ -21,15 +21,16 @@ jobs:
           node-version: 22
           cache: npm
 
-      # On utilise `npm install` (et non `npm ci`) volontairement : des deps à
-      # binaires natifs (rolldown/vitest, @next/swc, sharp, @tailwindcss/oxide,
-      # lightningcss, @unrs) ont des binaires + sous-dépendances WASM (@emnapi)
-      # spécifiques par plateforme. À cause du bug npm/cli#4828, un package-lock
-      # généré sur un seul OS (ex. macOS) ne peut pas contenir un arbre complet
-      # et cohérent pour Linux → `npm ci` (strict) casse en CI. `npm install`
-      # résout la plateforme du runner depuis package.json et fonctionne partout.
+      # Bug npm/cli#4828 : un package-lock.json généré sur macOS n'installe pas
+      # les binaires natifs Linux (rolldown/vitest, @next/swc, sharp, oxide,
+      # lightningcss, @unrs) sur le runner — même avec `npm install`, qui honore
+      # le lock. Le workaround documenté est de régénérer depuis package.json sur
+      # le runner : on retire le lock puis `npm install` résout la bonne
+      # plateforme. (Le lock committé reste utilisé en local et par Vercel.)
       - name: Install dependencies
-        run: npm install --no-audit --no-fund --prefer-offline
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
