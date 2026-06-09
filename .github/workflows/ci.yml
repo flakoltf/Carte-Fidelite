@@ -51,6 +51,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
+          # Plus de heap pour le build Next (sinon OOM quand l'app grandit ;
+          # le runner GitHub a 16 Go de RAM).
+          NODE_OPTIONS: --max-old-space-size=6144
           # Valeurs FACTICES non-secrètes : les clients Supabase/Upstash/QR sont
           # instanciés au scope module (jettent si la var manque) mais ne sont
           # jamais APPELÉS pendant le build → aucune vraie clé requise.
