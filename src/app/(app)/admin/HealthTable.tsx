@@ -28,6 +28,23 @@ const FILTERS: { key: HealthFilter; label: string }[] = [
   { key: "vert", label: "🟢 Verts" },
 ];
 
+function SortIcon({
+  col,
+  sortKey,
+  ascending,
+}: {
+  col: HealthSortKey;
+  sortKey: HealthSortKey;
+  ascending: boolean;
+}) {
+  if (col !== sortKey) return <ArrowUpDown className="inline h-3 w-3 text-galet" aria-hidden />;
+  return ascending ? (
+    <ArrowUp className="inline h-3 w-3" aria-hidden />
+  ) : (
+    <ArrowDown className="inline h-3 w-3" aria-hidden />
+  );
+}
+
 function relativeDays(iso: string | null): string {
   if (!iso) return "jamais";
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -63,15 +80,6 @@ export default function HealthTable({ rows }: { rows: HealthRow[] }) {
       setAscending(key === "score"); // score : rouges d'abord ; le reste : décroissant
     }
   };
-
-  const SortIcon = ({ col }: { col: HealthSortKey }) =>
-    col !== sortKey ? (
-      <ArrowUpDown className="inline h-3 w-3 text-galet" aria-hidden />
-    ) : ascending ? (
-      <ArrowUp className="inline h-3 w-3" aria-hidden />
-    ) : (
-      <ArrowDown className="inline h-3 w-3" aria-hidden />
-    );
 
   if (rows.length === 0) {
     return (
@@ -115,29 +123,29 @@ export default function HealthTable({ rows }: { rows: HealthRow[] }) {
             <tr className="border-b border-line-warm bg-calcaire text-left text-xs uppercase tracking-wide text-galet-ink">
               <th className="px-4 py-3">
                 <button onClick={() => toggleSort("nom")} className="font-semibold hover:text-onyx">
-                  Marchand <SortIcon col="nom" />
+                  Marchand <SortIcon col="nom" sortKey={sortKey} ascending={ascending} />
                 </button>
               </th>
               <th className="px-4 py-3">
                 <button onClick={() => toggleSort("score")} className="font-semibold hover:text-onyx">
-                  Santé <SortIcon col="score" />
+                  Santé <SortIcon col="score" sortKey={sortKey} ascending={ascending} />
                 </button>
               </th>
               <th className="px-4 py-3">Palier</th>
               <th className="px-4 py-3">
                 <button onClick={() => toggleSort("cartes")} className="font-semibold hover:text-onyx">
-                  Cartes actives <SortIcon col="cartes" />
+                  Cartes actives <SortIcon col="cartes" sortKey={sortKey} ascending={ascending} />
                 </button>
               </th>
               <th className="px-4 py-3">
                 <button onClick={() => toggleSort("scans")} className="font-semibold hover:text-onyx">
-                  Scans 30 j <SortIcon col="scans" />
+                  Scans 30 j <SortIcon col="scans" sortKey={sortKey} ascending={ascending} />
                 </button>
               </th>
               <th className="px-4 py-3">Dernier scan</th>
               <th className="px-4 py-3">
                 <button onClick={() => toggleSort("anciennete")} className="font-semibold hover:text-onyx">
-                  Depuis <SortIcon col="anciennete" />
+                  Depuis <SortIcon col="anciennete" sortKey={sortKey} ascending={ascending} />
                 </button>
               </th>
             </tr>
