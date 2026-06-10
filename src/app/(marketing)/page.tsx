@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
 import { JsonLd, organizationJsonLd, softwareApplicationJsonLd } from "@/components/site/JsonLd";
+import { faqJsonLd } from "@/content/faq";
 
 export const metadata: Metadata = {
   title: "Carte de fidélité numérique Apple & Google Wallet pour commerçants — HaloCard Genève",
@@ -14,6 +15,7 @@ export default function Home() {
     <>
       <JsonLd data={organizationJsonLd()} />
       <JsonLd data={softwareApplicationJsonLd()} />
+      <JsonLd data={faqJsonLd()} />
       <HomeClient />
     </>
   );

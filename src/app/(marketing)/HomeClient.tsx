@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   Check,
+  ChevronRight,
   Smartphone,
   Palette,
   Bell,
@@ -22,6 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
+import { FAQ_ITEMS } from "@/content/faq";
 import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
@@ -149,6 +151,7 @@ export default function HomeClient() {
             <a href="#mecaniques" className="transition-colors hover:text-onyx">Mécaniques</a>
             <a href="#galerie" className="transition-colors hover:text-onyx">Exemples</a>
             <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
+            <a href="#faq" className="transition-colors hover:text-onyx">FAQ</a>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -412,6 +415,42 @@ export default function HomeClient() {
               <br />
               Une <span className="text-onyx">carte active</span> = une carte installée dans un wallet avec au moins une activité
               (installation, scan ou mise à jour) au cours des 90 derniers jours.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ---------------- FAQ ---------------- */}
+      <section id="faq" className="border-t border-line-warm px-6 py-24">
+        <div className="mx-auto max-w-3xl">
+          <Reveal>
+            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Questions fréquentes</p>
+            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+              Les vraies questions, <em className="italic text-halo">sans détour.</em>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="mt-12 divide-y divide-line-warm rounded-2xl border border-line-warm bg-surface">
+              {FAQ_ITEMS.map((item) => (
+                <details key={item.question} className="group px-6 py-5 open:bg-halo/[0.03]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-onyx [&::-webkit-details-marker]:hidden">
+                    {item.question}
+                    <ChevronRight
+                      className="h-4 w-4 shrink-0 text-galet transition-transform group-open:rotate-90"
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-galet-ink">{item.answer}</p>
+                </details>
+              ))}
+            </div>
+          </Reveal>
+          <Reveal delay={0.12}>
+            <p className="mt-8 text-center text-sm text-galet-ink">
+              Une question qui n&apos;est pas là ?{" "}
+              <Link href="/demarrer" className="font-semibold text-halo hover:underline">
+                Posez-la nous — on vous montre votre carte au passage.
+              </Link>
             </p>
           </Reveal>
         </div>
