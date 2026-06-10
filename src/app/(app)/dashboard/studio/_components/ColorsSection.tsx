@@ -32,7 +32,13 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
   const [draft, setDraft] = useState(value.replace('#', ''));
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setDraft(value.replace('#', '')), [value]);
+  // Resynchronise le champ texte quand la couleur change ailleurs (palette,
+  // pipette) — pattern « adjusting state during render », sans effet.
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value.replace('#', ''));
+  }
 
   const handleOutside = useCallback((e: MouseEvent) => {
     if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
