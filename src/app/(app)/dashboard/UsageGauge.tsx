@@ -19,7 +19,14 @@ const BADGE_STYLES: Record<string, string> = {
   over: "bg-amber-600/15 text-amber-800",
 };
 
-export default function UsageGauge({ usage }: { usage: UsageGaugeModel }) {
+export default function UsageGauge({
+  usage,
+  showUpgradeCta = true,
+}: {
+  usage: UsageGaugeModel;
+  /** false côté admin : l'info reste, le mailto d'upgrade (destiné au marchand) disparaît. */
+  showUpgradeCta?: boolean;
+}) {
   const pct = usage.ratio === null ? null : Math.round(usage.ratio * 100);
 
   return (
@@ -70,7 +77,7 @@ export default function UsageGauge({ usage }: { usage: UsageGaugeModel }) {
         </div>
       )}
 
-      {usage.upgrade && (
+      {usage.upgrade && showUpgradeCta && (
         <Link
           href={`mailto:contact@halocard.ch?subject=${encodeURIComponent(
             `Passage au palier ${usage.upgrade.targetLabel}`

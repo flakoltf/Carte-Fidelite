@@ -7,6 +7,9 @@ import { fetchVisits, type Point } from "@/lib/analytics/visits";
 import { fetchSegmentCounts } from "@/lib/segments/fetch";
 import { STAGE_STYLE, LEGEND_ORDER } from "@/lib/segments/stageStyle";
 import { computeActivation, type ActivationStatus } from "@/lib/admin/activation";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { computeUsage } from "@/lib/billing/usage";
+import UsageGauge from "@/app/(app)/dashboard/UsageGauge";
 import MiniVisitsChart from "./MiniVisitsChart";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +23,35 @@ export default async function MerchantInsightsPage({ params }: { params: Promise
   const supabase = await createClient();
   const { data: m } = await supabase
     .from("merchants")
-    .select("id, shop_name, role")
+    .select("id, shop_name, role, plan")
     .eq("id", id)
     .maybeSingle();
   if (!m || m.role !== "merchant") notFound();
+
+  // Abonnement & santé — best-effort, jamais de page blanche.
+  // billing_active_cards : RLS admin (security_invoker) ; merchant_health :
+  // service-role (vue REVOKE), uniquement ici car la page est sous le gate admin.
+  const [usageRow, healthRow] = await Promise.all([
+    supabase
+      .from("billing_active_cards")
+      .select("active_cards_90d")
+      .eq("merchant_id", id)
+      .maybeSingle()
+      .then(
+        (r) => r.data,
+        () => null
+      ),
+    supabaseAdmin
+      .from("merchant_health")
+      .select("health_score, statut")
+      .eq("merchant_id", id)
+      .maybeSingle()
+      .then(
+        (r) => r.data,
+        () => null
+      ),
+  ]);
+  const usage = computeUsage(usageRow?.active_cards_90d ?? 0, m.plan);
 
   // Inputs d'activation (tout-temps) — comptes directs, dégradation propre.
   let hasCard = false;
@@ -70,9 +98,26 @@ export default async function MerchantInsightsPage({ params }: { params: Promise
           <ArrowLeft className="w-4 h-4" />
           Retour au marchand
         </Link>
-        <h1 className="font-display text-3xl text-onyx tracking-tight">Vue d&apos;ensemble</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-display text-3xl text-onyx tracking-tight">Vue d&apos;ensemble</h1>
+          {healthRow && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                healthRow.statut === "vert"
+                  ? "bg-emerald-500/10 text-emerald-700"
+                  : healthRow.statut === "orange"
+                    ? "bg-amber-500/15 text-amber-700"
+                    : "bg-red-500/10 text-red-700"
+              }`}
+            >
+              Santé {healthRow.health_score}/100
+            </span>
+          )}
+        </div>
         <p className="text-galet-ink">{m.shop_name}</p>
       </div>
+
+      <UsageGauge usage={usage} showUpgradeCta={false} />
 
       {atRisk && (
         <div className="bg-amber-500/10 border border-amber-500/30 text-amber-700 rounded-2xl px-4 py-3 text-sm">
