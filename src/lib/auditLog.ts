@@ -22,6 +22,11 @@ export const AUDIT_ACTIONS = [
   'ADMIN_IMPERSONATION_STOP',
   'CARD_DESIGN_UPDATED',
   'CARD_CLASS_SYNCED',
+  // Studio de design marchand (Agent A) — migration jumelle :
+  // supabase/migrations/20260611_audit_actions_studio.sql
+  'CARD_DESIGN_DRAFT_SAVED',
+  'CARD_DESIGN_PUBLISHED',
+  'CARD_ASSET_UPLOADED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
