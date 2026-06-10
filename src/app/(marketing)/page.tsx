@@ -169,7 +169,7 @@ export default function Home() {
               Connexion
             </Link>
             <Link
-              href="/signup"
+              href="/contact"
               className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
             >
               Créer ma carte
@@ -207,7 +207,7 @@ export default function Home() {
           <Reveal delay={0.15}>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/signup"
+                href="/contact"
                 className="group inline-flex items-center gap-2 rounded-full bg-halo px-7 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
               >
                 Créer ma carte
@@ -436,7 +436,7 @@ export default function Home() {
             Créez votre carte de fidélité numérique en quelques minutes. Sans engagement.
           </p>
           <Link
-            href="/signup"
+            href="/contact"
             className="group mt-9 inline-flex items-center gap-2 rounded-full bg-halo px-8 py-4 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
           >
             Créer ma carte
