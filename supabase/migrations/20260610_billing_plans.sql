@@ -38,6 +38,11 @@ FROM merchants m
 LEFT JOIN loyalty_cards c ON c.merchant_id = m.id
 GROUP BY m.id, m.plan;
 
+-- security_invoker : la vue applique la RLS des tables sous-jacentes — un
+-- marchand authentifié ne voit que SES lignes (sinon la vue, exécutée avec les
+-- droits de son propriétaire, exposerait les comptages de tous les tenants).
+ALTER VIEW billing_active_cards SET (security_invoker = true);
+
 -- Snapshot mensuel : le chiffre opposable au commerçant (CGV §6 — calculé le
 -- 1er jour de chaque mois). À exécuter le 1er du mois (cron Vercel) :
 --   INSERT INTO billing_snapshots (merchant_id, period, active_cards_90d, plan)
