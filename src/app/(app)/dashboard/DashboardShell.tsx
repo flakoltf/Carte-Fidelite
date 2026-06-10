@@ -16,7 +16,10 @@ import {
   ChevronRight,
   Layers,
   ShieldAlert,
-  CreditCard
+  CreditCard,
+  Palette,
+  History,
+  Gem
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
@@ -41,11 +44,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/dashboard" },
     { name: "Ma carte", icon: CreditCard, href: "/dashboard/card" },
+    { name: "Studio de carte", icon: Palette, href: "/dashboard/studio" },
     { name: "Clients", icon: Users, href: "/dashboard/customers" },
     { name: "Segments", icon: Layers, href: "/dashboard/segments" },
-    { name: "Notifications", icon: Bell, href: "/dashboard/notifications" },
-    { name: "Sécurité", icon: ShieldAlert, href: "/dashboard/security" },
     { name: "Campagnes", icon: Megaphone, href: "/dashboard/campaigns" },
+    { name: "Notifications", icon: Bell, href: "/dashboard/notifications" },
+    { name: "Activité", icon: History, href: "/dashboard/activity" },
+    { name: "Abonnement", icon: Gem, href: "/dashboard/subscription" },
+    { name: "Sécurité", icon: ShieldAlert, href: "/dashboard/security" },
     { name: "Scanner", icon: Scan, href: "/scan" },
     { name: "Paramètres", icon: Settings, href: "/dashboard/settings" },
   ];
