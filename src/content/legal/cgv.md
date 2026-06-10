@@ -12,7 +12,7 @@ En souscrivant un abonnement, en signant un bon de commande ou en utilisant le s
 
 - **Service** : la plateforme SaaS HALO permettant au Commerçant d'émettre et de gérer des cartes de fidélité digitales ajoutables dans Apple Wallet et Google Wallet, comprenant le tableau de bord commerçant, le CRM, les notifications push et l'éditeur de carte en marque blanche.
 - **Carte** : une carte de fidélité digitale émise sous la marque du Commerçant et ajoutée par un client final dans son portefeuille mobile.
-- **Carte active** : toute Carte présente dans un wallet Apple ou Google et liée à l'établissement, telle que comptabilisée dans le tableau de bord, qui sert d'unité de mesure du palier d'abonnement.
+- **Carte active** : toute Carte présente dans un portefeuille mobile (Apple Wallet ou Google Wallet) et liée à l'Établissement, ayant fait l'objet d'au moins un événement (installation, scan en caisse ou mise à jour) au cours des **quatre-vingt-dix (90) derniers jours**. Le nombre de Cartes actives est calculé le premier jour de chaque mois et fait foi pour la détermination du palier ; il est consultable à tout moment dans le tableau de bord. Elle sert d'unité de mesure du palier d'abonnement.
 - **Client final** : la personne physique, cliente du Commerçant, qui ajoute et utilise une Carte.
 - **Données clients** : les données personnelles des Clients finaux traitées au moyen du Service, dont le traitement est régi par le **Contrat de sous-traitance (DPA)** annexé.
 - **Établissement** : un point de vente physique exploité par le Commerçant.
@@ -41,10 +41,10 @@ Pour les premiers commerces partenaires, HALO offre une période d'essai de **de
 
 | Palier | Cartes actives | Prix / mois / établissement |
 |---|---|---|
-| Essentiel | jusqu'à 100 | CHF 49.– |
-| Croissance | jusqu'à 500 | CHF 89.– |
-| Premium | illimité | CHF 149.– |
-| Multi‑établissements | — | sur devis |
+| Essentiel | jusqu'à 200 | CHF 69.– |
+| Croissance | jusqu'à 750 | CHF 129.– |
+| Premium | jusqu'à 2 000 | CHF 199.– |
+| Multi‑établissements / au-delà de 2 000 | — | sur devis |
 
 6.2 **Changement de palier.** Si le nombre de Cartes actives dépasse durablement le plafond du palier souscrit, HALO en informe le Commerçant et l'abonnement passe au palier supérieur le mois suivant. Un passage à un palier inférieur prend effet le mois suivant la demande.
 

@@ -85,32 +85,32 @@ const PLAN_FEATURES = [
 const PRICING = [
   {
     name: "Essentiel",
-    price: "49",
+    price: "69",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 100 cartes actives",
+    tagline: "Jusqu'à 200 cartes actives",
     featured: false,
-    cta: "Choisir",
-    href: "/signup",
+    cta: "Choisir Essentiel",
+    href: "/contact?plan=essentiel",
     features: PLAN_FEATURES,
   },
   {
     name: "Croissance",
-    price: "89",
+    price: "129",
     unit: "CHF / mois",
-    tagline: "Jusqu'à 500 cartes actives",
+    tagline: "Jusqu'à 750 cartes actives",
     featured: true,
-    cta: "Choisir",
-    href: "/signup",
+    cta: "Choisir Croissance",
+    href: "/contact?plan=croissance",
     features: PLAN_FEATURES,
   },
   {
     name: "Premium",
-    price: "149",
+    price: "199",
     unit: "CHF / mois",
-    tagline: "Cartes actives illimitées",
+    tagline: "Jusqu'à 2 000 cartes actives",
     featured: false,
-    cta: "Choisir",
-    href: "/signup",
+    cta: "Choisir Premium",
+    href: "/contact?plan=premium",
     features: PLAN_FEATURES,
   },
 ];
@@ -158,7 +158,7 @@ export default function Home() {
               Connexion
             </Link>
             <Link
-              href="/signup"
+              href="/contact"
               className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
             >
               Créer ma carte
@@ -196,7 +196,7 @@ export default function Home() {
           <Reveal delay={0.15}>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/signup"
+                href="/contact"
                 className="group inline-flex items-center gap-2 rounded-full bg-halo px-7 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
               >
                 Créer ma carte
@@ -406,9 +406,12 @@ export default function Home() {
           </div>
           <Reveal>
             <p className="mt-8 text-center text-sm text-galet-ink">
-              Engagement annuel : <span className="text-onyx">2 mois offerts</span>.
+              Sans engagement. Paiement annuel : <span className="text-onyx">2 mois offerts</span>.
               <br />
               Plusieurs commerces ? <span className="text-onyx">Tarif sur demande</span>, établi selon votre réseau de points de vente.
+              <br />
+              Une <span className="text-onyx">carte active</span> = une carte installée dans un wallet avec au moins une activité
+              (installation, scan ou mise à jour) au cours des 90 derniers jours.
             </p>
           </Reveal>
         </div>
@@ -425,7 +428,7 @@ export default function Home() {
             Créez votre carte de fidélité numérique en quelques minutes. Sans engagement.
           </p>
           <Link
-            href="/signup"
+            href="/contact"
             className="group mt-9 inline-flex items-center gap-2 rounded-full bg-halo px-8 py-4 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
           >
             Créer ma carte
