@@ -33,6 +33,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     router.push("/login");
   };
 
+  // Actif si la route courante est la page ou une sous-page (P2 audit UX :
+  // l'exact-match laissait /dashboard/customers/xyz sans état actif).
+  const isNavActive = (href: string) =>
+    href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(href + "/");
+
   const navItems = [
     { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/dashboard" },
     { name: "Ma carte", icon: CreditCard, href: "/dashboard/card" },
@@ -57,7 +62,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
         <nav className="flex-1 space-y-2">
             {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isNavActive(item.href);
                 return (
                     <Link
                         key={item.href}
