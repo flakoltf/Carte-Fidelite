@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 certs/
+# les worktrees d'agents lient certs en symlink — « certs/ » ne couvre pas un lien
+certs
 
 # debug
 npm-debug.log*
