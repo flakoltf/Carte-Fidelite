@@ -163,9 +163,28 @@ prod tant que les migrations ne sont pas appliquées ; la lecture est sûre) :
 
 ## 6. État des vérifications (2026-06-10)
 
-- `npx vitest run` : **379/379 verts** (66 fichiers).
+- `npx vitest run` : **379/379 verts** (66 fichiers ; 344 existants + 35 Agent A).
 - `npx tsc --noEmit` : propre.
-- `npm run lint` : 0 erreur, 0 warning (résumé complet lu).
-- `npm run build` : OK (voir dernier commit).
-- Vérification visuelle : dev server local port 3001, compte démo, lecture
-  seule (aucune écriture en prod, aucun envoi réel).
+- `npm run lint` : **0 erreur, 0 warning** (résumé complet lu).
+- `npm run build` : **OK** — routes émises : `/dashboard/studio`, `/dashboard/activity`,
+  `/dashboard/subscription`, `/dashboard/customers/[id]`,
+  `/api/merchant/card-design{,/publish,/assets}`.
+- Vérification runtime (dev server port 3001, compte démo, lecture seule) :
+  login marchand OK ; `/dashboard`, `/dashboard/studio`, `/dashboard/activity`
+  (avec stats réelles 7/30/90 j), `/dashboard/subscription` (palier Essentiel,
+  grille 69/129/199, relevés), `/dashboard/card`, fiche client réelle
+  (`/dashboard/customers/4e051e51-…`) → tous 200 avec contenu attendu ;
+  `GET /api/merchant/card-design` renvoie le design publié du Café du Rhône +
+  fallbacks pré-migration (`version: 0`, `draft: null`) comme prévu.
+  AUCUNE écriture effectuée (pas de brouillon/publication/upload en prod).
+
+## 7. Notes d'environnement worktree (pour les prochains agents)
+
+- **Turbopack refuse les symlinks sortant du projet** : `node_modules` et
+  `certs` liés en symlink font paniquer `next build`. Correctif local appliqué
+  dans CE worktree : `npm ci` (vrai node_modules) + copie réelle de `certs/`
+  (gitignorée). Rien de committé, lockfile intact.
+- **Piège git réel rencontré** : `certs/` dans .gitignore n'ignore PAS un
+  symlink nommé `certs` → `git add -A` l'avait committé (un chemin relatif,
+  aucun secret). Historique de branche réécrit (filter-branch) pour le
+  retirer + règle `certs` (sans slash) ajoutée au .gitignore.
