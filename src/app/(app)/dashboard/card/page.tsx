@@ -1,0 +1,110 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, ExternalLink, Printer } from "lucide-react";
+import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
+
+// Page « Ma carte » : le QR d'enrôlement du marchand, imprimable, avec le lien
+// public. C'est l'outil n°1 du comptoir — il était jusqu'ici réservé à l'admin.
+// Source marchand : /api/merchant/me (respecte l'impersonation concierge).
+
+const MARKETING_BASE = "https://halocard.ch";
+
+function enrollUrlFor(slug: string): string {
+  // En dev/preview, le domaine vitrine n'existe pas : on reste sur l'origine courante.
+  if (typeof window !== "undefined" && !window.location.hostname.endsWith("halocard.ch")) {
+    return `${window.location.origin}/c/${slug}`;
+  }
+  return `${MARKETING_BASE}/c/${slug}`;
+}
+
+export default function MyCardPage() {
+  const [loading, setLoading] = useState(true);
+  const [merchant, setMerchant] = useState<{ shop_name: string; slug: string | null } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/merchant/me")
+      .then((r) => r.json())
+      .then(({ merchant }) => setMerchant(merchant))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24 text-galet-ink">
+        <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+      </div>
+    );
+  }
+
+  if (!merchant?.slug) {
+    return (
+      <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
+        Votre page d&apos;inscription n&apos;est pas encore prête — contactez-nous :{" "}
+        <a href="mailto:contact@halocard.ch" className="text-halo hover:underline">
+          contact@halocard.ch
+        </a>
+      </div>
+    );
+  }
+
+  const enrollUrl = enrollUrlFor(merchant.slug);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="mb-2 font-display text-3xl tracking-tight text-onyx">Ma carte</h1>
+        <p className="text-galet-ink">
+          Le QR à afficher en caisse : vos clients le scannent, remplissent 3 champs, et la carte
+          arrive dans leur téléphone.
+        </p>
+      </div>
+
+      <div className="grid items-start gap-8 lg:grid-cols-2">
+        <section className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
+          <h2 className="mb-1 font-bold text-onyx">QR d&apos;inscription client</h2>
+          <p className="mb-5 text-xs text-galet-ink">
+            Téléchargez-le, imprimez-le, et posez-le à hauteur des yeux, côté client — là où on
+            attend sa commande.
+          </p>
+          <EnrollmentQR url={enrollUrl} fileName={`qr-${merchant.slug}`} />
+        </section>
+
+        <section className="space-y-4">
+          <div className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
+            <h2 className="mb-1 font-bold text-onyx">Votre page d&apos;inscription</h2>
+            <p className="mb-4 text-xs text-galet-ink">
+              C&apos;est la page qui s&apos;ouvre quand un client scanne le QR — vérifiez-la sur
+              votre propre téléphone.
+            </p>
+            <a
+              href={enrollUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-line-warm px-5 py-2.5 text-sm font-semibold text-onyx transition-colors hover:bg-calcaire"
+            >
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              Ouvrir ma page d&apos;inscription
+            </a>
+          </div>
+
+          <div className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
+            <h2 className="mb-1 font-bold text-onyx">Le réflexe qui change tout</h2>
+            <p className="text-sm text-galet-ink">
+              Proposez la carte <span className="text-onyx">à chaque encaissement</span>, même aux
+              habitués — surtout aux habitués :{" "}
+              <em>
+                « Vous avez notre carte de fidélité ? Elle va direct dans votre téléphone, ça prend
+                10 secondes. »
+              </em>
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-galet">
+              <Printer className="h-3.5 w-3.5" aria-hidden />
+              Besoin d&apos;un chevalet imprimé ? Écrivez-nous, on vous en fournit un.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

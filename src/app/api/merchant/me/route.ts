@@ -9,7 +9,7 @@ export async function GET() {
   if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
   const { data } = await supabaseAdmin
     .from("merchants")
-    .select("id, shop_name, email, primary_color, logo_url, address, stamp_goal, latitude, longitude")
+    .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude")
     .eq("id", merchantId)
     .maybeSingle();
   return NextResponse.json({ merchant: data });
