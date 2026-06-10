@@ -6,20 +6,24 @@ import { buildApplePassBuffer } from "@/lib/applePass";
 import { buildGoogleSaveUrl } from "@/lib/googlePass";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 
 // Sert l'artefact Wallet d'une carte créée par l'enrôlement public.
-// GET /api/enroll/[cardId]?t=<enrollment_token>&wallet=apple|google
+// GET /api/enroll/[cardId]?s=<slug>&wallet=apple|google
+// (legacy : ?t=<enrollment_token> — liens émis avant la bascule slug)
 //   - apple  -> renvoie le .pkpass (Safari iOS affiche "Ajouter à Apple Wallet")
 //   - google -> redirige 302 vers l'URL signée "Enregistrer dans Google Wallet"
-// Protégé par l'id de carte (UUID non devinable) + le token de la boutique.
+// Protégé par l'id de carte (UUID non devinable) + l'appartenance à la boutique.
 export async function GET(req: Request, { params }: { params: Promise<{ cardId: string }> }) {
   try {
     const { cardId } = await params;
     const url = new URL(req.url);
     const token = (url.searchParams.get("t") || "").trim();
+    const slug = (url.searchParams.get("s") || "").trim();
     const wallet = url.searchParams.get("wallet");
 
-    if (!UUID_RE.test(cardId) || !UUID_RE.test(token)) {
+    const hasValidRef = UUID_RE.test(token) || SLUG_RE.test(slug);
+    if (!UUID_RE.test(cardId) || !hasValidRef) {
       return NextResponse.json({ error: "Paramètres invalides" }, { status: 400 });
     }
     if (wallet !== "apple" && wallet !== "google") {
@@ -41,10 +45,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ cardId: 
 
     const { data: merchant } = await supabaseAdmin
       .from("merchants")
-      .select("enrollment_token, shop_name, primary_color")
+      .select("enrollment_token, slug, shop_name, primary_color")
       .eq("id", card.merchant_id)
       .maybeSingle();
-    if (!merchant || merchant.enrollment_token !== token) {
+    const authorized =
+      merchant && (token ? merchant.enrollment_token === token : merchant.slug === slug);
+    if (!authorized) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 

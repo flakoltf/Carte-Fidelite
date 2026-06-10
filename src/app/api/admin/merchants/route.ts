@@ -3,6 +3,8 @@ import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { sendEmail } from "@/lib/email/send";
+import { merchantWelcomeEmail } from "@/lib/email/templates";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -78,7 +80,14 @@ export async function POST(req: Request) {
       ...meta,
     });
 
-    return NextResponse.json({ merchantId: merchant.id, email, tempPassword });
+    // Email A1 de bienvenue (best-effort : no-op tant que Resend n'est pas
+    // configuré — le mot de passe reste de toute façon dans la réponse admin).
+    const welcome = merchantWelcomeEmail({ shopName, email, tempPassword });
+    const emailResult = await sendEmail({ to: email, ...welcome }).catch(
+      () => ({ sent: false as const, reason: "error" as const })
+    );
+
+    return NextResponse.json({ merchantId: merchant.id, email, tempPassword, welcomeEmailSent: emailResult.sent });
   } catch (error) {
     console.error("Admin create merchant error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

@@ -76,6 +76,11 @@ describe("resolveHostRouting", () => {
       expect(resolveHostRouting("halocard.ch", "/cgu")).toBeNull();
       expect(resolveHostRouting("halocard.ch", "/contact")).toBeNull();
     });
+    it("canonicalise www vers l'apex (SEO, un seul hôte indexable)", () => {
+      expect(resolveHostRouting("www.halocard.ch", "/")).toBe("https://halocard.ch/");
+      expect(resolveHostRouting("www.halocard.ch", "/contact")).toBe("https://halocard.ch/contact");
+      expect(resolveHostRouting("halocard.ch", "/")).toBeNull();
+    });
   });
 
   describe("sur le domaine app (app.halocard.ch)", () => {

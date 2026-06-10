@@ -2,9 +2,10 @@ import jwt from "jsonwebtoken";
 import fs from "fs/promises";
 import path from "path";
 import { signQRCode } from "@/lib/qrSignature";
-import { classIdFor } from "@/lib/wallet/googleClass";
+import { classIdFor, ensureLoyaltyClass } from "@/lib/wallet/googleClass";
 import { loadDesign } from "@/lib/cardDesign/repository";
 import { mapToGoogleObjectExtras } from "@/lib/cardDesign/mapGoogle";
+import { DEFAULT_CARD_DESIGN } from "@/lib/cardDesign/types";
 
 export interface GooglePassInput {
   cardId: string;
@@ -41,7 +42,8 @@ export async function buildGoogleSaveUrl({
     private_key: string;
   };
 
-  const issuerId = process.env.GOOGLE_ISSUER_ID || "REMPLACE_PAR_TON_ISSUER_ID";
+  const issuerId = process.env.GOOGLE_ISSUER_ID;
+  if (!issuerId) throw new Error("GOOGLE_ISSUER_ID is required.");
   // Fallback class kept for the rare case where merchant lookup fails.
   const fallbackClassId = `${issuerId}.ma_classe_fidelite_template`;
 
@@ -57,37 +59,49 @@ export async function buildGoogleSaveUrl({
 
   // Resolve merchantId from the card row.
   let merchantId: string | undefined;
+  let shopName: string | undefined;
   let geoLocations: { latitude: number; longitude: number }[] | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards").select("merchant_id").eq("id", cardId).single();
   if (cardRow?.merchant_id) {
     merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
-      .from("merchants").select("latitude, longitude").eq("id", merchantId).single();
+      .from("merchants").select("shop_name, latitude, longitude").eq("id", merchantId).single();
+    if (mRow?.shop_name) shopName = mRow.shop_name as string;
     if (mRow?.latitude != null && mRow?.longitude != null) {
       geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
     }
   }
 
-  // NOTE: The LoyaltyClass identified by classId must be ensured/published via
-  // ensureLoyaltyClass (Task 14, API card-design route) before objects can be
-  // created against it. This function only references the class id.
-  const classId = merchantId ? classIdFor(merchantId) : fallbackClassId;
-
-  // Load the merchant's card design for the points label + barcode settings.
-  // Falls back to legacy defaults if the design cannot be loaded.
+  // Garantit la classe Google à l'émission (GET -> PATCH / 404 -> INSERT, jamais
+  // de PUT) : un marchand fraîchement onboardé sans design sauvegardé obtient une
+  // classe valide au premier enrôlement, au lieu d'un bouton qui échoue en caisse.
+  // En cas d'échec API, on retombe sur la classe partagée : carte non brandée
+  // plutôt qu'un échec devant le client final.
+  let classId = fallbackClassId;
   let pointsLabel = "Tampons";
   let barcodeType = "QR_CODE";
   let barcodeAltText = "";
   if (merchantId) {
+    classId = classIdFor(merchantId);
     try {
       const design = await loadDesign(supabaseAdmin, merchantId);
+      // Design par défaut (aucune ligne en base) : on personnalise au moins le
+      // nom de programme avec celui de la boutique.
+      if (design.programName === DEFAULT_CARD_DESIGN.programName && shopName) {
+        design.programName = shopName;
+      }
       const extras = mapToGoogleObjectExtras(design);
       pointsLabel = extras.pointsLabel;
       barcodeType = extras.barcodeType;
       barcodeAltText = extras.barcodeAltText;
-    } catch {
-      // loadDesign failed — keep the defaults.
+      classId = await ensureLoyaltyClass(merchantId, design);
+    } catch (e) {
+      console.error(
+        "ensureLoyaltyClass à l'émission a échoué — fallback classe partagée:",
+        e instanceof Error ? e.message : e,
+      );
+      classId = fallbackClassId;
     }
   }
 

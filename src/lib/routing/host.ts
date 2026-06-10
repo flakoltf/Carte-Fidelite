@@ -50,8 +50,11 @@ export function resolveHostRouting(host: string | null | undefined, path: string
   if (isPlatformHost(h)) return null;
 
   if (isMarketingHost(h)) {
-    // Une route d'app demandée sur le domaine vitrine -> bascule vers l'app.
+    // Une route d'app demandée sur le domaine vitrine -> bascule vers l'app
+    // (avant la canonicalisation www : un seul saut au lieu de deux).
     if (isAppPath(path)) return `https://${APP_HOST}${path}`;
+    // Canonicalisation SEO : www -> apex (un seul hôte indexable).
+    if (h === "www.halocard.ch") return `https://halocard.ch${path}`;
     return null; // pages marketing servies normalement
   }
 

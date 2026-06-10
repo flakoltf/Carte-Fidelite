@@ -60,6 +60,18 @@ const nextConfig: NextConfig = {
         },
       ],
     },
+    // SEO : un seul hôte indexable (halocard.ch). L'app et les déploiements
+    // Vercel servent le même contenu — on les exclut de l'index.
+    {
+      source: "/(.*)",
+      has: [{ type: "host", value: "app.halocard.ch" }],
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    },
+    {
+      source: "/(.*)",
+      has: [{ type: "host", value: "(?<vhost>.*\\.vercel\\.app)" }],
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    },
   ],
 };
 

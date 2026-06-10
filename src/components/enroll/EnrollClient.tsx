@@ -4,14 +4,21 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, User, Mail, Store, Download, Smartphone, AlertCircle, Check } from "lucide-react";
 
+// Tant que le publishing access Google Wallet n'est pas approuvé, le bouton
+// mènerait à un échec opaque au comptoir. Le jour de l'approbation : passer
+// NEXT_PUBLIC_GOOGLE_WALLET_READY=true dans Vercel et redéployer.
+const GOOGLE_WALLET_READY = process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY === "true";
+
 interface Props {
-  token: string;
+  // Identifiant public du marchand. L'enrollment_token (secret rotatif) ne doit
+  // jamais atteindre le navigateur : la résolution se fait côté serveur.
+  slug: string;
   shopName: string;
   primaryColor: string;
   logoUrl: string | null;
 }
 
-export default function EnrollClient({ token, shopName, primaryColor, logoUrl }: Props) {
+export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +34,7 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
       const res = await fetch("/api/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, firstName, lastName, email }),
+        body: JSON.stringify({ slug, firstName, lastName, email }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -42,8 +49,8 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
     }
   };
 
-  const appleUrl = cardId ? `/api/enroll/${cardId}?t=${token}&wallet=apple` : "#";
-  const googleUrl = cardId ? `/api/enroll/${cardId}?t=${token}&wallet=google` : "#";
+  const appleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=apple` : "#";
+  const googleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=google` : "#";
 
   return (
     <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-4">
@@ -179,15 +186,28 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
                 Ajouter à Apple Wallet
               </a>
 
-              <a
-                href={googleUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
-              >
-                <Smartphone className="w-5 h-5" />
-                Ajouter à Google Wallet
-              </a>
+              {GOOGLE_WALLET_READY ? (
+                <a
+                  href={googleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  Ajouter à Google Wallet
+                </a>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-dashed border-line-warm text-galet py-4 px-4 rounded-2xl text-center">
+                  <span className="flex items-center gap-2 font-bold">
+                    <Smartphone className="w-5 h-5" />
+                    Google Wallet — bientôt disponible
+                  </span>
+                  <span className="text-xs">
+                    Votre carte est créée et vos tampons comptent déjà. Vous pourrez l&apos;ajouter à
+                    Google Wallet très prochainement.
+                  </span>
+                </div>
+              )}
 
               <p className="text-center text-xs text-galet pt-2">
                 Présentez votre carte en caisse pour cumuler vos tampons.
