@@ -3,7 +3,6 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function cleanName(v: unknown): string | null {
@@ -13,26 +12,29 @@ function cleanName(v: unknown): string | null {
   return t;
 }
 
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
+
 // Enrôlement public : un client final scanne le QR physique du marchand
-// (/enroll/[token]) et soumet ce formulaire. Aucune authentification : on
-// identifie le marchand via son enrollment_token. supabaseAdmin contourne la RLS.
+// (/c/[slug]) et soumet ce formulaire. Aucune authentification : on identifie
+// le marchand via son slug public — l'enrollment_token (secret rotatif) ne
+// transite jamais par le navigateur. supabaseAdmin contourne la RLS.
 export async function POST(req: Request) {
   try {
     const meta = extractRequestMeta(req);
 
-    let body: { token?: unknown; firstName?: unknown; lastName?: unknown; email?: unknown };
+    let body: { slug?: unknown; firstName?: unknown; lastName?: unknown; email?: unknown };
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
     }
 
-    const token = typeof body.token === "string" ? body.token.trim() : "";
+    const slug = typeof body.slug === "string" ? body.slug.trim() : "";
     const firstName = cleanName(body.firstName);
     const lastName = cleanName(body.lastName);
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
-    if (!UUID_RE.test(token)) {
+    if (!SLUG_RE.test(slug)) {
       return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 400 });
     }
     if (!firstName || !lastName) {
@@ -42,18 +44,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
     }
 
-    // Rate limiting : par IP (anti-spam d'un appareil) et par token (anti-abus du QR public)
+    // Rate limiting : par IP (anti-spam d'un appareil) et par boutique (anti-abus du QR public)
     const ipLimit = await rateLimit(`enroll-ip:${meta.ip_address}`, 15, 3600000); // 15/h/IP
-    const tokenLimit = await rateLimit(`enroll-token:${token}`, 120, 3600000); // 120/h/boutique
-    if (!ipLimit.success || !tokenLimit.success) {
+    const slugLimit = await rateLimit(`enroll-slug:${slug}`, 120, 3600000); // 120/h/boutique
+    if (!ipLimit.success || !slugLimit.success) {
       return NextResponse.json({ error: "Trop de tentatives. Réessayez plus tard." }, { status: 429 });
     }
 
-    // Identifier le marchand via son token d'enrôlement
+    // Identifier le marchand via son slug public
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
       .select("id")
-      .eq("enrollment_token", token)
+      .eq("slug", slug)
       .maybeSingle();
 
     if (merchError) throw merchError;
@@ -120,17 +122,30 @@ export async function POST(req: Request) {
         .insert({ customer_id: customerId, merchant_id: merchant.id, stamps_count: 0 })
         .select("id")
         .single();
-      if (cardErr) throw cardErr;
-      cardId = card.id;
-      isNewCard = true;
+      if (cardErr) {
+        // Course : deux soumissions simultanées. La contrainte unique a tranché ;
+        // on récupère la carte gagnante (même pattern que customers ci-dessus).
+        if (cardErr.code !== "23505") throw cardErr;
+        const { data: raced } = await supabaseAdmin
+          .from("loyalty_cards")
+          .select("id")
+          .eq("customer_id", customerId)
+          .eq("merchant_id", merchant.id)
+          .single();
+        if (!raced) throw cardErr;
+        cardId = raced.id;
+      } else {
+        cardId = card.id;
+        isNewCard = true;
 
-      await logAuditEvent({
-        action: "CARD_GENERATED",
-        merchant_id: merchant.id,
-        card_id: cardId,
-        details: { via: "enrollment" },
-        ...meta,
-      });
+        await logAuditEvent({
+          action: "CARD_GENERATED",
+          merchant_id: merchant.id,
+          card_id: cardId,
+          details: { via: "enrollment" },
+          ...meta,
+        });
+      }
     }
 
     return NextResponse.json({ cardId, isNew: isNewCard });

@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, User, Mail, Store, Download, Smartphone, AlertCircle, Check } from "lucide-react";
 
 interface Props {
-  token: string;
+  // Identifiant public du marchand. L'enrollment_token (secret rotatif) ne doit
+  // jamais atteindre le navigateur : la résolution se fait côté serveur.
+  slug: string;
   shopName: string;
   primaryColor: string;
   logoUrl: string | null;
 }
 
-export default function EnrollClient({ token, shopName, primaryColor, logoUrl }: Props) {
+export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: Props) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +29,7 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
       const res = await fetch("/api/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, firstName, lastName, email }),
+        body: JSON.stringify({ slug, firstName, lastName, email }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -42,8 +44,8 @@ export default function EnrollClient({ token, shopName, primaryColor, logoUrl }:
     }
   };
 
-  const appleUrl = cardId ? `/api/enroll/${cardId}?t=${token}&wallet=apple` : "#";
-  const googleUrl = cardId ? `/api/enroll/${cardId}?t=${token}&wallet=google` : "#";
+  const appleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=apple` : "#";
+  const googleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=google` : "#";
 
   return (
     <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-4">

@@ -1,24 +1,30 @@
 import { supabaseAdmin } from './supabaseAdmin';
 import { clientIp } from './clientIp';
 
-export type AuditAction =
-  | 'CARD_GENERATED'
-  | 'CARD_SCANNED'
-  | 'POINTS_INCREMENTED'
-  | 'LOGIN_SUCCESS'
-  | 'LOGIN_FAILED'
-  | 'MERCHANT_CREATED'
-  | 'CUSTOMER_DELETED'
-  | 'MERCHANT_UPDATED'
-  | 'MERCHANT_TOKEN_ROTATED'
-  | 'REWARD_REDEEMED'
-  | 'CUSTOMER_UPDATED'
-  | 'MFA_ENROLLED'
-  | 'MFA_DISABLED'
-  | 'ADMIN_IMPERSONATION_START'
-  | 'ADMIN_IMPERSONATION_STOP'
-  | 'CARD_DESIGN_UPDATED'
-  | 'CARD_CLASS_SYNCED';
+// Toute nouvelle action exige une migration jumelle de audit_logs_action_check
+// (cf. supabase/migrations/20260610_audit_actions_card_design.sql) — le test
+// __tests__/auditActionsSync.test.ts échoue sinon.
+export const AUDIT_ACTIONS = [
+  'CARD_GENERATED',
+  'CARD_SCANNED',
+  'POINTS_INCREMENTED',
+  'LOGIN_SUCCESS',
+  'LOGIN_FAILED',
+  'MERCHANT_CREATED',
+  'CUSTOMER_DELETED',
+  'MERCHANT_UPDATED',
+  'MERCHANT_TOKEN_ROTATED',
+  'REWARD_REDEEMED',
+  'CUSTOMER_UPDATED',
+  'MFA_ENROLLED',
+  'MFA_DISABLED',
+  'ADMIN_IMPERSONATION_START',
+  'ADMIN_IMPERSONATION_STOP',
+  'CARD_DESIGN_UPDATED',
+  'CARD_CLASS_SYNCED',
+] as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 interface AuditLogEntry {
   action: AuditAction;
@@ -32,7 +38,7 @@ interface AuditLogEntry {
 
 export async function logAuditEvent(entry: AuditLogEntry) {
   try {
-    await supabaseAdmin.from('audit_logs').insert({
+    const { error } = await supabaseAdmin.from('audit_logs').insert({
       action: entry.action,
       merchant_id: entry.merchant_id,
       user_id: entry.user_id,
@@ -42,6 +48,11 @@ export async function logAuditEvent(entry: AuditLogEntry) {
       user_agent: entry.user_agent,
       created_at: new Date().toISOString(),
     });
+    if (error) {
+      // supabase-js ne throw pas : sans cette trace, une violation de CHECK
+      // (action absente de audit_logs_action_check) est totalement invisible.
+      console.error('Audit log rejected:', error.code, error.message, entry.action);
+    }
   } catch (error) {
     // Log failures but don't break the main operation
     console.error('Audit log failed:', error);
