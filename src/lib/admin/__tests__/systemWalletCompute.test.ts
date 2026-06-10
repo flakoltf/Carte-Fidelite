@@ -52,6 +52,7 @@ describe("computeBackupStatus", () => {
 describe("integrationStatuses", () => {
   it("lit la présence des variables, jamais leurs valeurs", () => {
     const statuses = integrationStatuses({
+      NODE_ENV: "test",
       SENTRY_DSN: "x",
       RESEND_API_KEY: "x",
       EMAIL_FROM: "x",
