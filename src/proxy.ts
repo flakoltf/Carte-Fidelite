@@ -10,7 +10,9 @@ export default async function proxy(request: NextRequest) {
   // 1) Routage par sous-domaine (jamais sur /api/*, ni en dev/preview).
   const hostRedirect = resolveHostRouting(host, path)
   if (hostRedirect) {
-    return NextResponse.redirect(new URL(hostRedirect, request.url))
+    // 308 : redirection permanente (canonicalisation www->apex, vitrine->app)
+    // qui préserve la méthode HTTP — les 307 par défaut diluent le signal SEO.
+    return NextResponse.redirect(new URL(hostRedirect, request.url), 308)
   }
 
   // 2) Sur le domaine vitrine, les pages publiques ne requièrent ni session ni MFA.
