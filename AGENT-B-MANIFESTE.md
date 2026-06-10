@@ -78,7 +78,38 @@ Aucune colonne/table/policy existante modifiée, renommée ou supprimée. Ordre 
 
 ## 6. Dépendances / décisions pour le fondateur (à l'intégration)
 
-1. **Appliquer les 3 migrations 20260611_*** en prod (avec ton accord explicite — invariant n°6 : vérifier l'état réel avant, la prod a déjà reçu des patchs hors-repo).
+0. **⚠️ FUSION AVEC L'AGENT A — migration jumelle unique du CHECK.** Les deux branches recréent `audit_logs_action_check` (`20260611_audit_actions_studio.sql` côté A : +3 actions studio ; `20260611_admin_panel_audit_actions.sql` côté B : +15 actions admin). Chacune écraserait les actions de l'autre, et le test `auditActionsSync` (qui lit la migration lexicalement la plus récente) échouera après merge. Correctif : APRÈS la fusion des deux branches, ajouter cette migration (et l'appliquer en dernier en prod) :
+
+   ```sql
+   -- supabase/migrations/20260612_audit_actions_merged.sql
+   -- Union des actions agent A (studio) + agent B (panneau admin).
+   ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_action_check;
+   ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_action_check
+     CHECK (action = ANY (ARRAY[
+       'CARD_GENERATED','CARD_SCANNED','POINTS_INCREMENTED',
+       'LOGIN_SUCCESS','LOGIN_FAILED','MERCHANT_CREATED','CUSTOMER_DELETED',
+       'MERCHANT_UPDATED','MERCHANT_TOKEN_ROTATED','REWARD_REDEEMED',
+       'CUSTOMER_UPDATED','MFA_ENROLLED','MFA_DISABLED',
+       'ADMIN_IMPERSONATION_START','ADMIN_IMPERSONATION_STOP',
+       'CARD_DESIGN_UPDATED','CARD_CLASS_SYNCED',
+       'SUBSCRIPTION_CREATED','SUBSCRIPTION_UPDATED','SUBSCRIPTION_CANCELED',
+       'PAYMENT_SUCCEEDED','PAYMENT_FAILED',
+       -- Agent A (studio marchand)
+       'CARD_DESIGN_DRAFT_SAVED','CARD_DESIGN_PUBLISHED','CARD_ASSET_UPLOADED',
+       -- Agent B (panneau super-admin)
+       'MERCHANT_SUSPENDED','MERCHANT_REACTIVATED',
+       'MERCHANT_PLAN_CHANGED','MERCHANT_LIMIT_ADJUSTED','MERCHANT_BILLING_UPDATED',
+       'MERCHANT_PASSWORD_RESET',
+       'ADMIN_NOTE_ADDED','ADMIN_NOTE_DELETED',
+       'LEAD_CREATED','LEAD_UPDATED','LEAD_DELETED',
+       'ADMIN_CUSTOMER_DATA_ACCESSED','DATA_EXPORTED',
+       'FEATURE_FLAG_UPDATED','PLATFORM_SETTING_UPDATED'
+     ]));
+   ```
+
+   (La fusion de `src/lib/auditLog.ts` est un simple merge additif des deux listes — aucun conflit de noms entre A et B, vérifié le 2026-06-11.)
+
+1. **Appliquer les 3 migrations 20260611_*** en prod (avec ton accord explicite — invariant n°6 : vérifier l'état réel avant, la prod a déjà reçu des patchs hors-repo). Si fusion avec l'agent A : appliquer aussi ses migrations puis la `20260612_audit_actions_merged.sql` ci-dessus EN DERNIER.
 2. **Blocage comptoir des suspendus** : la suspension est enregistrée/affichée/auditée, mais `/api/scan` et `/api/enroll` (fichiers partagés hors de mon territoire) ne la consultent pas encore. Patch d'une ligne à brancher à l'intégration : refuser si `merchants.suspended_at IS NOT NULL`.
 3. **Échecs d'émission wallet** : non trackés — proposition : action `PASS_ISSUE_FAILED` (+ migration jumelle) émise par generate-apple-pass / generate-google-pass.
 4. **Hits de rate-limit & échecs MFA** : non journalisés — même mécanisme proposé (`RATE_LIMITED`, `MFA_FAILED`).
