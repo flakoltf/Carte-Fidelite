@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Palette,
   Settings,
+  Wand2,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,7 +31,10 @@ const navGroups = [
   },
   {
     label: "Marchands",
-    items: [{ name: "Marchands", icon: Store, href: "/admin/merchants" }],
+    items: [
+      { name: "Marchands", icon: Store, href: "/admin/merchants" },
+      { name: "File concierge", icon: Wand2, href: "/admin/concierge" },
+    ],
   },
   {
     label: "Croissance",

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, ExternalLink, Printer, Palette, ArrowRight } from "lucide-react";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
+import QrPosterButton from "@/components/halo/QrPosterButton";
 
 // Page « Ma carte » : le QR d'enrôlement du marchand, imprimable, avec le lien
 // public. C'est l'outil n°1 du comptoir — il était jusqu'ici réservé à l'admin.
@@ -69,6 +70,16 @@ export default function MyCardPage() {
             attend sa commande.
           </p>
           <EnrollmentQR url={enrollUrl} fileName={`qr-${merchant.slug}`} />
+          <div className="mt-5 flex justify-center">
+            <QrPosterButton
+              url={enrollUrl}
+              shopName={merchant.shop_name}
+              fileName={`affichette-${merchant.slug}`}
+            />
+          </div>
+          <p className="mt-2 text-center text-[11px] text-galet">
+            Format A6, prêt à poser en caisse — encadrez-le, il fera le travail.
+          </p>
         </section>
 
         <section className="space-y-4">

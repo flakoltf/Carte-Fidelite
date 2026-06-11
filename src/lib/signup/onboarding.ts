@@ -26,6 +26,35 @@ export function nextStep(step: OnboardingStep): OnboardingStep | "done" {
   return i >= ONBOARDING_STEPS.length - 1 ? "done" : ONBOARDING_STEPS[i + 1];
 }
 
+// ── Fork de parcours : « Je crée ma carte » / « HALO crée ma carte » ───────
+// Le mode est choisi AVANT le wizard (écran de fork, juste après la
+// confirmation d'email). 'self' = wizard 5 étapes ; 'concierge' = mini-profil
+// puis mise en ligne automatique (carte provisoire, l'équipe affine ensuite).
+export const SETUP_MODES = ["self", "concierge"] as const;
+export type SetupMode = (typeof SETUP_MODES)[number];
+
+export function normalizeSetupMode(v: unknown): SetupMode | null {
+  return typeof v === "string" && (SETUP_MODES as readonly string[]).includes(v)
+    ? (v as SetupMode)
+    : null;
+}
+
+export type ModeValidation = { ok: true; mode: SetupMode } | { ok: false; error: string };
+
+export function validateModeInput(body: unknown): ModeValidation {
+  const src = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  const mode = normalizeSetupMode(src.mode);
+  if (!mode) return { ok: false, error: "Choisissez un parcours (autonome ou avec notre équipe)." };
+  return { ok: true, mode };
+}
+
+// Défauts de la mise en ligne concierge : programme tampons du secteur,
+// objectif borné comme le wizard (2–30). Pure, testée.
+export function conciergeDefaults(businessType: unknown): { stampGoal: number } {
+  const goal = sectorPreset(businessType).stampGoal;
+  return { stampGoal: Math.min(30, Math.max(2, goal)) };
+}
+
 // ── Étape « profil commerce » ───────────────────────────────────────────────
 export type ProfileInput = { shopName: string; businessType: BusinessType; address: string | null };
 export type ProfileValidation = { ok: true; value: ProfileInput } | { ok: false; error: string };

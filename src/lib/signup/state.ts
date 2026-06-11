@@ -13,7 +13,12 @@ import {
   type BillingCycle,
   type SubscriptionStatus,
 } from "@/lib/billing/subscription";
-import { normalizeOnboardingStep, type OnboardingStep } from "./onboarding";
+import {
+  normalizeOnboardingStep,
+  normalizeSetupMode,
+  type OnboardingStep,
+  type SetupMode,
+} from "./onboarding";
 
 export interface OnboardingState {
   merchantId: string;
@@ -33,6 +38,11 @@ export interface OnboardingState {
   step: OnboardingStep;
   completedAt: string | null;
   signupSource: string;
+  /** Fork du parcours — null tant que le marchand n'a pas choisi (colonne lue
+   *  défensivement : absente pré-migration 20260614, le fork s'affiche). */
+  setupMode: SetupMode | null;
+  /** Concierge : design sur-mesure encore en cours côté équipe HALO ? */
+  conciergePending: boolean;
   designPublished: boolean;
   activeCards: number;
 }
@@ -102,6 +112,8 @@ export async function fetchOnboardingState(merchantId: string): Promise<Onboardi
     step: normalizeOnboardingStep(row.onboarding_step),
     completedAt: asString(row.onboarding_completed_at),
     signupSource: asString(row.signup_source) ?? "concierge",
+    setupMode: normalizeSetupMode(row.setup_mode),
+    conciergePending: Boolean(asString(row.concierge_design_requested_at) && !asString(row.concierge_design_done_at)),
     designPublished,
     activeCards,
   };

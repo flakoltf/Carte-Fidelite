@@ -22,9 +22,13 @@ import {
   Store,
   Footprints,
   ExternalLink,
+  Wand2,
+  Clock,
+  Printer,
 } from "lucide-react";
 import { HaloSymbol } from "@/components/halo/HaloMark";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
+import QrPosterButton from "@/components/halo/QrPosterButton";
 import type { OnboardingState } from "@/lib/signup/state";
 import {
   SECTOR_CHOICES,
@@ -32,6 +36,7 @@ import {
   sectorPreset,
   ONBOARDING_STEPS,
   type OnboardingStep,
+  type SetupMode,
 } from "@/lib/signup/onboarding";
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -105,6 +110,10 @@ export default function OnboardingClient({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Fork de parcours : null tant que le marchand n'a pas choisi.
+  const [mode, setMode] = useState<SetupMode | null>(initialState.setupMode);
+  const [conciergeLive, setConciergeLive] = useState(false);
+
   // Étape profil
   const [shopName, setShopName] = useState(initialState.profileFilled ? initialState.shopName : "");
   const [businessType, setBusinessType] = useState(initialState.businessType);
@@ -144,6 +153,34 @@ export default function OnboardingClient({
   }
 
   // ── Actions ────────────────────────────────────────────────────────────────
+  async function chooseMode(next: SetupMode) {
+    setSaving(true);
+    setError("");
+    const res = await callApi("/api/onboarding/mode", "POST", { mode: next });
+    setSaving(false);
+    if (!res.ok) return setError(res.error);
+    setMode(next);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function launchConcierge(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    const res = await callApi("/api/onboarding/concierge", "POST", {
+      shopName,
+      businessType,
+      address,
+    });
+    setSaving(false);
+    if (!res.ok) return setError(res.error);
+    if (typeof res.data.slug === "string") {
+      setConciergeLive(true);
+      setLiveSlug(res.data.slug);
+      if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -223,17 +260,29 @@ export default function OnboardingClient({
           </p>
         )}
         <h1 className="font-display text-2xl text-onyx sm:text-3xl">
-          {liveSlug ? "Votre programme est en ligne." : "Mettons votre carte en ligne"}
+          {liveSlug
+            ? conciergeLive
+              ? "Votre carte est en ligne."
+              : "Votre programme est en ligne."
+            : mode === null
+              ? "Comment souhaitez-vous démarrer ?"
+              : mode === "concierge"
+                ? "On s'occupe de tout — ou presque"
+                : "Mettons votre carte en ligne"}
         </h1>
         {!liveSlug && (
           <p className="mt-1 text-sm text-galet-ink">
-            Quelques minutes suffisent — tout est enregistré au fur et à mesure.
+            {mode === null
+              ? "Deux parcours, le même résultat : vos clients fidélisés. Vous pourrez changer d'avis."
+              : mode === "concierge"
+                ? "Deux minutes : dites-nous qui vous êtes, votre QR sera prêt à imprimer."
+                : "Quelques minutes suffisent — tout est enregistré au fur et à mesure."}
           </p>
         )}
       </header>
 
-      {/* Barre de progression */}
-      {!liveSlug && (
+      {/* Barre de progression — wizard autonome uniquement */}
+      {!liveSlug && mode === "self" && (
         <nav aria-label="Progression" className="mb-8">
           <ol className="flex items-center gap-1 sm:gap-2">
             {ONBOARDING_STEPS.map((s, i) => {
@@ -264,14 +313,161 @@ export default function OnboardingClient({
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={liveSlug ? "live" : step}
+          key={liveSlug ? "live" : mode === null ? "fork" : mode === "concierge" ? "concierge" : step}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
         >
+          {/* ── Fork : « Je crée ma carte » / « HALO crée ma carte » ── */}
+          {!liveSlug && mode === null && (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => chooseMode("concierge")}
+                  disabled={saving}
+                  className="group rounded-3xl border-2 border-halo bg-surface p-6 text-left shadow-sm transition-all hover:shadow-md active:scale-[0.99] disabled:opacity-60"
+                >
+                  <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-halo/10 text-halo">
+                    <Wand2 className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span className="mb-1 flex items-center gap-2 font-bold text-onyx">
+                    HALO crée ma carte
+                    <span className="rounded-full bg-halo/10 px-2.5 py-0.5 text-[11px] font-medium text-halo">
+                      Recommandé
+                    </span>
+                  </span>
+                  <span className="block text-sm leading-relaxed text-galet-ink">
+                    Dites-nous votre nom et votre métier : votre QR est prêt à imprimer dans
+                    2 minutes, et notre équipe dessine votre carte sur-mesure sous 24 h.
+                  </span>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-halo">
+                    <Clock className="h-3.5 w-3.5" aria-hidden /> ~2 min, zéro réglage
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => chooseMode("self")}
+                  disabled={saving}
+                  className="group rounded-3xl border border-line-warm bg-surface p-6 text-left shadow-sm transition-all hover:border-galet hover:shadow-md active:scale-[0.99] disabled:opacity-60"
+                >
+                  <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-calcaire text-onyx">
+                    <Palette className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span className="mb-1 block font-bold text-onyx">Je crée ma carte</span>
+                  <span className="block text-sm leading-relaxed text-galet-ink">
+                    Couleurs, logo, tampons, palier : vous réglez tout vous-même dans le studio,
+                    avec aperçu Apple Wallet et Google Wallet en direct.
+                  </span>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-galet-ink">
+                    <Clock className="h-3.5 w-3.5" aria-hidden /> ~15 min, contrôle total
+                  </span>
+                </button>
+              </div>
+
+              <ErrorBox message={error} />
+
+              <p className="text-center text-xs text-galet">
+                Dans les deux cas : QR imprimable immédiatement, design modifiable à tout moment,
+                aucune carte bancaire requise.
+              </p>
+            </div>
+          )}
+
+          {/* ── Parcours concierge : mini-profil puis mise en ligne auto ── */}
+          {!liveSlug && mode === "concierge" && (
+            <form onSubmit={launchConcierge} className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
+              <div>
+                <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
+                  <Store className="h-4 w-4 text-halo" aria-hidden /> Votre commerce
+                </h2>
+                <p className="text-xs text-galet-ink">
+                  C&apos;est tout ce dont nous avons besoin — notre équipe s&apos;occupe du reste.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="conciergeShopName" className="ml-1 text-sm font-medium text-galet-ink">
+                  Nom du commerce
+                </label>
+                <input
+                  id="conciergeShopName"
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  autoComplete="organization"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  placeholder="Café du Léman"
+                  className={inputClass}
+                />
+              </div>
+
+              <fieldset className="space-y-2">
+                <legend className="ml-1 text-sm font-medium text-galet-ink">Secteur d&apos;activité</legend>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {SECTOR_CHOICES.map(({ key, preset: p }) => (
+                    <button
+                      type="button"
+                      key={key}
+                      onClick={() => setBusinessType(key)}
+                      aria-pressed={businessType === key}
+                      className={`min-h-11 rounded-2xl border p-3 text-left text-sm transition-all ${
+                        businessType === key
+                          ? "border-halo bg-halo/[0.06] font-medium text-onyx ring-1 ring-halo/30"
+                          : "border-line-warm bg-calcaire text-galet-ink hover:border-galet"
+                      }`}
+                    >
+                      <span className="mr-1.5">{p.emoji}</span>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <div className="space-y-2">
+                <label htmlFor="conciergeAddress" className="ml-1 flex items-center gap-1.5 text-sm font-medium text-galet-ink">
+                  <MapPin className="h-3.5 w-3.5" aria-hidden /> Adresse <span className="font-normal text-galet">(facultatif)</span>
+                </label>
+                <input
+                  id="conciergeAddress"
+                  maxLength={200}
+                  autoComplete="street-address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Rue du Rhône 12, 1204 Genève"
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="rounded-2xl border border-halo/30 bg-halo/[0.05] p-4 text-sm leading-relaxed text-galet-ink">
+                <span className="font-medium text-onyx">Ce qui se passe ensuite :</span> votre carte
+                part en ligne immédiatement avec un programme adapté à votre métier
+                ({sectorPreset(businessType).rewardExample.toLowerCase()}) et un design provisoire.
+                Notre équipe livre votre design sur-mesure sous 24 h ouvrées — les cartes déjà
+                installées par vos clients se mettent à jour automatiquement.
+              </div>
+
+              <ErrorBox message={error} />
+
+              <button disabled={saving} className={`${primaryBtn} w-full`}>
+                {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Mettre ma carte en ligne <ArrowRight className="h-4 w-4" /></>}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode(null)}
+                className="mx-auto block min-h-11 px-2 text-xs text-galet underline-offset-2 hover:text-galet-ink hover:underline"
+              >
+                ↩ Finalement, je préfère créer ma carte moi-même
+              </button>
+            </form>
+          )}
+
           {/* ── Étape 1 : profil commerce ── */}
-          {!liveSlug && step === "profile" && (
+          {!liveSlug && mode === "self" && step === "profile" && (
             <form onSubmit={saveProfile} className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
               <div>
                 <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
@@ -342,11 +538,19 @@ export default function OnboardingClient({
               <button disabled={saving} className={`${primaryBtn} w-full`}>
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Continuer <ArrowRight className="h-4 w-4" /></>}
               </button>
+
+              <button
+                type="button"
+                onClick={() => setMode(null)}
+                className="mx-auto block min-h-11 px-2 text-xs text-galet underline-offset-2 hover:text-galet-ink hover:underline"
+              >
+                ↩ Préférez-vous que notre équipe crée votre carte ?
+              </button>
             </form>
           )}
 
           {/* ── Étape 2 : programme de fidélité ── */}
-          {!liveSlug && step === "program" && (
+          {!liveSlug && mode === "self" && step === "program" && (
             <form onSubmit={saveProgram} className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
               <div>
                 <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
@@ -453,7 +657,7 @@ export default function OnboardingClient({
           )}
 
           {/* ── Étape 3 : design de la carte (handoff studio — territoire A) ── */}
-          {!liveSlug && step === "design" && (
+          {!liveSlug && mode === "self" && step === "design" && (
             <div className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
               <div>
                 <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
@@ -512,7 +716,7 @@ export default function OnboardingClient({
           )}
 
           {/* ── Étape 4 : choix du palier (sans paiement) ── */}
-          {!liveSlug && step === "plan" && (
+          {!liveSlug && mode === "self" && step === "plan" && (
             <div className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
               <div>
                 <h2 className="mb-1 font-bold text-onyx">Votre palier</h2>
@@ -598,7 +802,7 @@ export default function OnboardingClient({
           )}
 
           {/* ── Étape 5 : mise en ligne ── */}
-          {!liveSlug && step === "launch" && (
+          {!liveSlug && mode === "self" && step === "launch" && (
             <div className="space-y-6 rounded-3xl border border-line-warm bg-surface p-6 shadow-sm sm:p-8">
               <div>
                 <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
@@ -643,6 +847,17 @@ export default function OnboardingClient({
           {/* ── Succès : carte en ligne ── */}
           {liveSlug && (
             <div className="space-y-6">
+              {conciergeLive && (
+                <p className="flex items-start gap-2 rounded-2xl border border-halo/30 bg-halo/[0.05] p-4 text-sm leading-relaxed text-galet-ink">
+                  <Wand2 className="mt-0.5 h-4 w-4 shrink-0 text-halo" aria-hidden />
+                  <span>
+                    <span className="font-medium text-onyx">Notre équipe personnalise votre carte sous 24 h ouvrées.</span>{" "}
+                    Votre QR est définitif : imprimez-le dès maintenant — les cartes installées par
+                    vos clients se mettront à jour automatiquement avec le nouveau design.
+                  </span>
+                </p>
+              )}
+
               <div className="rounded-3xl border border-halo/30 bg-halo/[0.05] p-6 text-center shadow-sm sm:p-8">
                 <p className="mb-4 text-sm leading-relaxed text-galet-ink">
                   Vos clients peuvent dès maintenant scanner ce QR pour ajouter votre carte à
@@ -651,14 +866,29 @@ export default function OnboardingClient({
                 <div className="flex justify-center">
                   <EnrollmentQR url={enrollUrlFor(liveSlug)} fileName={`qr-${liveSlug}`} />
                 </div>
+                <div className="mt-4 flex justify-center">
+                  <QrPosterButton
+                    url={enrollUrlFor(liveSlug)}
+                    shopName={shopName || initialState.shopName}
+                    fileName={`affichette-${liveSlug}`}
+                  />
+                </div>
               </div>
 
               <div className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
-                <h2 className="mb-2 font-bold text-onyx">Et maintenant ?</h2>
+                <h2 className="mb-2 flex items-center gap-2 font-bold text-onyx">
+                  <Printer className="h-4 w-4 text-halo" aria-hidden /> Déployez en 3 gestes
+                </h2>
                 <ol className="list-decimal space-y-1.5 pl-5 text-sm text-galet-ink">
-                  <li>Téléchargez le QR (PNG) et posez-le en caisse, à hauteur des yeux.</li>
-                  <li>Proposez la carte à chaque encaissement : « Elle va direct dans votre téléphone, ça prend 10 secondes. »</li>
-                  <li>Suivez vos premières cartes depuis le tableau de bord.</li>
+                  <li>Imprimez l&apos;affichette (PDF) et posez-la en caisse, à hauteur des yeux.</li>
+                  <li>
+                    Testez vous-même :{" "}
+                    <a href={enrollUrlFor(liveSlug)} target="_blank" rel="noreferrer" className="text-halo underline-offset-2 hover:underline">
+                      ouvrez votre page d&apos;inscription
+                    </a>{" "}
+                    et ajoutez votre propre carte.
+                  </li>
+                  <li>Ajoutez le lien à votre profil Instagram et votre fiche Google Business, puis proposez la carte à chaque encaissement : « Elle va direct dans votre téléphone, ça prend 10 secondes. »</li>
                 </ol>
               </div>
 
@@ -670,7 +900,7 @@ export default function OnboardingClient({
         </motion.div>
       </AnimatePresence>
 
-      {!liveSlug && slug && step !== "profile" && (
+      {!liveSlug && mode === "self" && slug && step !== "profile" && (
         <p className="mt-6 text-center text-xs text-galet">
           Votre future page publique : {MARKETING_BASE.replace("https://", "")}/c/{slug}
         </p>

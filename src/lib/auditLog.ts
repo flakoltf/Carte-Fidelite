@@ -51,6 +51,11 @@ export const AUDIT_ACTIONS = [
   'SIGNUP_EMAIL_VERIFIED',
   'MERCHANT_SELF_PROVISIONED',
   'ONBOARDING_COMPLETED',
+  // Fork onboarding double parcours (self / concierge) — migration jumelle :
+  // supabase/migrations/20260614_audit_actions_concierge.sql
+  'ONBOARDING_MODE_SELECTED',
+  'CONCIERGE_CARD_PROVISIONED',
+  'CONCIERGE_DESIGN_DELIVERED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
