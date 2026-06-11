@@ -116,3 +116,108 @@ Une question ? Répondez à cet email. HaloCard · halocard.ch`;
 
   return { subject: `Bienvenue chez HaloCard — vos accès pour ${shopName}`, html, text };
 }
+
+// ── Parcours self-service (Agent C) ─────────────────────────────────────────
+
+function haloShell(inner: string): string {
+  return `<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#F3F0E9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0E0F11;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">
+      <tr><td align="center">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:24px 32px;border-bottom:1px solid #E8E4DA;">
+            <span style="font-size:14px;color:#6E7073;">HaloCard — Genève</span>
+          </td></tr>
+          <tr><td style="padding:32px;">${inner}</td></tr>
+          <tr><td style="padding:20px 32px;border-top:1px solid #E8E4DA;font-size:12px;color:#9B9DA0;">
+            Une question ? Répondez simplement à cet email — c'est le fondateur qui lit. HaloCard · halocard.ch
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+// Email de vérification d'adresse (inscription self-service). Le lien est
+// généré côté serveur (jeton Supabase haché) — jamais de secret réutilisable.
+export function signupVerificationEmail({ confirmUrl }: { confirmUrl: string }): RenderedEmail {
+  const u = escapeHtml(confirmUrl);
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">Confirmez votre adresse — votre carte vous attend</h1>
+            <p style="margin:0 0 20px;font-size:15px;line-height:1.5;">Bienvenue chez HaloCard. Un clic pour confirmer votre adresse, puis quelques minutes pour mettre votre carte de fidélité en ligne — sans carte bancaire.</p>
+            <p style="margin:0 0 20px;">
+              <a href="${u}" style="display:inline-block;background:#0D6B5E;color:#FFFFFF;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:14px;">Confirmer mon adresse</a>
+            </p>
+            <p style="margin:0;font-size:13px;color:#6E7073;line-height:1.5;">Ce lien est valable 24 heures et ne sert qu'une fois. Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email — rien ne sera créé.</p>`);
+
+  const text = `Confirmez votre adresse — votre carte vous attend
+
+Bienvenue chez HaloCard. Confirmez votre adresse pour mettre votre carte de fidélité en ligne (sans carte bancaire) :
+
+${confirmUrl}
+
+Ce lien est valable 24 heures et ne sert qu'une fois. Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.
+
+HaloCard · halocard.ch`;
+
+  return { subject: "Confirmez votre adresse — HaloCard", html, text };
+}
+
+// Envoyé quand quelqu'un tente de s'inscrire avec une adresse déjà utilisée.
+// La réponse HTTP reste indistincte (anti-énumération) ; le titulaire, lui,
+// est informé et guidé vers la connexion. `loginUrl` peut être un lien de
+// connexion en un clic (jeton haché à usage unique) ou, à défaut, /login.
+export function signupExistingAccountEmail({ loginUrl }: { loginUrl?: string } = {}): RenderedEmail {
+  const u = escapeHtml(loginUrl || "https://app.halocard.ch/login");
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">Vous avez déjà un compte HaloCard</h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Quelqu'un — sans doute vous — vient de tenter de créer un compte avec cette adresse. Bonne nouvelle : il existe déjà.</p>
+            <p style="margin:0 0 20px;">
+              <a href="${u}" style="display:inline-block;background:#0D6B5E;color:#FFFFFF;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:14px;">Me connecter</a>
+            </p>
+            <p style="margin:0;font-size:13px;color:#6E7073;line-height:1.5;">Si ce n'était pas vous, vous n'avez rien à faire : votre compte reste protégé, votre mot de passe n'a pas changé et aucune information n'a été communiquée.</p>`);
+
+  const text = `Vous avez déjà un compte HaloCard
+
+Quelqu'un — sans doute vous — vient de tenter de créer un compte avec cette adresse. Il existe déjà : connectez-vous ici :
+
+${loginUrl || "https://app.halocard.ch/login"}
+
+Si ce n'était pas vous, vous n'avez rien à faire : votre compte reste protégé et votre mot de passe n'a pas changé.
+
+HaloCard · halocard.ch`;
+
+  return { subject: "Vous avez déjà un compte HaloCard", html, text };
+}
+
+// « Votre programme est en ligne » — fin du wizard self-service.
+export function programLiveEmail({ shopName, enrollUrl }: { shopName: string; enrollUrl: string }): RenderedEmail {
+  const s = escapeHtml(shopName);
+  const u = escapeHtml(enrollUrl);
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">${s} : votre programme de fidélité est en ligne 🎉</h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Vos clients peuvent dès maintenant ajouter votre carte à Apple Wallet ou Google Wallet — sans installer d'application.</p>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">
+              Page d'inscription de vos clients : <a href="${u}" style="color:#0D6B5E;">${u}</a><br/>
+              Votre QR à imprimer : onglet <strong>« Ma carte »</strong> du tableau de bord.
+            </p>
+            <p style="margin:0;font-size:15px;line-height:1.5;"><strong>La seule chose à faire cette semaine :</strong> proposer la carte à chaque encaissement. <em>« Vous avez notre carte de fidélité ? Elle va direct dans votre téléphone, ça prend 10 secondes. »</em></p>`);
+
+  const text = `${shopName} : votre programme de fidélité est en ligne
+
+Vos clients peuvent dès maintenant ajouter votre carte à Apple Wallet ou Google Wallet — sans installer d'application.
+
+Page d'inscription de vos clients : ${enrollUrl}
+Votre QR à imprimer : onglet « Ma carte » du tableau de bord (https://app.halocard.ch/dashboard/card).
+
+La seule chose à faire cette semaine : proposer la carte à chaque encaissement. « Vous avez notre carte de fidélité ? Elle va direct dans votre téléphone, ça prend 10 secondes. »
+
+HaloCard · halocard.ch`;
+
+  return { subject: `${shopName} : votre programme de fidélité est en ligne`, html, text };
+}

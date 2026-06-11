@@ -42,6 +42,15 @@ export const AUDIT_ACTIONS = [
   'DATA_EXPORTED',
   'FEATURE_FLAG_UPDATED',
   'PLATFORM_SETTING_UPDATED',
+  // Parcours self-service (Agent C) + cycle d'abonnement — migration jumelle :
+  // supabase/migrations/20260613_audit_actions_self_service.sql
+  // (SUBSCRIPTION_* figuraient déjà dans le CHECK depuis 20260610).
+  'SUBSCRIPTION_CREATED',
+  'SUBSCRIPTION_UPDATED',
+  'SIGNUP_STARTED',
+  'SIGNUP_EMAIL_VERIFIED',
+  'MERCHANT_SELF_PROVISIONED',
+  'ONBOARDING_COMPLETED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
