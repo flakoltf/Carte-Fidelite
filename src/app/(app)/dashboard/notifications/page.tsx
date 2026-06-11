@@ -18,8 +18,8 @@ export default async function NotificationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Notifications</h1>
-        <p className="text-galet-ink">Envoyez un message à vos clients, directement dans leur Wallet — sans SMS.</p>
+        <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Messages clients</h1>
+        <p className="text-galet-ink">Envoyez un message à vos clients, directement sur leur téléphone — sans SMS, sans frais.</p>
       </div>
       <SendForm />
       <div>
@@ -31,7 +31,7 @@ export default async function NotificationsPage() {
               <div className="text-sm text-galet-ink">{n.body}</div>
               <div className="text-xs text-galet mt-1">{new Date(n.created_at).toLocaleString()} · {n.sent_count} envoyé(s) · {isAudienceKey(n.audience) ? audienceLabel(n.audience) : "Tous mes clients"}</div>
             </div>
-          )) : <p className="text-galet text-sm">Aucune notification envoyée pour l&apos;instant.</p>}
+          )) : <p className="text-galet text-sm">Rien d&apos;envoyé pour l&apos;instant. Un message bien placé (« Double tampon ce jeudi ! ») fait revenir vos clients — il s&apos;affiche directement sur leur téléphone.</p>}
         </div>
       </div>
     </div>

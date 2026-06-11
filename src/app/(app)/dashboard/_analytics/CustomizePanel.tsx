@@ -30,7 +30,24 @@ export function CustomizePanel({ config, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex justify-end" onClick={onClose}>
       <div className="w-80 bg-surface border-l border-line-warm p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold mb-4 text-onyx">Personnaliser</h3>
+        <h3 className="font-bold mb-2 text-onyx">Personnaliser</h3>
+        {/* Raccourcis : les deux presets du premier jour, toujours accessibles. */}
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setItems(items.map((w) => ({ ...w, visible: w.key === "kpis" || w.key === "visits" })))}
+            className="flex-1 rounded-xl border border-line-warm bg-calcaire px-3 py-2 text-xs font-medium text-galet-ink hover:border-galet"
+          >
+            L&apos;essentiel
+          </button>
+          <button
+            type="button"
+            onClick={() => setItems(items.map((w) => ({ ...w, visible: true })))}
+            className="flex-1 rounded-xl border border-line-warm bg-calcaire px-3 py-2 text-xs font-medium text-galet-ink hover:border-galet"
+          >
+            Tout afficher
+          </button>
+        </div>
         <ul className="space-y-2">
           {items.map((w, i) => (
             <li key={w.key} className="flex items-center justify-between bg-calcaire border border-line-warm rounded-xl px-3 py-2">

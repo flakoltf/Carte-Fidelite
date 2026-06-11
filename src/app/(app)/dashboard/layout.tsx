@@ -3,6 +3,7 @@ import { getSessionRole } from "@/lib/adminAuth";
 import { readImpersonationCookie } from "@/lib/admin/impersonation";
 import DashboardShell from "./DashboardShell";
 import ImpersonationBanner from "./ImpersonationBanner";
+import TrialBanner from "./TrialBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <>
       <ImpersonationBanner />
+      <TrialBanner />
       <DashboardShell>{children}</DashboardShell>
     </>
   );

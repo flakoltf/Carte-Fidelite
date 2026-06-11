@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Camera, RefreshCw, CheckCircle, AlertCircle, Loader2, Gift } from "lucide-react";
+import { Camera, RefreshCw, CheckCircle, AlertCircle, Loader2, Gift, Undo2 } from "lucide-react";
+import { REVERT_WINDOW_SECONDS } from "@/lib/loyalty/revert";
 
 export default function ScanPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
@@ -13,6 +14,24 @@ export default function ScanPage() {
   const [rewardReady, setRewardReady] = useState(false);
   const [redeemed, setRedeemed] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
+
+  // Annulation du tampon : fenêtre de 5 min, confirmation en un 2e tap.
+  const [revertDeadline, setRevertDeadline] = useState<number | null>(null);
+  const [revertArmed, setRevertArmed] = useState(false);
+  const [reverting, setReverting] = useState(false);
+  const [revertedDone, setRevertedDone] = useState(false);
+  const [nowTick, setNowTick] = useState(0); // posé en effet (l'horloge n'appartient pas au rendu)
+
+  // Compte à rebours du bouton « Annuler » (1 tick/s tant que la fenêtre est ouverte).
+  useEffect(() => {
+    if (!revertDeadline || revertedDone) return;
+    setNowTick(Date.now());
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [revertDeadline, revertedDone]);
+
+  const revertSecondsLeft =
+    revertDeadline && nowTick > 0 ? Math.max(0, Math.floor((revertDeadline - nowTick) / 1000)) : 0;
 
   useEffect(() => {
     if (status !== "scanning") return;
@@ -67,6 +86,11 @@ export default function ScanPage() {
         setCardDetails(data.card);
         setGoal(data.stampGoal ?? 10);
         setRewardReady(!!data.rewardReady);
+        // Un tampon vient d'être ajouté → annulable pendant 5 min (le serveur
+        // fait foi ; ce compte à rebours n'est que l'affichage).
+        setRevertDeadline(data.added ? Date.now() + REVERT_WINDOW_SECONDS * 1000 : null);
+        setRevertArmed(false);
+        setRevertedDone(false);
         setStatus("success");
         setMessage(data.added
           ? `Point ajouté à ${data.card.customers.full_name} !`
@@ -95,6 +119,7 @@ export default function ScanPage() {
       setRedeemed(true);
       setRewardReady(false);
       setCardDetails(data.card);
+      setRevertDeadline(null); // récompense encaissée : plus rien à annuler
       setMessage("Récompense remise ✅ La carte repart à zéro.");
     } catch {
       setMessage("Échec de l'encaissement. Réessayez.");
@@ -103,9 +128,38 @@ export default function ScanPage() {
     }
   };
 
+  const handleRevert = async () => {
+    if (!scanResult) return;
+    if (!revertArmed) { setRevertArmed(true); return; } // 1er tap : on demande confirmation
+    setReverting(true);
+    try {
+      const res = await fetch("/api/scan/revert", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: scanResult })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setRevertArmed(false);
+        setMessage(data.error || "Annulation impossible. Réessayez.");
+        return;
+      }
+      setCardDetails(data.card);
+      setRewardReady(false);
+      setRevertedDone(true);
+      setRevertDeadline(null);
+      setMessage("Tampon annulé — le compte est corrigé.");
+    } catch {
+      setRevertArmed(false);
+      setMessage("Erreur réseau. Réessayez.");
+    } finally {
+      setReverting(false);
+    }
+  };
+
   const resetScanner = () => {
     setScanResult(null); setCardDetails(null); setStatus("scanning");
     setMessage(""); setRewardReady(false); setRedeemed(false);
+    setRevertDeadline(null); setRevertArmed(false); setRevertedDone(false);
   };
 
   return (
@@ -171,8 +225,28 @@ export default function ScanPage() {
                 <button onClick={resetScanner}
                     className="flex items-center gap-2 bg-surface border border-line-warm text-galet-ink px-6 py-3 rounded-xl font-bold hover:bg-calcaire transition-colors w-full justify-center">
                     <RefreshCw className="w-4 h-4" />
-                    Scan Suivant
+                    Scan suivant
                 </button>
+
+                {/* Annulation : visible 5 min après un tampon ajouté, 2 taps (confirmation). */}
+                {revertDeadline !== null && revertSecondsLeft > 0 && !revertedDone && !redeemed && (
+                  <button onClick={handleRevert} disabled={reverting}
+                      className={`mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-6 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+                        revertArmed
+                          ? "border-red-500/40 bg-red-500/10 text-red-700 hover:bg-red-500/15"
+                          : "border-line-warm bg-surface text-galet-ink hover:bg-calcaire"
+                      }`}>
+                      {reverting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Undo2 className="w-4 h-4" />}
+                      {revertArmed
+                        ? "Confirmer l'annulation du tampon ?"
+                        : `Annuler ce tampon (${Math.floor(revertSecondsLeft / 60)}:${String(revertSecondsLeft % 60).padStart(2, "0")})`}
+                  </button>
+                )}
+                {revertedDone && (
+                  <p className="mt-3 text-center text-xs text-galet-ink">
+                    Tampon annulé. Vous pouvez scanner la bonne carte.
+                  </p>
+                )}
             </div>
           )}
 

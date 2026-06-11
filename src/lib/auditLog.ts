@@ -56,6 +56,9 @@ export const AUDIT_ACTIONS = [
   'ONBOARDING_MODE_SELECTED',
   'CONCIERGE_CARD_PROVISIONED',
   'CONCIERGE_DESIGN_DELIVERED',
+  // Expérience guidée (annulation de tampon au comptoir) — migration jumelle :
+  // supabase/migrations/20260615_audit_actions_guided.sql
+  'SCAN_REVERTED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
