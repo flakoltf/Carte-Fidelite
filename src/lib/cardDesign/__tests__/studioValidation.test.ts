@@ -72,3 +72,22 @@ describe('validateStudioDesign', () => {
     expect(warnings.some((w) => w.includes('Nom de programme long'))).toBe(true);
   });
 });
+
+describe('validateStudioDesign — compteur de tampons obligatoire', () => {
+  it('bloque une carte à tampons dont aucun champ ne contient {points}', () => {
+    const d = base({
+      fields: [{ id: 'p1', zone: 'primary', label: 'BIENVENUE', value: 'Chez nous', order: 0 }],
+    });
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(true);
+  });
+
+  it("n'exige pas {points} pour une carte à points (non-stamps)", () => {
+    const d = base({
+      cardType: 'points',
+      fields: [{ id: 'p1', zone: 'primary', label: 'STATUT', value: '{palier}', order: 0 }],
+    });
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(false);
+  });
+});

@@ -15,8 +15,10 @@ export interface PassJsonInput {
 
 type PassField = { key: string; value: string; label?: string; changeMessage?: string; textAlignment?: string };
 type StoreCardShape = {
+  headerFields: PassField[];
   primaryFields: PassField[];
   secondaryFields: PassField[];
+  auxiliaryFields: PassField[];
   backFields: PassField[];
 };
 export type PassJson = Record<string, unknown> & { storeCard: StoreCardShape };
@@ -79,12 +81,26 @@ export function buildPassJson(i: PassJsonInput): PassJson {
     pass.labelColor = m.labelColor;
     pass.organizationName = m.organizationName;
     pass.logoText = m.logoText;
+    // Filet de sécurité : un design (legacy ou contournant la validation studio)
+    // peut ne plus contenir le jeton {points} — le pass perdrait son compteur de
+    // tampons. On réinjecte le champ par défaut plutôt que d'émettre une carte morte.
+    const primaryFields = [...m.primaryFields];
+    const auxiliaryFields = [...m.auxiliaryFields];
+    if (!i.design.fields.some((f) => f.value.includes('{points}'))) {
+      const fallback = {
+        key: 'stamps',
+        label: 'TAMPONS',
+        value: `${i.stamps} / ${i.stampGoal ?? 10}`,
+      };
+      if (primaryFields.length === 0) primaryFields.push(fallback);
+      else auxiliaryFields.unshift(fallback);
+    }
     // Replace the entire storeCard with design-driven field buckets.
     (pass as Record<string, unknown>).storeCard = {
       headerFields: m.headerFields,
-      primaryFields: m.primaryFields,
+      primaryFields,
       secondaryFields: m.secondaryFields,
-      auxiliaryFields: m.auxiliaryFields,
+      auxiliaryFields,
       backFields: m.backFields,
     };
     // Code-barres piloté par le design : format + valeur (jeton ou custom) + texte alternatif.

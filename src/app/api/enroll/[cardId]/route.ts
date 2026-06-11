@@ -45,13 +45,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ cardId: 
 
     const { data: merchant } = await supabaseAdmin
       .from("merchants")
-      .select("enrollment_token, slug, shop_name, primary_color")
+      .select("enrollment_token, slug, shop_name, primary_color, suspended_at")
       .eq("id", card.merchant_id)
       .maybeSingle();
     const authorized =
       merchant && (token ? merchant.enrollment_token === token : merchant.slug === slug);
     if (!authorized) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
+    // Suspension administrative : pas d'émission d'artefact Wallet (même règle
+    // que POST /api/enroll — 404 indistinct, on n'expose pas le statut).
+    if (merchant.suspended_at) {
+      return NextResponse.json({ error: "Carte introuvable" }, { status: 404 });
+    }
+    // Le gate client (bouton masqué) doit aussi tenir côté serveur : tant que le
+    // publishing access Google n'est pas accordé, la voie google est fermée.
+    if (wallet === "google" && process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY !== "true") {
+      return NextResponse.json({ error: "Google Wallet n'est pas encore disponible" }, { status: 503 });
     }
 
     const { data: customer } = await supabaseAdmin

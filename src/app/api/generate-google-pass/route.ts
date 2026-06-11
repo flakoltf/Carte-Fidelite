@@ -43,6 +43,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Profil marchand manquant pour cet utilisateur" }, { status: 400 });
     }
 
+    // Suspension administrative : pas de nouvelle émission de pass (même règle que /api/scan).
+    const { data: merchantRow } = await supabaseAdmin
+      .from("merchants")
+      .select("suspended_at")
+      .eq("id", merchantId)
+      .maybeSingle();
+    if (merchantRow?.suspended_at) {
+      return NextResponse.json({ error: "Compte suspendu — contactez HaloCard." }, { status: 403 });
+    }
+
     // --- SÉCURITÉ : Idempotence (évite la double création en cas de retry) ---
     const idempotencyHeader = req.headers.get("idempotency-key");
     const idempotencyKey = idempotencyHeader

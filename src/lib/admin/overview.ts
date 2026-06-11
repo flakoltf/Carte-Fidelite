@@ -14,6 +14,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { normalizePlan } from "@/lib/billing/usage";
+import { effectiveCap } from "./merchantControls";
 import { isDemoMerchant, type HealthRow, type UsageRow } from "./overviewCompute";
 
 // ── Santé marchands : merchant_health (service-role) ⋈ merchants (RLS) ─────
@@ -52,22 +53,31 @@ export async function fetchHealthRows(supabase: SupabaseClient): Promise<HealthR
 }
 
 // ── Conso vs plafond : billing_active_cards (security_invoker, RLS admin) ──
+// Le plafond retourné est le plafond EFFECTIF : plan_cap_override (ajustement
+// manuel admin) prioritaire sur le plafond du palier — sinon les opportunités
+// d'upsell de la god-view seraient calculées sur un plafond faux.
 export async function fetchUsageRows(supabase: SupabaseClient): Promise<UsageRow[]> {
   const { data, error } = await supabase
     .from("billing_active_cards")
     .select("merchant_id, plan, active_cards_90d, plan_cap");
   if (error) throw error;
-  const { data: merchants } = await supabase.from("merchants").select("id, shop_name, role");
+  const { data: merchants } = await supabase
+    .from("merchants")
+    .select("id, shop_name, role, plan_cap_override");
   const byId = new Map((merchants ?? []).map((m) => [m.id as string, m]));
   return (data ?? [])
     .filter((r) => byId.get(r.merchant_id as string)?.role === "merchant")
-    .map((r) => ({
-      merchantId: r.merchant_id as string,
-      shopName: (byId.get(r.merchant_id as string)?.shop_name as string) ?? "—",
-      plan: normalizePlan(r.plan),
-      activeCards90: (r.active_cards_90d as number) ?? 0,
-      planCap: (r.plan_cap as number) ?? null,
-    }));
+    .map((r) => {
+      const m = byId.get(r.merchant_id as string);
+      const plan = normalizePlan(r.plan);
+      return {
+        merchantId: r.merchant_id as string,
+        shopName: (m?.shop_name as string) ?? "—",
+        plan,
+        activeCards90: (r.active_cards_90d as number) ?? 0,
+        planCap: effectiveCap(plan, (m?.plan_cap_override as number | null) ?? null),
+      };
+    });
 }
 
 // ── Croissance : leads + signups ────────────────────────────────────────────

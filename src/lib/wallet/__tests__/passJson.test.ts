@@ -180,3 +180,39 @@ describe("buildPassJson — sans design (legacy)", () => {
     expect(back?.value).toBe("Bienvenue");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Filet de sécurité : design sans {points} → le compteur est réinjecté
+// ---------------------------------------------------------------------------
+describe("buildPassJson — design sans {points} (filet de sécurité)", () => {
+  it("réinjecte TAMPONS en primary si la zone est vide", () => {
+    const design: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "s1", zone: "secondary", label: "CLIENT", value: "{nom}", order: 0 }],
+    };
+    const p = buildPassJson({ ...base, stamps: 4, stampGoal: 9, design });
+    const f = p.storeCard.primaryFields.find((x) => x.key === "stamps");
+    expect(f?.label).toBe("TAMPONS");
+    expect(f?.value).toBe("4 / 9");
+  });
+
+  it("réinjecte TAMPONS en auxiliary si primary est occupé par un autre champ", () => {
+    const design: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "p1", zone: "primary", label: "BIENVENUE", value: "Chez nous", order: 0 }],
+    };
+    const p = buildPassJson({ ...base, stamps: 2, stampGoal: 8, design });
+    expect(p.storeCard.primaryFields[0].label).toBe("BIENVENUE");
+    const f = p.storeCard.auxiliaryFields.find((x) => x.key === "stamps");
+    expect(f?.value).toBe("2 / 8");
+  });
+
+  it("ne double pas le compteur quand le design contient déjà {points}", () => {
+    const p = buildPassJson({ ...base, stamps: 5, stampGoal: 10, design: stubDesign });
+    const all = [
+      ...p.storeCard.primaryFields, ...p.storeCard.auxiliaryFields,
+      ...p.storeCard.headerFields, ...p.storeCard.secondaryFields,
+    ].filter((x) => x.key === "stamps" || String(x.value).includes("5 / 10"));
+    expect(all).toHaveLength(1);
+  });
+});

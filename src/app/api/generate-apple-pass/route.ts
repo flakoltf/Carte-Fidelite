@@ -47,12 +47,17 @@ export async function POST(req: NextRequest) {
 
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id, shop_name, primary_color")
+      .select("id, shop_name, primary_color, suspended_at")
       .eq("id", merchantId)
       .maybeSingle();
 
     if (merchError || !merchant) {
       return NextResponse.json({ error: "Profil marchand manquant pour cet utilisateur" }, { status: 400 });
+    }
+
+    // Suspension administrative : pas de nouvelle émission de pass (même règle que /api/scan).
+    if (merchant.suspended_at) {
+      return NextResponse.json({ error: "Compte suspendu — contactez HaloCard." }, { status: 403 });
     }
 
     // --- SÉCURITÉ : Idempotence (évite la double création BDD en cas de retry) ---
