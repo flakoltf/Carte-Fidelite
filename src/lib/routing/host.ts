@@ -11,7 +11,7 @@ export const APP_HOST = "app.halocard.ch";
 export const MARKETING_HOSTS = new Set(["halocard.ch", "www.halocard.ch"]);
 
 // Préfixes appartenant à l'application authentifiée.
-const APP_PREFIXES = ["/dashboard", "/admin", "/scan", "/login", "/signup"];
+const APP_PREFIXES = ["/dashboard", "/admin", "/scan", "/login", "/signup", "/onboarding"];
 
 export function normalizeHost(host: string | null | undefined): string {
   return (host ?? "").split(":")[0].trim().toLowerCase();

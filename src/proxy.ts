@@ -45,7 +45,8 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const isProtected =
-    path.startsWith('/dashboard') || path.startsWith('/scan') || path.startsWith('/admin')
+    path.startsWith('/dashboard') || path.startsWith('/scan') || path.startsWith('/admin') ||
+    path.startsWith('/onboarding')
 
   // Pas de session → routes protégées renvoyées au login.
   if (!user && isProtected) {
