@@ -11,9 +11,13 @@ export const dynamic = "force-dynamic";
 async function getMerchant(slug: string) {
   const { data } = await supabaseAdmin
     .from("merchants")
-    .select("shop_name, primary_color, logo_url")
+    .select("shop_name, primary_color, logo_url, suspended_at")
     .eq("slug", slug)
     .maybeSingle();
+  // Suspension administrative : la page publique disparaît (404 indistinct du
+  // slug inexistant — on n'expose pas le statut du compte), même règle que
+  // POST /api/enroll.
+  if (data?.suspended_at) return null;
   return data;
 }
 

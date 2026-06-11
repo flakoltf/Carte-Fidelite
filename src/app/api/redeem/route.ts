@@ -28,8 +28,11 @@ export async function POST(req: NextRequest) {
   if (!actualCardId) return NextResponse.json({ error: "Carte invalide" }, { status: 400 });
 
   const { data: merchant } = await supabaseAdmin
-    .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal").eq("user_id", user.id).single();
+    .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal, suspended_at").eq("user_id", user.id).single();
   if (!merchant) return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
+  // Suspension administrative : pas d'encaissement au comptoir (même règle que /api/scan).
+  if (merchant.suspended_at)
+    return NextResponse.json({ error: "Compte suspendu — contactez HaloCard." }, { status: 403 });
 
   const { data: card } = await supabaseAdmin
     .from("loyalty_cards").select("*, customers(*)").eq("id", actualCardId).single();

@@ -64,6 +64,13 @@ export function validateStudioDesign(design: CardDesign): ValidationResult {
   }
 
   const cardType = design.cardType ?? 'stamps';
+  // Une carte à tampons sans compteur visible est cassée au comptoir : le pass
+  // n'affiche plus la progression. Le jeton {points} doit survivre à l'édition.
+  if (cardType === 'stamps' && !design.fields.some((f) => f.value.includes('{points}'))) {
+    errors.push(
+      'Votre carte n’affiche plus le compteur de tampons : gardez un champ contenant le jeton {points} (ex. « TAMPONS » en zone principale).'
+    );
+  }
   if (cardType === 'stamps' && design.stamps) {
     const { goal, icon } = design.stamps;
     if (!Number.isInteger(goal) || goal < STAMP_GOAL_MIN || goal > STAMP_GOAL_MAX) {
