@@ -9,8 +9,6 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [merchant, setMerchant] = useState<any>(null);
 
   const [shopName, setShopName] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#10b981");
@@ -22,9 +20,8 @@ export default function Settings() {
   const [lng, setLng] = useState("");
 
   useEffect(() => {
+    // Chargement unique au montage.
     fetchMerchant();
-    // Chargement unique au montage ; le client Supabase est recréé à chaque rendu.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchMerchant = async () => {
@@ -34,7 +31,6 @@ export default function Settings() {
     const { merchant: data } = await res.json();
 
     if (data) {
-      setMerchant(data);
       setShopName(data.shop_name);
       setPrimaryColor(data.primary_color || "#10b981");
       setLogoUrl(data.logo_url || "");

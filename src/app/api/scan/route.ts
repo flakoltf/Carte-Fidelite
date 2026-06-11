@@ -69,8 +69,15 @@ export async function POST(req: Request) {
     if (cachedResponse) return NextResponse.json(cachedResponse);
 
     const { data: merchant } = await supabaseAdmin
-      .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal").eq("user_id", user.id).single();
+      .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal, suspended_at").eq("user_id", user.id).single();
     if (!merchant) return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
+    // Suspension administrative (panneau admin) : le comptoir est bloqué.
+    if (merchant.suspended_at) {
+      return NextResponse.json(
+        { error: "Compte suspendu — contactez HaloCard (contact@halocard.ch)" },
+        { status: 403 }
+      );
+    }
 
     // 1. Récupérer la carte
     const { data: card, error: cardError } = await supabaseAdmin

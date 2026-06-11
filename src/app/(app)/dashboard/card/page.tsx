@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, ExternalLink, Printer } from "lucide-react";
+import Link from "next/link";
+import { Loader2, ExternalLink, Printer, Palette, ArrowRight } from "lucide-react";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
 
 // Page « Ma carte » : le QR d'enrôlement du marchand, imprimable, avec le lien
@@ -71,6 +72,24 @@ export default function MyCardPage() {
         </section>
 
         <section className="space-y-4">
+          <div className="rounded-3xl border border-halo/30 bg-halo/[0.05] p-6 shadow-sm">
+            <h2 className="mb-1 flex items-center gap-2 font-bold text-onyx">
+              <Palette className="h-4 w-4 text-halo" aria-hidden />
+              Le design de votre carte
+            </h2>
+            <p className="mb-4 text-xs text-galet-ink">
+              Couleurs, logo, bannière, tampons, champs — composez votre carte dans le studio,
+              avec aperçu Apple et Google Wallet en temps réel.
+            </p>
+            <Link
+              href="/dashboard/studio"
+              className="inline-flex items-center gap-2 rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95"
+            >
+              Ouvrir le studio de carte
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+
           <div className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
             <h2 className="mb-1 font-bold text-onyx">Votre page d&apos;inscription</h2>
             <p className="mb-4 text-xs text-galet-ink">

@@ -36,12 +36,55 @@ export type CardBarcode = {
   altText?: string;
 };
 
+// ─── Extensions studio (additives — toutes optionnelles) ─────────────────────
+
+// Type de programme porté par la carte. 'cashback' et 'subscription' sont
+// réservés (structure extensible) : types acceptés par la base, pas encore
+// proposés par l'UI ni rendus par les passes.
+export type CardTypeKey = 'stamps' | 'points' | 'cashback' | 'subscription';
+export const CARD_TYPES: readonly CardTypeKey[] = ['stamps', 'points', 'cashback', 'subscription'];
+export const CARD_TYPE_LABELS: Record<CardTypeKey, string> = {
+  stamps: 'Carte à tampons',
+  points: 'Carte à points',
+  cashback: 'Cashback',
+  subscription: 'Abonnement',
+};
+
+export type StampShape = 'circle' | 'rounded' | 'square';
+export const STAMP_SHAPES: readonly StampShape[] = ['circle', 'rounded', 'square'];
+
+// Configuration visuelle des tampons (aperçus studio + page d'enrôlement).
+// Le rendu dynamique dans les passes Apple/Google (strip généré par carte)
+// est une étape ultérieure — voir AGENT-A-MANIFESTE.md.
+export type StampsConfig = {
+  /** Nombre de tampons requis pour la récompense (aligné sur stamp_goal). */
+  goal: number;
+  /** Emoji / caractère du tampon « tamponné » (bibliothèque ou libre). */
+  icon: string;
+  /** Forme de l'alvéole (tamponné comme vide). */
+  shape: StampShape;
+  /** Visuel uploadé pour l'état tamponné (chemin Storage card-assets). */
+  filledAssetPath?: string;
+  /** Visuel uploadé pour l'état non tamponné (chemin Storage card-assets). */
+  emptyAssetPath?: string;
+};
+
+export const DEFAULT_STAMPS_CONFIG: StampsConfig = {
+  goal: 10,
+  icon: '☕',
+  shape: 'circle',
+};
+
 export type CardDesign = {
   colors: { background: string; foreground: string; label: string };
   programName: string;
   logo: { originalPath?: string; assets?: LogoAssets };
   fields: CardField[];
   barcode: CardBarcode;
+  /** Type de programme (extension studio) — défaut historique : tampons. */
+  cardType?: CardTypeKey;
+  /** Visuels des tampons (extension studio). */
+  stamps?: StampsConfig;
 };
 
 export const APPLE_ZONE_LIMITS: Record<CardZone, number> = {

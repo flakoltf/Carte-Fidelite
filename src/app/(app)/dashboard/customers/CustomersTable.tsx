@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Calendar, Users, Pencil, Trash2 } from "lucide-react";
 import { RedeemCell } from "./RedeemCell";
@@ -82,7 +83,12 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                           {customer.full_name[0]}
                         </div>
                         <div>
-                          <div className="font-bold text-onyx">{customer.full_name}</div>
+                          <Link
+                            href={`/dashboard/customers/${customer.id}`}
+                            className="font-bold text-onyx hover:text-halo transition-colors"
+                          >
+                            {customer.full_name}
+                          </Link>
                           <div className="text-xs text-galet">{customer.email || "Email non renseigné"}</div>
                         </div>
                       </div>

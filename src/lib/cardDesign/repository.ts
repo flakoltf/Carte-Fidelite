@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { CardDesign, LogoAssets, CardField, CardBarcode } from './types';
-import { DEFAULT_CARD_DESIGN } from './types';
+import type { CardDesign, LogoAssets, CardField, CardBarcode, CardTypeKey, StampsConfig } from './types';
+import { CARD_TYPES, DEFAULT_CARD_DESIGN } from './types';
 
 type Row = {
   background_color: string;
@@ -12,9 +12,16 @@ type Row = {
   fields: CardField[] | null;
   barcode: CardBarcode | null;
   google_class_id: string | null;
+  // Colonnes studio (20260611_card_design_studio.sql) — optionnelles tant que
+  // la migration n'est pas appliquée : la lecture reste rétro-compatible.
+  card_type?: string | null;
+  stamps?: StampsConfig | null;
 };
 
 export function rowToDesign(row: Row): CardDesign {
+  const cardType = CARD_TYPES.includes(row.card_type as CardTypeKey)
+    ? (row.card_type as CardTypeKey)
+    : undefined;
   return {
     colors: {
       background: row.background_color,
@@ -28,6 +35,8 @@ export function rowToDesign(row: Row): CardDesign {
     },
     fields: Array.isArray(row.fields) ? row.fields : [],
     barcode: row.barcode ?? DEFAULT_CARD_DESIGN.barcode,
+    ...(cardType ? { cardType } : {}),
+    ...(row.stamps ? { stamps: row.stamps } : {}),
   };
 }
 
