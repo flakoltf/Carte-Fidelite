@@ -104,7 +104,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             <HaloSymbol size={22} className="text-halo" />
             <span className="font-display tracking-[0.12em]">HALO</span>
         </div>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-expanded={isMobileMenuOpen}
+          className="-mr-2.5 flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-calcaire"
+        >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>

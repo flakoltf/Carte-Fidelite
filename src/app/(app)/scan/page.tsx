@@ -109,11 +109,11 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-calcaire text-onyx flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-calcaire text-onyx flex flex-col items-center justify-center px-4 py-8 sm:p-6 font-sans">
       <div className="max-w-md w-full">
         <div className="mb-8 text-center">
             <h1 className="font-display text-3xl font-extrabold tracking-tight text-onyx">
-                Letaief Scanner
+                Scanner HALO
             </h1>
             <p className="text-galet mt-2">Validez les tampons de vos clients en un clin d&apos;œil.</p>
         </div>

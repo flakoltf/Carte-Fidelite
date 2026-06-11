@@ -221,3 +221,68 @@ HaloCard · halocard.ch`;
 
   return { subject: `${shopName} : votre programme de fidélité est en ligne`, html, text };
 }
+
+// « Votre carte est en ligne, notre équipe peaufine le design » — fin du
+// parcours concierge (fork onboarding). Le QR fonctionne déjà ; on annonce la
+// personnalisation sous 24 h ouvrées, mise à jour automatique côté clients.
+export function conciergeLiveEmail({ shopName, enrollUrl }: { shopName: string; enrollUrl: string }): RenderedEmail {
+  const s = escapeHtml(shopName);
+  const u = escapeHtml(enrollUrl);
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">${s} : votre carte est en ligne 🎉</h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Votre QR fonctionne dès maintenant : vos clients peuvent ajouter votre carte à Apple Wallet ou Google Wallet, sans installer d'application.</p>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">
+              Page d'inscription de vos clients : <a href="${u}" style="color:#0D6B5E;">${u}</a><br/>
+              Votre QR à imprimer : onglet <strong>« Ma carte »</strong> du tableau de bord.
+            </p>
+            <p style="margin:0;font-size:15px;line-height:1.5;"><strong>Et le design ?</strong> Notre équipe personnalise votre carte sous 24 h ouvrées. Les cartes déjà installées par vos clients se mettront à jour automatiquement — vous n'avez rien à faire.</p>`);
+
+  const text = `${shopName} : votre carte est en ligne
+
+Votre QR fonctionne dès maintenant : vos clients peuvent ajouter votre carte à Apple Wallet ou Google Wallet, sans installer d'application.
+
+Page d'inscription de vos clients : ${enrollUrl}
+Votre QR à imprimer : onglet « Ma carte » du tableau de bord (https://app.halocard.ch/dashboard/card).
+
+Et le design ? Notre équipe personnalise votre carte sous 24 h ouvrées. Les cartes déjà installées par vos clients se mettront à jour automatiquement — vous n'avez rien à faire.
+
+HaloCard · halocard.ch`;
+
+  return { subject: `${shopName} : votre carte est en ligne — design en cours de personnalisation`, html, text };
+}
+
+// Notification interne — nouvelle entrée dans la file « cartes à personnaliser ».
+export function conciergeQueueEmail({
+  shopName,
+  businessType,
+  merchantId,
+}: {
+  shopName: string;
+  businessType: string;
+  merchantId: string;
+}): RenderedEmail {
+  const s = escapeHtml(shopName);
+  const b = escapeHtml(businessType);
+  const adminUrl = `https://app.halocard.ch/admin/concierge`;
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">Nouvelle carte à personnaliser : ${s}</h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Un marchand vient de choisir le parcours « HALO crée ma carte ». Sa carte provisoire (design par défaut) est déjà en ligne — objectif : livrer le design sur-mesure sous 24 h ouvrées.</p>
+            <p style="margin:0;font-size:15px;line-height:1.7;">
+              Commerce : <strong>${s}</strong> (${b})<br/>
+              File de personnalisation : <a href="${adminUrl}" style="color:#0D6B5E;">${adminUrl}</a>
+            </p>`);
+
+  const text = `Nouvelle carte à personnaliser : ${shopName}
+
+Un marchand vient de choisir le parcours « HALO crée ma carte ». Sa carte provisoire (design par défaut) est déjà en ligne — objectif : livrer le design sur-mesure sous 24 h ouvrées.
+
+Commerce : ${shopName} (${businessType})
+Marchand : ${merchantId}
+File de personnalisation : ${adminUrl}
+
+HaloCard · interne`;
+
+  return { subject: `[Concierge] Carte à personnaliser — ${shopName}`, html, text };
+}

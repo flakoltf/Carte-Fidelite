@@ -94,7 +94,7 @@ export default function SignupClient({ turnstileSiteKey }: { turnstileSiteKey: s
   }
 
   return (
-    <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-6">
+    <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center px-4 py-8 sm:p-6">
       {turnstileSiteKey && (
         <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
       )}
@@ -107,7 +107,7 @@ export default function SignupClient({ turnstileSiteKey }: { turnstileSiteKey: s
           </p>
         </div>
 
-        <div className="bg-surface border border-line-warm rounded-3xl p-8 shadow-[0_8px_30px_-12px_rgba(14,15,17,0.18)]">
+        <div className="bg-surface border border-line-warm rounded-3xl p-6 sm:p-8 shadow-[0_8px_30px_-12px_rgba(14,15,17,0.18)]">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-galet-ink ml-1">Email professionnel</label>
@@ -160,7 +160,11 @@ export default function SignupClient({ turnstileSiteKey }: { turnstileSiteKey: s
             </button>
           </form>
 
-          <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-galet">
+          <p className="mt-5 text-center text-xs leading-relaxed text-galet-ink">
+            Après confirmation de votre email : créez votre carte vous-même (~15 min),
+            ou laissez notre équipe la créer pour vous (~2 min).
+          </p>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-galet">
             <ShieldCheck className="h-3.5 w-3.5 text-halo" aria-hidden />
             Aucune carte bancaire requise pendant le lancement.
           </p>
