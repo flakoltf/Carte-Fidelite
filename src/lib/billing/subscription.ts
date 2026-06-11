@@ -44,6 +44,44 @@ export function normalizeBillingCycle(v: unknown): BillingCycle {
   return v === "annual" ? "annual" : "monthly";
 }
 
+// ── Bandeau d'essai (pure, testée) ──────────────────────────────────────────
+// Le dashboard affiche l'essai en continu, devient pressant à J-3, et bascule
+// en « essai terminé » (lecture seule douce) après expiration. Jamais de
+// blocage du comptoir : scan/encaissement restent ouverts quoi qu'il arrive.
+export interface TrialBannerInfo {
+  show: boolean;
+  expired: boolean;
+  /** Jours restants (arrondi supérieur : il reste « 1 jour » jusqu'à la fin). */
+  daysLeft: number;
+  /** J-3 et moins : le bandeau passe en ton orange. */
+  urgent: boolean;
+}
+
+export function trialBannerInfo(row: SubscriptionRow, now: Date = new Date()): TrialBannerInfo {
+  const status = deriveSubscriptionStatus(row, now);
+  if (status === "trial") {
+    const ends = asDate(row.trial_ends_at);
+    const daysLeft = ends ? Math.max(0, Math.ceil((ends.getTime() - now.getTime()) / 86_400_000)) : 0;
+    return { show: true, expired: false, daysLeft, urgent: daysLeft <= 3 };
+  }
+  if (status === "pending") {
+    return { show: true, expired: true, daysLeft: 0, urgent: true };
+  }
+  return { show: false, expired: false, daysLeft: 0, urgent: false };
+}
+
+// Garde « lecture seule douce » : après l'essai, les actions d'envoi
+// (campagnes, notifications) sont mises en pause — le comptoir, jamais.
+// Renvoie null si tout va bien, sinon le message à montrer au marchand.
+export function trialWriteBlockReason(row: SubscriptionRow, now: Date = new Date()): string | null {
+  if (deriveSubscriptionStatus(row, now) !== "pending") return null;
+  return (
+    "Votre essai gratuit est terminé : les envois sont en pause. " +
+    "Vos cartes et le scan continuent de fonctionner normalement. " +
+    "Choisissez votre formule (Réglages → Abonnement) ou écrivez-nous : contact@halocard.ch."
+  );
+}
+
 // ── Garde de changement de palier (application des limites SANS paiement) ──
 // Upgrade : toujours permis. Downgrade : refusé si l'usage actuel (cartes
 // actives 90 j) dépasse déjà le plafond cible — blocage DOUX assorti d'un

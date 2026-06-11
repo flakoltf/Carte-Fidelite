@@ -24,7 +24,7 @@ beforeEach(() => {
 });
 
 describe("resolveTrialDays", () => {
-  it("défaut 30 jours", () => {
+  it("défaut 14 jours", () => {
     expect(resolveTrialDays(undefined)).toBe(DEFAULT_TRIAL_DAYS);
     expect(resolveTrialDays("")).toBe(DEFAULT_TRIAL_DAYS);
   });

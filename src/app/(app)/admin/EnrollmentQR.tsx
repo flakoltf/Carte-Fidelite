@@ -29,6 +29,12 @@ export default function EnrollmentQR({ url, fileName = "qr-enrolement" }: { url:
       a.href = canvas.toDataURL("image/png");
       a.download = `${fileName}.png`;
       a.click();
+      // Signal pour la checklist de démarrage (QR téléchargé = prêt à afficher).
+      try {
+        window.localStorage.setItem("halo_poster_done", "1");
+      } catch {
+        /* stockage local indisponible */
+      }
     };
     img.src = svg64;
   };

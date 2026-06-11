@@ -108,9 +108,20 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
             </div>
           );
         }) : (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface py-16 text-galet">
+          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface px-6 py-16 text-center text-galet">
             <Users className="w-12 h-12 opacity-30" />
-            <p>Aucun client trouvé.</p>
+            {customers.length === 0 ? (
+              <>
+                <p className="text-galet-ink">
+                  Vos clients apparaîtront ici dès leur première carte.
+                </p>
+                <Link href="/dashboard/card" className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95">
+                  Afficher mon QR en caisse
+                </Link>
+              </>
+            ) : (
+              <p>Aucun client ne correspond à votre recherche.</p>
+            )}
           </div>
         )}
       </div>
@@ -186,7 +197,16 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                   <td colSpan={4} className="py-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-galet">
                       <Users className="w-12 h-12 opacity-30" />
-                      <p>Aucun client trouvé.</p>
+                      {customers.length === 0 ? (
+                        <>
+                          <p className="text-galet-ink">Vos clients apparaîtront ici dès leur première carte.</p>
+                          <Link href="/dashboard/card" className="rounded-full bg-halo px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-halo-600 active:scale-95">
+                            Afficher mon QR en caisse
+                          </Link>
+                        </>
+                      ) : (
+                        <p>Aucun client ne correspond à votre recherche.</p>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -12,7 +12,9 @@
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export const DEFAULT_TRIAL_DAYS = 30;
+// 14 jours — aligné sur le marché (Loopy Loyalty 15 j) : assez pour déployer
+// le QR et voir revenir ses premiers clients, assez court pour décider.
+export const DEFAULT_TRIAL_DAYS = 14;
 
 // Pure (testée) : période d'essai du lancement, bornée et fail-safe.
 export function resolveTrialDays(envValue: string | undefined): number {

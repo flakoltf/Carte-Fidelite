@@ -107,6 +107,12 @@ export default function QrPosterButton({
       a.download = `${fileName}.pdf`;
       a.click();
       URL.revokeObjectURL(a.href);
+      // Signal pour la checklist de démarrage (« Imprimez votre affichette »).
+      try {
+        window.localStorage.setItem("halo_poster_done", "1");
+      } catch {
+        /* stockage local indisponible : la checklist se validera via les données */
+      }
     } catch {
       setError("Génération du PDF impossible. Réessayez, ou téléchargez le QR en PNG.");
     } finally {
