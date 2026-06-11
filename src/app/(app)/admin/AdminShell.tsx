@@ -2,16 +2,57 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Store, LogOut, Menu, X, ChevronRight } from "lucide-react";
+import {
+  LayoutDashboard,
+  Store,
+  LogOut,
+  Menu,
+  X,
+  ChevronRight,
+  Inbox,
+  Banknote,
+  Wallet,
+  Activity,
+  ShieldCheck,
+  Palette,
+  Settings,
+} from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
 import { HaloSymbol } from "@/components/halo/HaloMark";
 
-const navItems = [
-  { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" },
-  { name: "Marchands", icon: Store, href: "/admin/merchants" },
+// Navigation dense mais groupée — le centre de commandement du fondateur.
+const navGroups = [
+  {
+    label: "Pilotage",
+    items: [{ name: "Vue d'ensemble", icon: LayoutDashboard, href: "/admin" }],
+  },
+  {
+    label: "Marchands",
+    items: [{ name: "Marchands", icon: Store, href: "/admin/merchants" }],
+  },
+  {
+    label: "Croissance",
+    items: [{ name: "Leads & pipeline", icon: Inbox, href: "/admin/leads" }],
+  },
+  {
+    label: "Facturation",
+    items: [{ name: "Abonnements", icon: Banknote, href: "/admin/billing" }],
+  },
+  {
+    label: "Système",
+    items: [
+      { name: "Opérations Wallet", icon: Wallet, href: "/admin/wallet" },
+      { name: "Santé technique", icon: Activity, href: "/admin/system" },
+      { name: "Audit & sécurité", icon: ShieldCheck, href: "/admin/audit" },
+      { name: "Templates & contenu", icon: Palette, href: "/admin/templates" },
+      { name: "Réglages plateforme", icon: Settings, href: "/admin/settings" },
+    ],
+  },
 ];
+
+const navItems = navGroups.flatMap((g) => g.items);
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,20 +77,29 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <span className="ml-1 text-[11px] font-semibold bg-halo/10 text-halo border border-halo/20 rounded-full px-2 py-0.5 leading-none">Admin</span>
         </div>
 
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
-                isActive(item.href)
-                  ? "bg-halo/10 text-halo border border-halo/20"
-                  : "text-galet-ink hover:text-onyx hover:bg-calcaire"
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.name}</span>
-            </Link>
+        <nav className="flex-1 space-y-5 overflow-y-auto pr-1">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <div className="px-4 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-galet">
+                {group.label}
+              </div>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 group ${
+                      isActive(item.href)
+                        ? "bg-halo/10 text-halo border border-halo/20"
+                        : "text-galet-ink hover:text-onyx hover:bg-calcaire"
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

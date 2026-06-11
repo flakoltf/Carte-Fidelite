@@ -9,6 +9,7 @@ import {
   fetchDueOnceCampaigns, fetchActiveRecurringCampaigns, fetchRecentSends,
   recordCampaignSends, setLastRunOn,
 } from "@/lib/campaigns/fetch";
+import { recordCronRun } from "@/lib/cron/recordRun";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +60,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  await recordCronRun({ job: "campaigns", status: "ok", startedAt: now, details: { processed, pushed } });
   return NextResponse.json({ processed, pushed });
 }
 

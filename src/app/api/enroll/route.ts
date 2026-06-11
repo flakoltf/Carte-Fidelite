@@ -54,12 +54,17 @@ export async function POST(req: Request) {
     // Identifier le marchand via son slug public
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id")
+      .select("id, suspended_at")
       .eq("slug", slug)
       .maybeSingle();
 
     if (merchError) throw merchError;
     if (!merchant) {
+      return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 404 });
+    }
+    // Suspension administrative : pas de nouvel enrôlement (404 indistinct du
+    // lien invalide — on n'expose pas le statut du compte au public).
+    if (merchant.suspended_at) {
       return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 404 });
     }
 

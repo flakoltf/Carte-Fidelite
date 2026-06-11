@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqualStr } from "@/lib/timingSafe";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordCronRun } from "@/lib/cron/recordRun";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,11 +10,13 @@ export const dynamic = "force-dynamic";
 // 1er jour de chaque mois, fait foi pour la détermination du palier).
 // Idempotent : UNIQUE (merchant_id, period) — relancer le cron ne duplique rien.
 async function runSnapshot() {
+  const startedAt = new Date();
   const { data: counts, error } = await supabaseAdmin
     .from("billing_active_cards")
     .select("merchant_id, plan, active_cards_90d");
   if (error) {
     console.error("billing snapshot read failed:", error.code, error.message);
+    await recordCronRun({ job: "billing-snapshot", status: "error", startedAt, details: { step: "read" } });
     return NextResponse.json({ error: "read_failed" }, { status: 500 });
   }
 
@@ -32,10 +35,17 @@ async function runSnapshot() {
       .upsert(rows, { onConflict: "merchant_id,period", ignoreDuplicates: true });
     if (upErr) {
       console.error("billing snapshot write failed:", upErr.code, upErr.message);
+      await recordCronRun({ job: "billing-snapshot", status: "error", startedAt, details: { step: "write" } });
       return NextResponse.json({ error: "write_failed" }, { status: 500 });
     }
   }
 
+  await recordCronRun({
+    job: "billing-snapshot",
+    status: "ok",
+    startedAt,
+    details: { period, merchants: rows.length },
+  });
   return NextResponse.json({ period, merchants: rows.length });
 }
 
