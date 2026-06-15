@@ -10,7 +10,8 @@
 // Place ID Google : "ChIJ" + 23 caractères base64url (format documenté). On reste
 // permissif sur la longueur exacte (Google a fait évoluer le format) mais on
 // exige le préfixe ChIJ et un jeu de caractères sûr pour une URL.
-const PLACE_ID_RE = /^ChIJ[A-Za-z0-9_-]{10,256}$/;
+// Borne haute 255 : alignée sur le CHECK Postgres (max de répétition regex = 255).
+const PLACE_ID_RE = /^ChIJ[A-Za-z0-9_-]{10,255}$/;
 
 export function isValidPlaceId(placeId: unknown): placeId is string {
   return typeof placeId === "string" && PLACE_ID_RE.test(placeId.trim());
