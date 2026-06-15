@@ -161,6 +161,42 @@ export async function buildApplePassBuffer({
     }
   }
 
+  // RENDU DES TAMPONS SUR LE PASS (Priorité A) — strip dynamique généré par
+  // carte selon l'état RÉEL (stamps / goal) : la carte « vit » et se remplit à
+  // chaque scan (régénéré à chaque émission).
+  //  - Précédence : si le marchand a uploadé une bande/photo (strip.png déjà
+  //    présent), on respecte SON visuel — pas de génération (slot contendu avec
+  //    la « Photo du commerce » F1, le visuel choisi gagne).
+  //  - Gaté sur un design PUBLIÉ de type tampons (pas de surprise pour les
+  //    cartes legacy sans design).
+  //  - FAIL-OPEN : toute erreur de génération → aucun strip, pass valide quand
+  //    même (« rien ne casse au comptoir »).
+  const isStampsCard = !!design && (design.cardType ?? "stamps") === "stamps";
+  if (isStampsCard && !designLogoBuffers["strip.png"]) {
+    try {
+      const { stampStripSvg } = await import("@/lib/cardDesign/stampStrip");
+      const { DEFAULT_STAMPS_CONFIG } = await import("@/lib/cardDesign/types");
+      const cfg = design!.stamps ?? DEFAULT_STAMPS_CONFIG;
+      const svg = stampStripSvg({
+        goal: cfg.goal ?? stampGoal,
+        filledCount: stamps,
+        shape: cfg.shape,
+        colors: design!.colors,
+      });
+      const sharp = (await import("sharp")).default;
+      const sizes: [string, number, number][] = [
+        ["strip.png", 375, 123],
+        ["strip@2x.png", 750, 246],
+        ["strip@3x.png", 1125, 369],
+      ];
+      for (const [name, w, h] of sizes) {
+        designLogoBuffers[name] = await sharp(Buffer.from(svg)).resize(w, h).png().toBuffer();
+      }
+    } catch (e) {
+      console.error("[applePass] génération strip tampons (fail-open):", e instanceof Error ? e.message : e);
+    }
+  }
+
   const passJson = buildPassJson({
     cardId,
     customerName,
