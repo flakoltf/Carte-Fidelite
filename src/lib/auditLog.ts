@@ -59,6 +59,10 @@ export const AUDIT_ACTIONS = [
   // Expérience guidée (annulation de tampon au comptoir) — migration jumelle :
   // supabase/migrations/20260615_audit_actions_guided.sql
   'SCAN_REVERTED',
+  // Compte démo de prospection (seed/reset 1-clic) — migration jumelle :
+  // supabase/migrations/20260618_audit_actions_demo.sql
+  'DEMO_ACCOUNT_SEEDED',
+  'DEMO_ACCOUNT_RESET',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

@@ -32,6 +32,7 @@ import {
 import { BILLING_PLANS } from "@/lib/billing/usage";
 import HealthTable from "./HealthTable";
 import SignupsChart from "./SignupsChart";
+import DemoControls from "./DemoControls";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,9 @@ export default async function AdminDashboard() {
           <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
+
+      {/* ── Démo de prospection (seed / reset 1-clic) ───────────────────── */}
+      <DemoControls />
 
       {/* ── KPIs ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
