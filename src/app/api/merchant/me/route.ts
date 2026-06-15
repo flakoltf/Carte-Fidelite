@@ -11,11 +11,18 @@ export async function GET() {
   try {
     const merchantId = await currentMerchantId();
     if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
-    const { data } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("merchants")
       .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone")
       .eq("id", merchantId)
       .maybeSingle();
+    // Une erreur PostgREST (ex. colonne manquante, 42703) NE DOIT PAS être avalée
+    // en data=null : sinon le client reçoit { merchant: null } et l'interprète à
+    // tort comme « marchand sans page » (→ faux « pas prête »). 500 explicite.
+    if (error) {
+      console.error("GET /api/merchant/me — erreur SELECT merchants :", error.message);
+      return NextResponse.json({ error: "erreur serveur" }, { status: 500 });
+    }
     return NextResponse.json({ merchant: data });
   } catch (e) {
     // Jamais de throw nu (→ 500 HTML opaque) : réponse JSON stable que le client

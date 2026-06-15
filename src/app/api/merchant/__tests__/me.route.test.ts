@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = {
   merchantId: null as string | null,
   row: null as Record<string, unknown> | null,
+  selectError: null as { message: string; code?: string } | null,
   throwOnSelect: false,
 };
 
@@ -27,6 +28,9 @@ vi.mock("@/lib/supabaseAdmin", () => ({
           maybeSingle: async () => {
             calls.selectedIds.push(id);
             if (state.throwOnSelect) throw new Error("db down");
+            // PostgREST renvoie { data: null, error } (il ne THROW pas) sur ex.
+            // colonne manquante (42703) — c'était le vrai bug.
+            if (state.selectError) return { data: null, error: state.selectError };
             return { data: state.row, error: null };
           },
         }),
@@ -40,6 +44,7 @@ import { GET } from "@/app/api/merchant/me/route";
 beforeEach(() => {
   state.merchantId = null;
   state.row = null;
+  state.selectError = null;
   state.throwOnSelect = false;
   calls.selectedIds = [];
 });
@@ -74,5 +79,17 @@ describe("GET /api/merchant/me", () => {
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error).toBeTruthy();
+  });
+
+  it("erreur PostgREST (ex. colonne manquante 42703) → 500, JAMAIS merchant:null", async () => {
+    // Le vrai bug : la colonne merchants.phone manquait → SELECT renvoyait error,
+    // le handler l'avalait en data=null → { merchant: null } → faux « pas prête ».
+    state.merchantId = "merchant-cible";
+    state.selectError = { message: 'column merchants.phone does not exist', code: "42703" };
+    const res = await GET();
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBeTruthy();
+    expect(body).not.toHaveProperty("merchant");
   });
 });
