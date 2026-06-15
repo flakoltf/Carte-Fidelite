@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
+import { initialStampsForEnroll } from "@/lib/loyalty/engine";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -54,7 +56,7 @@ export async function POST(req: Request) {
     // Identifier le marchand via son slug public
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id, suspended_at")
+      .select("id, suspended_at, loyalty_type, loyalty_config, stamp_goal")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -108,6 +110,13 @@ export async function POST(req: Request) {
       }
     }
 
+    // Tampon de bienvenue : si le marchand l'a activé (welcome_stamps=1), la
+    // nouvelle carte naît avec 1 tampon. Décidé ici, avant toute création/signature
+    // du pass — jamais ajouté après coup. Plafonné à l'objectif. N'affecte QUE les
+    // cartes nouvellement créées (les cartes existantes gardent leur compte).
+    const program = resolveLoyaltyProgram(merchant);
+    const welcomeStamps = initialStampsForEnroll(program);
+
     // find-or-create carte (1 carte par client/marchand ; le pass_type sera fixé
     // au moment où le client choisit Apple ou Google, via le GET ci-dessous)
     let cardId: string;
@@ -124,7 +133,7 @@ export async function POST(req: Request) {
     } else {
       const { data: card, error: cardErr } = await supabaseAdmin
         .from("loyalty_cards")
-        .insert({ customer_id: customerId, merchant_id: merchant.id, stamps_count: 0 })
+        .insert({ customer_id: customerId, merchant_id: merchant.id, stamps_count: welcomeStamps })
         .select("id")
         .single();
       if (cardErr) {

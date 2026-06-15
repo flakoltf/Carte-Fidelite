@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyScan, programCanRedeem } from "../engine";
+import { applyScan, programCanRedeem, initialStampsForEnroll } from "../engine";
 import type { LoyaltyProgram } from "../types";
 
 const stamp = (goal: number): LoyaltyProgram => ({ type: "stamp_card", config: { goal } });
@@ -15,6 +15,48 @@ describe("applyScan — stamp_card", () => {
   });
   it("carte déjà pleine → rien ajouté, prête, pas de nouvel event", () => {
     expect(applyScan(stamp(10), 10)).toEqual({ newCount: 10, added: false, rewardReady: true, events: [] });
+  });
+});
+
+describe("applyScan — stamp_card avec récompense intermédiaire", () => {
+  // goal 10, palier intermédiaire à 5.
+  const stampInter = (goal: number, at: number): LoyaltyProgram => ({
+    type: "stamp_card",
+    config: { goal, intermediate_milestone: at },
+  });
+
+  it("atteinte du palier intermédiaire → intermediate_reward_ready (sans reward_ready)", () => {
+    expect(applyScan(stampInter(10, 5), 4)).toEqual({
+      newCount: 5,
+      added: true,
+      rewardReady: false,
+      events: [{ kind: "intermediate_reward_ready" }],
+    });
+  });
+
+  it("juste avant le palier → aucun event", () => {
+    expect(applyScan(stampInter(10, 5), 3)).toEqual({ newCount: 4, added: true, rewardReady: false, events: [] });
+  });
+
+  it("au-delà du palier intermédiaire → aucun event (ne se redéclenche pas)", () => {
+    expect(applyScan(stampInter(10, 5), 5)).toEqual({ newCount: 6, added: true, rewardReady: false, events: [] });
+  });
+
+  it("atteinte du goal → reward_ready uniquement (jamais intermediate au goal)", () => {
+    expect(applyScan(stampInter(10, 5), 9)).toEqual({
+      newCount: 10,
+      added: true,
+      rewardReady: true,
+      events: [{ kind: "reward_ready" }],
+    });
+  });
+
+  it("post-redeem (carte remise à 0) → cycle repart proprement, aucun event prématuré", () => {
+    expect(applyScan(stampInter(10, 5), 0)).toEqual({ newCount: 1, added: true, rewardReady: false, events: [] });
+  });
+
+  it("carte déjà pleine → rien ajouté, pas de nouvel event intermédiaire", () => {
+    expect(applyScan(stampInter(10, 5), 10)).toEqual({ newCount: 10, added: false, rewardReady: true, events: [] });
   });
 });
 
@@ -40,6 +82,23 @@ describe("applyScan — tiered", () => {
   });
   it("premier scan entre dans le 1er palier", () => {
     expect(applyScan(tiered(tiers), 0)).toEqual({ newCount: 1, added: true, rewardReady: false, events: [{ kind: "tier_changed", name: "Bronze" }] });
+  });
+});
+
+describe("initialStampsForEnroll — tampon de bienvenue à la création", () => {
+  it("welcome_stamps = 1 → la carte naît avec 1 tampon (0 → welcome)", () => {
+    expect(initialStampsForEnroll({ type: "stamp_card", config: { goal: 10, welcome_stamps: 1 } })).toBe(1);
+  });
+  it("welcome_stamps absent/0 → la carte naît à 0", () => {
+    expect(initialStampsForEnroll({ type: "stamp_card", config: { goal: 10 } })).toBe(0);
+    expect(initialStampsForEnroll({ type: "stamp_card", config: { goal: 10, welcome_stamps: 0 } })).toBe(0);
+  });
+  it("borne plafond : ne dépasse jamais l'objectif (goal = 1)", () => {
+    expect(initialStampsForEnroll({ type: "stamp_card", config: { goal: 1, welcome_stamps: 1 } })).toBe(1);
+  });
+  it("programmes non-stamp → 0 (pas de tampon de bienvenue)", () => {
+    expect(initialStampsForEnroll({ type: "visit_based", config: { milestones: [5] } })).toBe(0);
+    expect(initialStampsForEnroll({ type: "tiered", config: { tiers: [{ name: "Or", at: 10 }] } })).toBe(0);
   });
 });
 
