@@ -3,8 +3,31 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { validateCustomerUpdate } from "@/lib/customers/validate";
+import { currentMerchantContext } from "@/lib/auth/currentMerchant";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Données personnelles d'un client final (suppression RGPD, modification PII) :
+// un admin en mode concierge ne doit PAS agir au nom du marchand sur ces
+// opérations sensibles — il agit sous SA propre identité auditée, jamais masqué.
+// Renvoie soit { merchantId, userId }, soit une réponse d'erreur à retourner.
+type Resolved = { merchantId: string; userId: string } | { error: NextResponse };
+async function resolveOwnMerchant(): Promise<Resolved> {
+  const ctx = await currentMerchantContext();
+  if (!ctx.userId) return { error: NextResponse.json({ error: "Non autorisé" }, { status: 401 }) };
+  if (ctx.isImpersonating) {
+    return {
+      error: NextResponse.json(
+        { error: "Action interdite en mode gestion concierge (données personnelles client)" },
+        { status: 403 }
+      ),
+    };
+  }
+  if (!ctx.merchantId) {
+    return { error: NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 }) };
+  }
+  return { merchantId: ctx.merchantId, userId: ctx.userId };
+}
 
 // RGPD — droit à l'oubli. Supprime définitivement un client et toutes ses
 // données rattachées (cartes, scans). Les audit_logs gardent une trace
@@ -20,30 +43,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 });
     }
 
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const resolved = await resolveOwnMerchant();
+    if ("error" in resolved) return resolved.error;
+    const { merchantId, userId } = resolved;
 
-    if (!user) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-    }
-
-    const rateLimitResult = await rateLimit(`customer-delete:${user.id}`, 20, 3600000); // 20/hour
+    const rateLimitResult = await rateLimit(`customer-delete:${userId}`, 20, 3600000); // 20/hour
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: "Trop de suppressions. Réessayez plus tard." },
         { status: 429 }
       );
-    }
-
-    const { data: merchant } = await supabaseAdmin
-      .from("merchants")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!merchant) {
-      return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
     }
 
     const { data: customer } = await supabaseAdmin
@@ -56,7 +65,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Client introuvable" }, { status: 404 });
     }
 
-    if (customer.merchant_id !== merchant.id) {
+    if (customer.merchant_id !== merchantId) {
       return NextResponse.json(
         { error: "Ce client n'appartient pas à votre boutique" },
         { status: 403 }
@@ -73,8 +82,8 @@ export async function DELETE(
     const meta = extractRequestMeta(req);
     await logAuditEvent({
       action: "CUSTOMER_DELETED",
-      merchant_id: merchant.id,
-      user_id: user.id,
+      merchant_id: merchantId,
+      user_id: userId,
       details: {
         customer_id: id,
         card_ids: cardIds,
@@ -115,24 +124,19 @@ export async function PATCH(
       return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 });
     }
 
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    const resolved = await resolveOwnMerchant();
+    if ("error" in resolved) return resolved.error;
+    const { merchantId, userId } = resolved;
 
-    const rateLimitResult = await rateLimit(`customer-update:${user.id}`, 30, 3600000); // 30/hour
+    const rateLimitResult = await rateLimit(`customer-update:${userId}`, 30, 3600000); // 30/hour
     if (!rateLimitResult.success) {
       return NextResponse.json({ error: "Trop de modifications. Réessayez plus tard." }, { status: 429 });
     }
 
-    const { data: merchant } = await supabaseAdmin
-      .from("merchants").select("id").eq("user_id", user.id).maybeSingle();
-    if (!merchant) return NextResponse.json({ error: "Profil marchand manquant" }, { status: 400 });
-
     const { data: customer } = await supabaseAdmin
       .from("customers").select("id, merchant_id").eq("id", id).maybeSingle();
     if (!customer) return NextResponse.json({ error: "Client introuvable" }, { status: 404 });
-    if (customer.merchant_id !== merchant.id) {
+    if (customer.merchant_id !== merchantId) {
       return NextResponse.json({ error: "Ce client n'appartient pas à votre boutique" }, { status: 403 });
     }
 
@@ -156,8 +160,8 @@ export async function PATCH(
     const meta = extractRequestMeta(req);
     await logAuditEvent({
       action: "CUSTOMER_UPDATED",
-      merchant_id: merchant.id,
-      user_id: user.id,
+      merchant_id: merchantId,
+      user_id: userId,
       details: { customer_id: id, fields: Object.keys(update) },
       ...meta,
     });
