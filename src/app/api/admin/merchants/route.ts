@@ -55,6 +55,18 @@ export async function POST(req: Request) {
     }
 
     // 2. Créer la ligne merchants (role='merchant').
+    // Marqueurs d'onboarding CONCIERGE posés à l'insertion : un compte créé par
+    // l'admin n'a pas à repasser par le wizard self-service (BUG #2). Sans ces
+    // champs, le marchand restait avec setup_mode/onboarding_completed_at = NULL
+    // et managed_by_concierge = false → traité comme un compte self inachevé
+    // (file concierge, filtres admin, surfaces self-service trompeuses).
+    const conciergeMarkers = {
+      setup_mode: "concierge" as const,
+      managed_by_concierge: true,
+      onboarding_step: "done" as const,
+      onboarding_completed_at: new Date().toISOString(),
+      signup_source: "concierge" as const, // = défaut colonne, posé explicitement pour la traçabilité
+    };
     const { data: merchant, error: insErr } = await supabaseAdmin
       .from("merchants")
       .insert({
@@ -62,6 +74,7 @@ export async function POST(req: Request) {
         shop_name: shopName,
         email,
         role: "merchant",
+        ...conciergeMarkers,
         ...(primaryColor ? { primary_color: primaryColor } : {}),
       })
       .select("id")
@@ -76,7 +89,7 @@ export async function POST(req: Request) {
     await logAuditEvent({
       action: "MERCHANT_CREATED",
       merchant_id: merchant.id,
-      details: { shop_name: shopName, email },
+      details: { shop_name: shopName, email, setup_mode: "concierge" },
       ...meta,
     });
 
