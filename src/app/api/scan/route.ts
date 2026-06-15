@@ -6,35 +6,28 @@ import { verifyQRCode } from "@/lib/qrSignature";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { applyScan } from "@/lib/loyalty/engine";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
-import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 
 type AtomicScan = { status: "incremented" | "cooldown" | "full" | "notfound"; newCount: number };
 
-// Incrément ATOMIQUE via la fonction Postgres scan_increment (verrou de ligne → pas de
-// race ni de double-comptage). Fallback NON atomique tant que la migration
-// 20260604_scan_atomic_increment.sql n'est pas appliquée (à retirer ensuite).
+// Incrément ATOMIQUE via la fonction Postgres scan_increment (verrou de ligne →
+// pas de race ni de double-comptage). La RPC est appliquée en prod (migration
+// 20260604_scan_atomic_increment.sql, vérifiée présente) : on échoue BRUYAMMENT
+// en cas d'erreur plutôt que de retomber sur un read-modify-write racé
+// (invariant n°4 de CLAUDE.md — fail-loud, jamais de double tampon silencieux).
 async function atomicScan(cardId: string, cap: number, cooldownSeconds: number): Promise<AtomicScan> {
   const { data, error } = await supabaseAdmin.rpc("scan_increment", {
     p_card_id: cardId, p_cap: cap, p_cooldown_seconds: cooldownSeconds,
   });
-  if (!error && Array.isArray(data) && data[0]) {
-    const row = data[0] as { new_count: number; status: AtomicScan["status"] };
-    return { status: row.status, newCount: row.new_count };
+  if (error) {
+    console.error("[scan] RPC scan_increment échec:", error.message);
+    throw new Error("Incrément atomique indisponible");
   }
-  if (error && !/scan_increment|function|does not exist|PGRST202|schema cache/i.test(error.message || "")) {
-    throw error; // vraie erreur DB (pas « fonction absente »)
+  if (!Array.isArray(data) || !data[0]) {
+    throw new Error("scan_increment: réponse vide");
   }
-  console.warn("[scan] RPC scan_increment indisponible — fallback NON atomique (appliquez la migration).");
-  const { data: c } = await supabaseAdmin
-    .from("loyalty_cards").select("stamps_count, last_scan").eq("id", cardId).single();
-  if (!c) return { status: "notfound", newCount: 0 };
-  if (withinCooldown(c.last_scan, new Date(), cooldownSeconds)) return { status: "cooldown", newCount: c.stamps_count };
-  if (cap > 0 && c.stamps_count >= cap) return { status: "full", newCount: c.stamps_count };
-  const next = c.stamps_count + 1;
-  await supabaseAdmin.from("loyalty_cards")
-    .update({ stamps_count: next, last_scan: new Date().toISOString() }).eq("id", cardId);
-  return { status: "incremented", newCount: next };
+  const row = data[0] as { new_count: number; status: AtomicScan["status"] };
+  return { status: row.status, newCount: row.new_count };
 }
 
 export async function POST(req: Request) {

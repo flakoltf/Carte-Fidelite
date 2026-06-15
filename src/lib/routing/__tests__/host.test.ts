@@ -34,6 +34,11 @@ describe("classification des hôtes", () => {
     expect(isAppHost("app.halocard.ch")).toBe(true);
     expect(isAppHost("halocard.ch")).toBe(false);
   });
+  it("rejette les hôtes app.* usurpés (allowlist stricte, pas de startsWith)", () => {
+    expect(isAppHost("app.evilcorp.com")).toBe(false);
+    expect(isAppHost("app.halocard.ch.evil.com")).toBe(false);
+    expect(isAppHost("app.staging.halocard.ch")).toBe(false);
+  });
 });
 
 describe("isAppPath", () => {
