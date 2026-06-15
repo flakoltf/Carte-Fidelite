@@ -13,7 +13,7 @@ export async function GET() {
     if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
     const { data, error } = await supabaseAdmin
       .from("merchants")
-      .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone")
+      .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone, google_place_id")
       .eq("id", merchantId)
       .maybeSingle();
     // Une erreur PostgREST (ex. colonne manquante, 42703) NE DOIT PAS être avalée
@@ -75,6 +75,19 @@ export async function PATCH(req: Request) {
   if ("business_hours" in src) {
     const { normalizeBusinessHours } = await import("@/lib/merchant-config/hours");
     updates.business_hours = normalizeBusinessHours(src.business_hours);
+    identityTouched = true;
+  }
+  if ("google_place_id" in src) {
+    const raw = src.google_place_id;
+    if (raw === null || raw === "") {
+      updates.google_place_id = null;
+    } else {
+      const { isValidPlaceId } = await import("@/lib/wallet/googleReview");
+      if (!isValidPlaceId(raw)) {
+        return NextResponse.json({ error: "Place ID Google invalide (doit commencer par ChIJ)" }, { status: 400 });
+      }
+      updates.google_place_id = (raw as string).trim();
+    }
     identityTouched = true;
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle, Gift, Clock, Camera } from "lucide-react";
+import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle, Gift, Clock, Camera, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { SecuritySection } from "./SecuritySection";
 import BusinessHoursEditor from "./BusinessHoursEditor";
@@ -24,6 +24,7 @@ export default function Settings() {
   // Carte vivante (Feature 1)
   const [rewardLabel, setRewardLabel] = useState("");
   const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
+  const [googlePlaceId, setGooglePlaceId] = useState("");
   const [photoMsg, setPhotoMsg] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -47,6 +48,7 @@ export default function Settings() {
       setLng(data.longitude != null ? String(data.longitude) : "");
       setRewardLabel(data.reward_label || "");
       setBusinessHours(normalizeBusinessHours(data.business_hours));
+      setGooglePlaceId(data.google_place_id || "");
     }
     setLoading(false);
   };
@@ -97,6 +99,7 @@ export default function Settings() {
         logo_url: logoUrl,
         reward_label: rewardLabel.trim() === "" ? null : rewardLabel.trim(),
         business_hours: businessHours,
+        google_place_id: googlePlaceId.trim() === "" ? null : googlePlaceId.trim(),
       }),
     });
 
@@ -210,6 +213,21 @@ export default function Settings() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Clock className="w-4 h-4" /> Horaires d&apos;ouverture</label>
                         <BusinessHoursEditor value={businessHours} onChange={setBusinessHours} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Star className="w-4 h-4" /> Avis Google (au moment magique)</label>
+                        <p className="text-xs text-galet">Quand un client débloque sa récompense, sa carte affiche « Laisser un avis Google ». Collez votre Place ID (commence par <code>ChIJ…</code>).</p>
+                        <input
+                            type="text"
+                            value={googlePlaceId}
+                            onChange={(e) => setGooglePlaceId(e.target.value)}
+                            placeholder="ChIJ…"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all font-mono"
+                        />
+                        {googlePlaceId.trim() !== "" && !/^ChIJ[A-Za-z0-9_-]{10,256}$/.test(googlePlaceId.trim()) && (
+                            <p className="text-xs text-amber-600">Format inattendu — un Place ID commence par « ChIJ ».</p>
+                        )}
                     </div>
 
                     <div className="space-y-2">

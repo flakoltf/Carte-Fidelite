@@ -68,17 +68,19 @@ export async function buildGoogleSaveUrl({
     merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("shop_name, latitude, longitude, reward_label, address, phone, business_hours")
+      .select("shop_name, latitude, longitude, reward_label, address, phone, business_hours, google_place_id, stamp_goal")
       .eq("id", merchantId).single();
     if (mRow?.shop_name) shopName = mRow.shop_name as string;
     if (mRow?.latitude != null && mRow?.longitude != null) {
       geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
     }
-    // Couche identité commerce (Feature 1) sur l'objet : récompense + horaires
-    // du jour (textModules), itinéraire + appel (linksModule).
+    // Couche identité commerce (F1) + lien avis Google si reward-ready (F2) :
+    // récompense + horaires (textModules), itinéraire + appel + avis (linksModule).
     const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
     const { googleIdentityModules } = await import("@/lib/wallet/googleIdentity");
-    identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date()));
+    const { canRedeem } = await import("@/lib/loyalty/stamp");
+    const rewardReady = canRedeem(stamps, (mRow?.stamp_goal as number) ?? 10);
+    identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date(), { rewardReady }));
   }
 
   // Garantit la classe Google à l'émission (GET -> PATCH / 404 -> INSERT, jamais
