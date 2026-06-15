@@ -9,5 +9,13 @@ export default defineConfig({
     // Supabase admin au chargement. Les tests purs n'appellent jamais la BDD.
     env: { NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321", SUPABASE_SERVICE_ROLE_KEY: "test-service-key", QR_SIGNATURE_SECRET: "test-qr-secret" },
   },
-  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      // `server-only` throw hors RSC : on le neutralise pour les tests qui
+      // importent des modules serveur (supabaseAdmin, auditLog…). Le garde
+      // reste pleinement actif au build Next (prod/dev).
+      "server-only": path.resolve(__dirname, "src/test/server-only-stub.ts"),
+    },
+  },
 });

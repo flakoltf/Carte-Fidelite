@@ -27,9 +27,12 @@ export function isMarketingHost(host: string): boolean {
   return MARKETING_HOSTS.has(normalizeHost(host));
 }
 
+// Allowlist stricte : seul l'apex applicatif compte. Un `startsWith("app.")`
+// laissait passer n'importe quel hôte du type `app.evilcorp.com` (faciliterait
+// du phishing). Les previews et le dev (*.vercel.app, localhost) ne passent pas
+// par ici : ils sont court-circuités en amont par isPlatformHost.
 export function isAppHost(host: string): boolean {
-  const h = normalizeHost(host);
-  return h === APP_HOST || h.startsWith("app.");
+  return normalizeHost(host) === APP_HOST;
 }
 
 // Une route appartient-elle à l'application authentifiée ?
