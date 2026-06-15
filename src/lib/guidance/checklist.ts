@@ -26,8 +26,20 @@ export function presetDashboardConfig(kind: DashboardPresetKey, businessType: st
 }
 
 // ── Checklist de démarrage ──────────────────────────────────────────────────
-// 3 gestes, les mêmes mots que l'écran de fin d'onboarding (continuité).
-export type ChecklistKey = "poster" | "first_card" | "first_stamp";
+// Guidage ordonné, geste par geste, jusqu'à une carte 100 % prête. Mêmes mots
+// que l'écran de fin d'onboarding (continuité). Trois temps :
+//   1. activation  — affichette → carte testée → premier tampon
+//   2. identité    — photo, récompense annoncée, avis Google reliés
+//   3. croissance  — 1re campagne de réveil (n'apparaît qu'avec assez de dormants)
+// Aucune case cochée à la main : chaque « done » est détecté dans les données.
+export type ChecklistKey =
+  | "poster"
+  | "first_card"
+  | "first_stamp"
+  | "photo"
+  | "reward_label"
+  | "google_reviews"
+  | "wake_campaign";
 
 export interface ChecklistItem {
   key: ChecklistKey;
@@ -39,11 +51,25 @@ export interface ChecklistItem {
   cta: string;
 }
 
+// Seuil d'apparition de la campagne de réveil : en dessous, pas assez de clients
+// endormis pour qu'une campagne ait du sens — on n'affiche rien (pas de bruit).
+export const WAKE_CAMPAIGN_MIN_DORMANTS = 10;
+
 export interface ChecklistInput {
   /** L'affichette (ou le QR) a été téléchargée — signal client persisté. */
   posterDone: boolean;
   cardsCount: number;
   scansCount: number;
+  /** Une photo de commerce est publiée sur la carte (strip Apple / hero Google). */
+  photoDone: boolean;
+  /** merchants.reward_label renseigné (récompense annoncée en clair). */
+  rewardLabelDone: boolean;
+  /** merchants.google_place_id renseigné (lien avis Google relié). */
+  googleReviewsDone: boolean;
+  /** Clients « endormis » (segment Inactifs) — gouverne l'apparition de la campagne. */
+  dormantsCount: number;
+  /** Une campagne ciblant les dormants a déjà été créée. */
+  wakeCampaignSent: boolean;
 }
 
 export function computeStartupChecklist(input: ChecklistInput): {
@@ -76,7 +102,45 @@ export function computeStartupChecklist(input: ChecklistInput): {
       href: "/scan",
       cta: "Ouvrir le scanner",
     },
+    {
+      key: "photo",
+      done: input.photoDone,
+      title: "Ajoutez la photo de votre commerce",
+      hint: "Une vraie photo (devanture, vitrine) sur la carte : vos clients vous reconnaissent d'un coup d'œil.",
+      href: "/dashboard/settings",
+      cta: "Ajouter la photo",
+    },
+    {
+      key: "reward_label",
+      done: input.rewardLabelDone,
+      title: "Annoncez votre récompense",
+      hint: "Dites en clair ce qu'on gagne (« Le 10ᵉ café offert ») — c'est ça qui donne envie de revenir.",
+      href: "/dashboard/settings",
+      cta: "Écrire la récompense",
+    },
+    {
+      key: "google_reviews",
+      done: input.googleReviewsDone,
+      title: "Reliez vos avis Google",
+      hint: "Un client content laisse un avis en deux clics depuis sa carte — votre meilleure pub locale.",
+      href: "/dashboard/settings",
+      cta: "Coller le lien Google",
+    },
   ];
+
+  // Croissance : la campagne de réveil ne se montre que s'il y a vraiment des
+  // clients à réveiller (sinon c'est du bruit pour un commerce qui démarre).
+  if (input.dormantsCount >= WAKE_CAMPAIGN_MIN_DORMANTS) {
+    items.push({
+      key: "wake_campaign",
+      done: input.wakeCampaignSent,
+      title: "Réveillez vos clients endormis",
+      hint: `${input.dormantsCount} clients ne sont pas revenus depuis un moment — un petit message les fait repasser la porte.`,
+      href: "/dashboard/campaigns",
+      cta: "Créer ma campagne",
+    });
+  }
+
   const doneCount = items.filter((i) => i.done).length;
   return { items, doneCount, allDone: doneCount === items.length };
 }
