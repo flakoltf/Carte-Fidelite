@@ -61,16 +61,24 @@ export async function buildGoogleSaveUrl({
   let merchantId: string | undefined;
   let shopName: string | undefined;
   let geoLocations: { latitude: number; longitude: number }[] | undefined;
+  let identityModules: import("@/lib/wallet/googleIdentity").GoogleIdentityModules = {};
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards").select("merchant_id").eq("id", cardId).single();
   if (cardRow?.merchant_id) {
     merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
-      .from("merchants").select("shop_name, latitude, longitude").eq("id", merchantId).single();
+      .from("merchants")
+      .select("shop_name, latitude, longitude, reward_label, address, phone, business_hours")
+      .eq("id", merchantId).single();
     if (mRow?.shop_name) shopName = mRow.shop_name as string;
     if (mRow?.latitude != null && mRow?.longitude != null) {
       geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
     }
+    // Couche identité commerce (Feature 1) sur l'objet : récompense + horaires
+    // du jour (textModules), itinéraire + appel (linksModule).
+    const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
+    const { googleIdentityModules } = await import("@/lib/wallet/googleIdentity");
+    identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date()));
   }
 
   // Garantit la classe Google à l'émission (GET -> PATCH / 404 -> INSERT, jamais
@@ -121,6 +129,7 @@ export async function buildGoogleSaveUrl({
       ...(barcodeAltText ? { alternateText: barcodeAltText } : {}),
     },
     ...(geoLocations ? { locations: geoLocations } : {}),
+    ...identityModules,
   };
 
   const claims = {

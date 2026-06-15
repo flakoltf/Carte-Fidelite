@@ -85,6 +85,7 @@ export async function buildApplePassBuffer({
   let locations;
   let merchantId: string | undefined;
   let palier: string | undefined;
+  let identity: import("@/lib/wallet/passJson").PassIdentity | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
     .select("merchant_id")
@@ -94,10 +95,14 @@ export async function buildApplePassBuffer({
     merchantId = cardRow.merchant_id;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config")
+      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config, reward_label, address, phone, business_hours")
       .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
+    // Couche identité commerce (Feature 1) — calculée ICI pour que TOUT chemin
+    // d'émission (enrôlement + régénération web-service après scan) la porte.
+    const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
+    identity = identityFromMerchant(mRow, new Date());
     if (mRow?.latitude != null && mRow?.longitude != null) {
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
@@ -170,6 +175,7 @@ export async function buildApplePassBuffer({
     locations,
     design,
     palier,
+    identity,
   });
 
   // Buffer map for PKPass: pass.json + icon/logo assets.
