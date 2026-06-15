@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Loader2, ExternalLink, Printer, Palette, ArrowRight } from "lucide-react";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
 import QrPosterButton from "@/components/halo/QrPosterButton";
-import { cardViewFromResult, type CardView, type MerchantMe } from "./cardView";
 
 // Page « Ma carte » : le QR d'enrôlement du marchand, imprimable, avec le lien
 // public. C'est l'outil n°1 du comptoir — il était jusqu'ici réservé à l'admin.
@@ -22,30 +21,17 @@ function enrollUrlFor(slug: string): string {
 }
 
 export default function MyCardPage() {
-  const [view, setView] = useState<CardView | null>(null); // null = chargement en cours
+  const [loading, setLoading] = useState(true);
+  const [merchant, setMerchant] = useState<{ shop_name: string; slug: string | null } | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch("/api/merchant/me");
-        if (!r.ok) {
-          if (!cancelled) setView({ kind: "error" });
-          return;
-        }
-        const body = (await r.json()) as { merchant?: MerchantMe };
-        if (!cancelled) setView(cardViewFromResult({ ok: true, merchant: body.merchant }));
-      } catch {
-        // Réseau KO : un échec de chargement n'est PAS « page pas prête » (BUG #3).
-        if (!cancelled) setView({ kind: "error" });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    fetch("/api/merchant/me")
+      .then((r) => r.json())
+      .then(({ merchant }) => setMerchant(merchant))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (view === null) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-galet-ink">
         <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
@@ -53,19 +39,7 @@ export default function MyCardPage() {
     );
   }
 
-  if (view.kind === "error") {
-    return (
-      <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
-        Impossible de charger votre profil pour le moment. Rechargez la page — si le souci
-        persiste, écrivez-nous :{" "}
-        <a href="mailto:contact@halocard.ch" className="text-halo hover:underline">
-          contact@halocard.ch
-        </a>
-      </div>
-    );
-  }
-
-  if (view.kind === "no-slug") {
+  if (!merchant?.slug) {
     return (
       <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
         Votre page d&apos;inscription n&apos;est pas encore prête — contactez-nous :{" "}
@@ -76,7 +50,6 @@ export default function MyCardPage() {
     );
   }
 
-  const merchant = { shop_name: view.shopName, slug: view.slug };
   const enrollUrl = enrollUrlFor(merchant.slug);
 
   return (
