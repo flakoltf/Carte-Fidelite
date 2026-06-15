@@ -25,8 +25,11 @@ export function googleIdentityModules(identity?: PassIdentity): GoogleIdentityMo
   if (hours) text.push({ id: "hours", header: "Aujourd'hui", body: hours });
 
   const uris: { uri: string; description: string; id: string }[] = [];
+  const review = v(identity.reviewUrl);
   const maps = v(identity.mapsUrl);
   const phone = v(identity.phone);
+  // Avis Google en premier (moment magique : récompense débloquée).
+  if (review) uris.push({ uri: review, description: "★ Laisser un avis Google", id: "review" });
   if (maps) uris.push({ uri: maps, description: "Itinéraire", id: "maps" });
   if (phone) uris.push({ uri: `tel:${phone.replace(/\s+/g, "")}`, description: "Appeler", id: "phone" });
 

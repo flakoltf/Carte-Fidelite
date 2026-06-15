@@ -95,14 +95,16 @@ export async function buildApplePassBuffer({
     merchantId = cardRow.merchant_id;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config, reward_label, address, phone, business_hours")
+      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config, reward_label, address, phone, business_hours, google_place_id")
       .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
-    // Couche identité commerce (Feature 1) — calculée ICI pour que TOUT chemin
-    // d'émission (enrôlement + régénération web-service après scan) la porte.
+    // Couche identité commerce (F1) + lien avis Google si reward-ready (F2),
+    // calculés ICI pour que TOUT chemin d'émission (enrôlement + régénération
+    // web-service après scan) les porte.
     const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
-    identity = identityFromMerchant(mRow, new Date());
+    const { canRedeem } = await import("@/lib/loyalty/stamp");
+    identity = identityFromMerchant(mRow, new Date(), { rewardReady: canRedeem(stamps, stampGoal) });
     if (mRow?.latitude != null && mRow?.longitude != null) {
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
