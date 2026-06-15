@@ -9,7 +9,7 @@ export async function GET() {
   if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
   const { data } = await supabaseAdmin
     .from("merchants")
-    .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude")
+    .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone")
     .eq("id", merchantId)
     .maybeSingle();
   return NextResponse.json({ merchant: data });
@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
   }
 
   const src = body as Record<string, unknown>;
-  const updates: { shop_name?: string; primary_color?: string; logo_url?: string } = {};
+  const updates: Record<string, unknown> = {};
 
   for (const field of ["shop_name", "primary_color", "logo_url"] as const) {
     if (field in src) {
@@ -42,6 +42,29 @@ export async function PATCH(req: Request) {
     }
   }
 
+  // Identité commerce (Feature 1) — champs poussés sur la carte wallet.
+  let identityTouched = false;
+  if ("reward_label" in src) {
+    const raw = src.reward_label;
+    if (raw === null || raw === "") {
+      updates.reward_label = null;
+    } else if (typeof raw === "string" && raw.trim().length >= 1 && raw.trim().length <= 80) {
+      updates.reward_label = raw.trim();
+    } else {
+      return NextResponse.json({ error: "reward_label : 1 à 80 caractères" }, { status: 400 });
+    }
+    identityTouched = true;
+  }
+  if ("business_hours" in src) {
+    const { normalizeBusinessHours } = await import("@/lib/merchant-config/hours");
+    updates.business_hours = normalizeBusinessHours(src.business_hours);
+    identityTouched = true;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "aucun champ à mettre à jour" }, { status: 400 });
+  }
+
   const { error } = await supabaseAdmin
     .from("merchants")
     .update(updates)
@@ -49,6 +72,17 @@ export async function PATCH(req: Request) {
 
   if (error) {
     return NextResponse.json({ error: "échec de la mise à jour" }, { status: 500 });
+  }
+
+  // Rafraîchit les cartes en circulation pour refléter la nouvelle identité.
+  // Best-effort : un échec de push ne fait pas échouer l'enregistrement.
+  if (identityTouched) {
+    try {
+      const { refreshMerchantPasses } = await import("@/lib/wallet/refresh");
+      await refreshMerchantPasses(merchantId);
+    } catch (e) {
+      console.error("refreshMerchantPasses (identité) a échoué :", e instanceof Error ? e.message : e);
+    }
   }
 
   return NextResponse.json({ ok: true });

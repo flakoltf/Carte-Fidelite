@@ -11,6 +11,22 @@ export interface PassJsonInput {
   design?: CardDesign;
   /** Optional tier label for {palier} token substitution. */
   palier?: string;
+  /**
+   * Données d'IDENTITÉ commerce (Feature 1 — carte vivante). Appliquées aux deux
+   * chemins (legacy ET design) : infos du commerce, indépendantes du créatif de
+   * la carte. Valeurs déjà calculées/normalisées par l'appelant.
+   */
+  identity?: PassIdentity;
+}
+
+export interface PassIdentity {
+  rewardLabel?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  /** Libellé « horaires du jour » déjà calculé (module merchant-config/hours). */
+  todaysHours?: string | null;
+  /** Lien d'itinéraire (Maps) déjà construit. */
+  mapsUrl?: string | null;
 }
 
 type PassField = { key: string; value: string; label?: string; changeMessage?: string; textAlignment?: string };
@@ -22,6 +38,31 @@ type StoreCardShape = {
   backFields: PassField[];
 };
 export type PassJson = Record<string, unknown> & { storeCard: StoreCardShape };
+
+const MAX_BACK_FIELDS = 10; // garde-fou Apple (qualité) : backFields ≤ 10.
+
+// Applique la couche identité au storeCard, quel que soit le chemin de rendu.
+// Apple détecte automatiquement téléphone/adresse/URL dans les backFields
+// (PKDataDetectorType) → champs tappables sans config supplémentaire.
+export function applyIdentity(store: StoreCardShape, identity?: PassIdentity): void {
+  if (!identity) return;
+  const v = (s?: string | null) => (typeof s === "string" && s.trim() ? s.trim() : null);
+  const reward = v(identity.rewardLabel);
+  const hours = v(identity.todaysHours);
+  const address = v(identity.address);
+  const maps = v(identity.mapsUrl);
+  const phone = v(identity.phone);
+
+  if (reward) store.secondaryFields.push({ key: "reward", label: "RÉCOMPENSE", value: reward });
+  if (hours) store.backFields.push({ key: "hours", label: "AUJOURD'HUI", value: hours });
+  if (address) store.backFields.push({ key: "address", label: "ADRESSE", value: address });
+  if (maps) store.backFields.push({ key: "maps", label: "ITINÉRAIRE", value: maps });
+  if (phone) store.backFields.push({ key: "phone", label: "TÉLÉPHONE", value: phone });
+
+  if (store.backFields.length > MAX_BACK_FIELDS) {
+    store.backFields = store.backFields.slice(0, MAX_BACK_FIELDS);
+  }
+}
 
 /**
  * Substitutes {token} placeholders in a string using the supplied context.
@@ -113,6 +154,11 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       ...(bc?.altText ? { altText: bc.altText } : {}),
     }];
   }
+
+  // Couche identité commerce — appliquée APRÈS les deux chemins (legacy/design)
+  // pour que l'adresse, le téléphone, les horaires et la récompense apparaissent
+  // toujours, quel que soit le design choisi au studio.
+  applyIdentity(pass.storeCard, i.identity);
 
   return pass;
 }

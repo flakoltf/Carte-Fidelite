@@ -216,3 +216,54 @@ describe("buildPassJson — design sans {points} (filet de sécurité)", () => {
     expect(all).toHaveLength(1);
   });
 });
+
+describe("buildPassJson — couche identité commerce (Feature 1)", () => {
+  const base = {
+    cardId: "c", customerName: "Alice", stamps: 3,
+    orgName: "Café du Rhône", backgroundColor: "rgb(0,0,0)",
+    passTypeIdentifier: "pass.x", teamIdentifier: "T1", barcodeMessage: "sig",
+  };
+
+  it("ajoute récompense (front), horaires/adresse/maps/téléphone (back) sur le chemin legacy", () => {
+    const p = buildPassJson({
+      ...base,
+      identity: {
+        rewardLabel: "Un café offert",
+        address: "Quai des Bergues 23, Genève",
+        phone: "+41 22 000 00 00",
+        todaysHours: "08:00 – 18:00",
+        mapsUrl: "https://maps.google.com/?q=46.2,6.1",
+      },
+    });
+    expect(p.storeCard.secondaryFields.find((f) => f.key === "reward")?.value).toBe("Un café offert");
+    const keys = p.storeCard.backFields.map((f) => f.key);
+    expect(keys).toEqual(expect.arrayContaining(["hours", "address", "maps", "phone"]));
+    expect(p.storeCard.backFields.find((f) => f.key === "phone")?.value).toBe("+41 22 000 00 00");
+  });
+
+  it("omet chaque champ identité vide ou absent (jamais de champ vide sur la carte)", () => {
+    const p = buildPassJson({ ...base, identity: { rewardLabel: "  ", address: null, phone: undefined } });
+    expect(p.storeCard.secondaryFields.find((f) => f.key === "reward")).toBeUndefined();
+    expect(p.storeCard.backFields.find((f) => f.key === "address")).toBeUndefined();
+  });
+
+  it("sans identité : pass inchangé (rétro-compatibilité)", () => {
+    const p = buildPassJson(base);
+    expect(p.storeCard.secondaryFields.find((f) => f.key === "reward")).toBeUndefined();
+    expect(p.storeCard.backFields.filter((f) => ["hours", "address", "maps", "phone"].includes(f.key))).toHaveLength(0);
+  });
+
+  it("respecte le garde-fou backFields ≤ 10", () => {
+    const design = {
+      colors: { background: "#000", foreground: "#fff", label: "#ccc" },
+      programName: "P", logo: {},
+      fields: Array.from({ length: 12 }, (_, i) => ({ id: `f${i}`, zone: "back", label: `L${i}`, value: `v${i}`, order: i })),
+      barcode: { type: "QR", source: "card_token" },
+    } as unknown as CardDesign;
+    const p = buildPassJson({
+      ...base, design,
+      identity: { address: "A", phone: "P", todaysHours: "H", mapsUrl: "M" },
+    });
+    expect(p.storeCard.backFields.length).toBeLessThanOrEqual(10);
+  });
+});
