@@ -1,4 +1,4 @@
-import type { LoyaltyProgram } from "./types";
+import type { LoyaltyProgram, StampCardConfig } from "./types";
 
 export type ValidateResult = { ok: true; program: LoyaltyProgram } | { ok: false; error: string };
 
@@ -11,7 +11,22 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
   if (type === "stamp_card") {
     const goal = cfg.goal;
     if (!isInt(goal) || goal < 1 || goal > 50) return { ok: false, error: "Objectif carte invalide (1 à 50)." };
-    return { ok: true, program: { type: "stamp_card", config: { goal } } };
+
+    const config: StampCardConfig = { goal };
+
+    // Tampon de bienvenue : 0 (défaut, omis) ou 1.
+    const ws = cfg.welcome_stamps;
+    if (ws !== undefined && ws !== 0 && ws !== 1) return { ok: false, error: "Tampon de bienvenue : 0 ou 1 uniquement." };
+    if (ws === 1) config.welcome_stamps = 1;
+
+    // Récompense intermédiaire : palier unique strictement entre 1 et l'objectif. null/absent = aucune.
+    const im = cfg.intermediate_milestone;
+    if (im !== undefined && im !== null) {
+      if (!isInt(im) || im <= 1 || im >= goal) return { ok: false, error: "Récompense intermédiaire : un entier strictement supérieur à 1 et inférieur à l'objectif." };
+      config.intermediate_milestone = im;
+    }
+
+    return { ok: true, program: { type: "stamp_card", config } };
   }
 
   if (type === "visit_based") {

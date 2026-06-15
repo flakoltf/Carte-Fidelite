@@ -11,6 +11,51 @@ describe("validateLoyaltyProgram — stamp_card", () => {
   });
 });
 
+describe("validateLoyaltyProgram — stamp_card : tampon de bienvenue", () => {
+  it("welcome_stamps = 1 conservé dans la config", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, welcome_stamps: 1 })).toEqual({
+      ok: true,
+      program: { type: "stamp_card", config: { goal: 10, welcome_stamps: 1 } },
+    });
+  });
+  it("welcome_stamps = 0 → omis (défaut)", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, welcome_stamps: 0 })).toEqual({
+      ok: true,
+      program: { type: "stamp_card", config: { goal: 10 } },
+    });
+  });
+  it("welcome_stamps autre que 0/1 → erreur", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, welcome_stamps: 2 }).ok).toBe(false);
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, welcome_stamps: -1 }).ok).toBe(false);
+  });
+});
+
+describe("validateLoyaltyProgram — stamp_card : récompense intermédiaire", () => {
+  it("palier valide (1 < x < goal) conservé", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 5 })).toEqual({
+      ok: true,
+      program: { type: "stamp_card", config: { goal: 10, intermediate_milestone: 5 } },
+    });
+  });
+  it("null → omis (aucune récompense intermédiaire)", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: null })).toEqual({
+      ok: true,
+      program: { type: "stamp_card", config: { goal: 10 } },
+    });
+  });
+  it("palier >= goal → erreur", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 10 }).ok).toBe(false);
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 11 }).ok).toBe(false);
+  });
+  it("palier <= 1 → erreur (borne basse stricte)", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 1 }).ok).toBe(false);
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 0 }).ok).toBe(false);
+  });
+  it("palier non entier → erreur", () => {
+    expect(validateLoyaltyProgram("stamp_card", { goal: 10, intermediate_milestone: 2.5 }).ok).toBe(false);
+  });
+});
+
 describe("validateLoyaltyProgram — visit_based", () => {
   it("paliers croissants distincts valides", () => {
     expect(validateLoyaltyProgram("visit_based", { milestones: [5, 20, 50] })).toEqual({ ok: true, program: { type: "visit_based", config: { milestones: [5, 20, 50] } } });

@@ -20,4 +20,13 @@ describe("resolveLoyaltyProgram", () => {
   it("type connu mais config corrompue → repli stamp_card", () => {
     expect(resolveLoyaltyProgram({ loyalty_type: "visit_based", loyalty_config: { milestones: "oops" }, stamp_goal: 9 })).toEqual({ type: "stamp_card", config: { goal: 9 } });
   });
+  it("stamp_card : welcome_stamps et intermediate_milestone valides conservés", () => {
+    expect(resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5 }, stamp_goal: 10 }))
+      .toEqual({ type: "stamp_card", config: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5 } });
+  });
+  it("stamp_card : valeurs aberrantes en base ignorées (défense)", () => {
+    // welcome_stamps != 1 et intermediate hors bornes → ne polluent pas la config résolue.
+    expect(resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10, welcome_stamps: 3, intermediate_milestone: 10 }, stamp_goal: 10 }))
+      .toEqual({ type: "stamp_card", config: { goal: 10 } });
+  });
 });
