@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle } from "lucide-react";
+import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle, Gift, Clock, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { SecuritySection } from "./SecuritySection";
+import BusinessHoursEditor from "./BusinessHoursEditor";
+import { DEFAULT_BUSINESS_HOURS, normalizeBusinessHours, todaysHoursLabel, type BusinessHours } from "@/lib/merchant-config/hours";
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -18,6 +20,12 @@ export default function Settings() {
   const [addrMsg, setAddrMsg] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
+
+  // Carte vivante (Feature 1)
+  const [rewardLabel, setRewardLabel] = useState("");
+  const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
+  const [photoMsg, setPhotoMsg] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     // Chargement unique au montage.
@@ -37,8 +45,23 @@ export default function Settings() {
       setAddress(data.address || "");
       setLat(data.latitude != null ? String(data.latitude) : "");
       setLng(data.longitude != null ? String(data.longitude) : "");
+      setRewardLabel(data.reward_label || "");
+      setBusinessHours(normalizeBusinessHours(data.business_hours));
     }
     setLoading(false);
+  };
+
+  const uploadPhoto = async (file: File) => {
+    setUploadingPhoto(true); setPhotoMsg("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/merchant/card-photo", { method: "POST", body: fd });
+      setPhotoMsg(res.ok ? "Photo mise à jour — vos cartes se rafraîchissent." : "Échec de l'envoi de la photo.");
+    } catch {
+      setPhotoMsg("Erreur réseau.");
+    }
+    setUploadingPhoto(false);
   };
 
   const saveAddress = async () => {
@@ -72,6 +95,8 @@ export default function Settings() {
         shop_name: shopName,
         primary_color: primaryColor,
         logo_url: logoUrl,
+        reward_label: rewardLabel.trim() === "" ? null : rewardLabel.trim(),
+        business_hours: businessHours,
       }),
     });
 
@@ -162,6 +187,46 @@ export default function Settings() {
                     </div>
                 </div>
 
+                {/* ── Carte vivante (Feature 1) ─────────────────────────── */}
+                <div className="pt-6 border-t border-line-warm space-y-6">
+                    <div>
+                        <h2 className="font-bold text-onyx flex items-center gap-2"><Gift className="w-4 h-4 text-halo" /> Carte vivante</h2>
+                        <p className="text-sm text-galet-ink mt-1">Ces infos s&apos;affichent directement sur la carte Wallet de vos clients.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-galet-ink">Récompense affichée</label>
+                        <input
+                            type="text"
+                            maxLength={80}
+                            value={rewardLabel}
+                            onChange={(e) => setRewardLabel(e.target.value)}
+                            placeholder="Un café offert"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all"
+                        />
+                        <p className="text-xs text-galet">{rewardLabel.length}/80</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Clock className="w-4 h-4" /> Horaires d&apos;ouverture</label>
+                        <BusinessHoursEditor value={businessHours} onChange={setBusinessHours} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Camera className="w-4 h-4" /> Photo du commerce</label>
+                        <p className="text-xs text-galet">Affichée en bandeau sur la carte. Même image que dans le Studio — la dernière modification fait foi.</p>
+                        <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            disabled={uploadingPhoto}
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }}
+                            className="block text-sm text-galet-ink file:mr-3 file:rounded-full file:border-0 file:bg-halo file:px-4 file:py-2 file:text-white file:font-semibold disabled:opacity-50"
+                        />
+                        {uploadingPhoto && <p className="text-xs text-galet inline-flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" /> Envoi…</p>}
+                        {photoMsg && <p className="text-xs text-galet-ink">{photoMsg}</p>}
+                    </div>
+                </div>
+
                 <div className="pt-4 border-t border-line-warm flex items-center justify-between">
                     <button
                         disabled={saving}
@@ -228,20 +293,38 @@ export default function Settings() {
                         )}
                     </div>
 
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <div className="text-[10px] opacity-70 font-bold tracking-widest uppercase mb-1">POINTS DE FIDÉLITÉ</div>
-                            <div className="text-3xl font-black">7 / 10</div>
-                        </div>
-                        <div className="bg-white p-2 rounded-lg">
-                            <div className="w-12 h-12 bg-[#E6E1D5] animate-pulse rounded-sm" />
+                    <div className="space-y-3">
+                        {(rewardLabel.trim() || todaysHoursLabel(businessHours, new Date())) && (
+                            <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                {rewardLabel.trim() && (
+                                    <div>
+                                        <div className="text-[9px] opacity-70 font-bold tracking-widest uppercase">RÉCOMPENSE</div>
+                                        <div className="text-sm font-semibold">{rewardLabel.trim()}</div>
+                                    </div>
+                                )}
+                                {todaysHoursLabel(businessHours, new Date()) && (
+                                    <div>
+                                        <div className="text-[9px] opacity-70 font-bold tracking-widest uppercase">AUJOURD&apos;HUI</div>
+                                        <div className="text-sm font-semibold">{todaysHoursLabel(businessHours, new Date())}</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <div className="text-[10px] opacity-70 font-bold tracking-widest uppercase mb-1">POINTS DE FIDÉLITÉ</div>
+                                <div className="text-3xl font-black">7 / 10</div>
+                            </div>
+                            <div className="bg-white p-2 rounded-lg">
+                                <div className="w-12 h-12 bg-[#E6E1D5] animate-pulse rounded-sm" />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="bg-surface border border-line-warm rounded-3xl p-6 text-xs text-galet-ink leading-relaxed shadow-sm">
-                <p>💡 <strong>Note :</strong> La couleur et le logo s&apos;appliqueront aux prochaines cartes générées. Pour mettre à jour les cartes existantes, utilisez le bouton &quot;Push Update&quot; (disponible prochainement).</p>
+                <p>💡 <strong>Aperçu indicatif.</strong> Adresse, téléphone et itinéraire apparaissent au dos de la carte. Après enregistrement, vos cartes en circulation sont rafraîchies automatiquement (push silencieux).</p>
             </div>
         </div>
 
