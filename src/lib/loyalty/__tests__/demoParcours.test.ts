@@ -3,10 +3,11 @@ import { buildPassJson, type PassJson } from "@/lib/wallet/passJson";
 import { identityFromMerchant } from "@/lib/wallet/identityFromMerchant";
 import { googleIdentityModules } from "@/lib/wallet/googleIdentity";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
-import { applyScan, currentTier, programCanRedeem } from "@/lib/loyalty/engine";
+import { applyScan, currentTier, programCanRedeem, initialStampsForEnroll } from "@/lib/loyalty/engine";
 import { applyStamp, canRedeem } from "@/lib/loyalty/stamp";
 import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { revertSecondsLeft, revertStatusMessage, REVERT_WINDOW_SECONDS } from "@/lib/loyalty/revert";
+import { shouldShowReview, reviewUrlFor, isValidPlaceId } from "@/lib/wallet/googleReview";
 
 // ════════════════════════════════════════════════════════════════════════════
 //  PARCOURS DE DÉMO GENÈVE — filet anti-régression
@@ -20,10 +21,11 @@ import { revertSecondsLeft, revertStatusMessage, REVERT_WINDOW_SECONDS } from "@
 //   ✅ Scène 3  enrôlement → carte à 0
 //   ✅ Scène 4  scans → déblocage de la récompense (3 mécaniques)
 //   ✅ Scène 5  bords : cooldown, plafond, fenêtre d'annulation 5 min
-//   ⛔ Scène 1  marchand concierge cohérent (marqueurs) → dépend de #19 (non mergé)
-//   ⛔ Scène 6  lien « Avis Google » → dépend de F2 / #18 (non mergé)
-//   ⛔ F3 tampon de bienvenue / intermédiaire → reporté août (absent du code)
-//  (voir describe.todo en bas + la description de PR.)
+//   ✅ Scène 6  lien « Avis Google » (F2/#18, mergé) — apparaît/disparaît
+//   ✅ F3 tampon de bienvenue + récompense intermédiaire (#22, mergé)
+//   ↪ Scène 1 (marchand concierge cohérent, #21) : couverte par le test de route
+//     src/app/api/admin/merchants/__tests__/createMerchant.test.ts (logique de
+//     handler, pas une fonction pure — pas dupliquée ici).
 
 // Le marchand de démo : Café du Rhône, carte « 10 cafés = 1 offert ».
 const CAFE_DU_RHONE = {
@@ -196,19 +198,59 @@ describe("Parcours démo Genève — les 3 mécaniques de fidélité", () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// SCÈNES NON ENCORE GARDABLES SUR main (code absent) — à câbler quand mergé.
+// Scène 6 — lien « Avis Google » au moment magique (F2/#18, mergé sur main)
 // ────────────────────────────────────────────────────────────────────────────
-describe("Parcours démo Genève — à compléter quand le code arrive sur main", () => {
-  // Scène 1 : POST /api/admin/merchants pose setup_mode='concierge',
-  // managed_by_concierge=true, onboarding_completed_at → dépend de PR #19.
-  it.todo("Scène 1 — marchand concierge créé COHÉRENT (marqueurs) [PR #19]");
+describe("Parcours démo Genève — Scène 6 : lien « Avis Google » au déblocage", () => {
+  // Place ID Google au format documenté (ChIJ…). Exemple, pas un lieu réel.
+  const PLACE_ID = "ChIJN1t_tDeuEmsRUsoyG83frY4";
+  const program = resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10 }, stamp_goal: 10 });
 
-  // Scène 6 : lien « Avis Google » présent quand reward-ready ET google_place_id,
-  // absent sinon, et qui DISPARAÎT au scan suivant → dépend de F2 / PR #18.
-  it.todo("Scène 6 — lien « Avis Google » apparaît au déblocage et disparaît au scan suivant [F2/#18]");
-  it.todo("Scène 6 (bord) — google_place_id absent → aucun lien avis [F2/#18]");
+  it("apparaît quand la récompense est débloquée ET un place id est configuré", () => {
+    const r = applyScan(program, 9); // 10e tampon → reward-ready
+    expect(r.rewardReady).toBe(true);
+    expect(shouldShowReview(r.rewardReady, PLACE_ID)).toBe(true);
+    expect(reviewUrlFor(PLACE_ID)).toBe(
+      `https://search.google.com/local/writereview?placeid=${PLACE_ID}`,
+    );
+  });
 
-  // F3 (reporté août) : tampon de bienvenue (welcome_stamps=1) + récompense
-  // intermédiaire sur carte à tampons.
-  it.todo("F3 — tampon de bienvenue + récompense intermédiaire [reporté août, absent du code]");
+  it("disparaît au scan suivant (carte encaissée → repart à 0, plus reward-ready)", () => {
+    const next = applyScan(program, 0); // 1er tampon de la nouvelle carte
+    expect(next.rewardReady).toBe(false);
+    expect(shouldShowReview(next.rewardReady, PLACE_ID)).toBe(false);
+  });
+
+  it("(bord) google_place_id absent ou invalide → aucun lien avis, même reward-ready", () => {
+    expect(shouldShowReview(true, null)).toBe(false);
+    expect(shouldShowReview(true, "")).toBe(false);
+    expect(shouldShowReview(true, "pas-un-place-id")).toBe(false);
+    expect(reviewUrlFor(null)).toBeNull();
+    expect(isValidPlaceId(PLACE_ID)).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// F3 — tampon de bienvenue + récompense intermédiaire (carte à tampons, #22)
+// ────────────────────────────────────────────────────────────────────────────
+describe("Parcours démo Genève — F3 : tampon de bienvenue + récompense intermédiaire", () => {
+  it("tampon de bienvenue : la carte démarre à 1 si welcome_stamps=1, sinon 0", () => {
+    const withWelcome = resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10, welcome_stamps: 1 }, stamp_goal: 10 });
+    const without = resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10 }, stamp_goal: 10 });
+    expect(initialStampsForEnroll(withWelcome)).toBe(1);
+    expect(initialStampsForEnroll(without)).toBe(0);
+  });
+
+  it("récompense intermédiaire : event intermediate_reward_ready pile au palier, jamais avec reward_ready", () => {
+    const p = resolveLoyaltyProgram({ loyalty_type: "stamp_card", loyalty_config: { goal: 10, intermediate_milestone: 5 }, stamp_goal: 10 });
+    // 4 → 5 : palier intermédiaire atteint (5 < 10 → pas de reward_ready).
+    const atMid = applyScan(p, 4);
+    expect(atMid.rewardReady).toBe(false);
+    expect(atMid.events).toEqual([{ kind: "intermediate_reward_ready" }]);
+    // 5 → 6 : entre les paliers, aucun event.
+    expect(applyScan(p, 5).events).toEqual([]);
+    // 9 → 10 : récompense finale seule (pas d'intermédiaire en même temps).
+    const atGoal = applyScan(p, 9);
+    expect(atGoal.rewardReady).toBe(true);
+    expect(atGoal.events).toEqual([{ kind: "reward_ready" }]);
+  });
 });
