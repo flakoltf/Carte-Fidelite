@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Loader2, ExternalLink, Printer, Palette, ArrowRight } from "lucide-react";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
 import QrPosterButton from "@/components/halo/QrPosterButton";
+import { cardViewFromOutcome, type CardView, type MerchantMe } from "./cardView";
 
 // Page « Ma carte » : le QR d'enrôlement du marchand, imprimable, avec le lien
 // public. C'est l'outil n°1 du comptoir — il était jusqu'ici réservé à l'admin.
@@ -21,17 +22,42 @@ function enrollUrlFor(slug: string): string {
 }
 
 export default function MyCardPage() {
-  const [loading, setLoading] = useState(true);
-  const [merchant, setMerchant] = useState<{ shop_name: string; slug: string | null } | null>(null);
+  // null = chargement en cours ; sinon état résolu (auth | error | empty | ready).
+  const [view, setView] = useState<CardView | null>(null);
 
   useEffect(() => {
-    fetch("/api/merchant/me")
-      .then((r) => r.json())
-      .then(({ merchant }) => setMerchant(merchant))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        // no-store : endpoint dépendant de la session/impersonation — jamais de
+        // réponse mise en cache (sinon un 401 « avant résolution » resservi → faux
+        // « pas prête »).
+        const res = await fetch("/api/merchant/me", { cache: "no-store" });
+        if (res.status === 401) {
+          if (!cancelled) setView({ status: "auth" });
+          return;
+        }
+        if (!res.ok) {
+          if (!cancelled) setView({ status: "error" });
+          return;
+        }
+        const body = (await res.json().catch(() => null)) as { merchant?: MerchantMe } | null;
+        if (!body) {
+          if (!cancelled) setView({ status: "error" });
+          return;
+        }
+        if (!cancelled) setView(cardViewFromOutcome({ kind: "ok", merchant: body.merchant }));
+      } catch {
+        // Réseau KO : un échec de chargement n'est PAS « page pas prête ».
+        if (!cancelled) setView({ status: "error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  if (loading) {
+  if (view === null) {
     return (
       <div className="flex items-center justify-center py-24 text-galet-ink">
         <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
@@ -39,7 +65,31 @@ export default function MyCardPage() {
     );
   }
 
-  if (!merchant?.slug) {
+  if (view.status === "auth") {
+    return (
+      <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
+        Votre session a expiré.{" "}
+        <Link href="/login" className="text-halo hover:underline">
+          Reconnectez-vous
+        </Link>{" "}
+        pour accéder à votre carte.
+      </div>
+    );
+  }
+
+  if (view.status === "error") {
+    return (
+      <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
+        Impossible de charger votre profil pour le moment. Rechargez la page — si le souci
+        persiste, écrivez-nous :{" "}
+        <a href="mailto:contact@halocard.ch" className="text-halo hover:underline">
+          contact@halocard.ch
+        </a>
+      </div>
+    );
+  }
+
+  if (view.status === "empty") {
     return (
       <div className="rounded-3xl border border-line-warm bg-surface p-8 text-galet-ink">
         Votre page d&apos;inscription n&apos;est pas encore prête — contactez-nous :{" "}
@@ -50,6 +100,7 @@ export default function MyCardPage() {
     );
   }
 
+  const merchant = { shop_name: view.shopName, slug: view.slug };
   const enrollUrl = enrollUrlFor(merchant.slug);
 
   return (
