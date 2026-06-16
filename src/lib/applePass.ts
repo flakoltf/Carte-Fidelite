@@ -161,36 +161,47 @@ export async function buildApplePassBuffer({
     }
   }
 
-  // RENDU DES TAMPONS SUR LE PASS (Priorité A) — strip dynamique généré par
-  // carte selon l'état RÉEL (stamps / goal) : la carte « vit » et se remplit à
-  // chaque scan (régénéré à chaque émission).
-  //  - Précédence : si le marchand a uploadé une bande/photo (strip.png déjà
-  //    présent), on respecte SON visuel — pas de génération (slot contendu avec
-  //    la « Photo du commerce » F1, le visuel choisi gagne).
+  // RENDU DES TAMPONS SUR LE PASS (A + A.2) — strip dynamique généré par carte
+  // selon l'état RÉEL (stamps / goal) : la carte « vit » et se remplit à chaque
+  // scan (régénéré à chaque émission).
+  //  - A.2 COMPOSITE (décision manager PR #33) : si le marchand a une PHOTO de
+  //    commerce (strip uploadé), on ne masque PLUS les tampons — photo en fond +
+  //    voile dégradé sombre (~40 % bas) + grille DANS cette bande (WCAG garanti).
+  //  - Sans photo : grille sur fond couleur (comportement Priorité A).
   //  - Gaté sur un design PUBLIÉ de type tampons (pas de surprise pour les
   //    cartes legacy sans design).
-  //  - FAIL-OPEN : toute erreur de génération → aucun strip, pass valide quand
-  //    même (« rien ne casse au comptoir »).
+  //  - FAIL-OPEN : toute erreur → on garde l'existant (photo brute ou aucun
+  //    strip), pass valide quand même (« rien ne casse au comptoir »).
   const isStampsCard = !!design && (design.cardType ?? "stamps") === "stamps";
-  if (isStampsCard && !designLogoBuffers["strip.png"]) {
+  if (isStampsCard) {
     try {
-      const { stampStripSvg } = await import("@/lib/cardDesign/stampStrip");
+      const { chooseStripPlan } = await import("@/lib/cardDesign/stampStrip");
+      const { compositeStampStrip, rasterStampStrip, STRIP_SIZES } = await import(
+        "@/lib/cardDesign/stampStripRaster"
+      );
       const { DEFAULT_STAMPS_CONFIG } = await import("@/lib/cardDesign/types");
       const cfg = design!.stamps ?? DEFAULT_STAMPS_CONFIG;
-      const svg = stampStripSvg({
+      const opts = {
         goal: cfg.goal ?? stampGoal,
         filledCount: stamps,
         shape: cfg.shape,
         colors: design!.colors,
-      });
-      const sharp = (await import("sharp")).default;
-      const sizes: [string, number, number][] = [
-        ["strip.png", 375, 123],
-        ["strip@2x.png", 750, 246],
-        ["strip@3x.png", 1125, 369],
-      ];
-      for (const [name, w, h] of sizes) {
-        designLogoBuffers[name] = await sharp(Buffer.from(svg)).resize(w, h).png().toBuffer();
+      };
+      // Photo = strip uploadé (déjà téléchargé plus haut dans designLogoBuffers).
+      const bestPhoto =
+        designLogoBuffers["strip@3x.png"] ??
+        designLogoBuffers["strip@2x.png"] ??
+        designLogoBuffers["strip.png"];
+      const plan = chooseStripPlan({ hasDesign: true, isStampsCard: true, hasPhoto: !!bestPhoto });
+      if (plan === "composite") {
+        for (const [name, w, h] of STRIP_SIZES) {
+          const photo = designLogoBuffers[name] ?? (bestPhoto as Buffer);
+          designLogoBuffers[name] = await compositeStampStrip(photo, w, h, opts);
+        }
+      } else if (plan === "grid") {
+        for (const [name, w, h] of STRIP_SIZES) {
+          designLogoBuffers[name] = await rasterStampStrip(w, h, opts);
+        }
       }
     } catch (e) {
       console.error("[applePass] génération strip tampons (fail-open):", e instanceof Error ? e.message : e);

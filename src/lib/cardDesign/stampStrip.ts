@@ -107,3 +107,85 @@ export function stampStripSvg(opts: StampStripOptions): string {
     `</svg>`
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  A.2 — OVERLAY pour COMPOSITE photo (décision manager PR #33)
+// ─────────────────────────────────────────────────────────────────────────────
+// Quand le marchand a une photo de commerce (strip uploadé), on ne masque PLUS
+// les tampons : photo en fond + VOILE dégradé sombre sur la bande basse (~40 %) +
+// grille posée DANS cette bande. Contraste WCAG garanti par le voile. Ce SVG est
+// TRANSPARENT (pas de fond opaque) : il se compose par-dessus la photo (sharp).
+
+export type StampOverlayOptions = StampStripOptions & {
+  /** Hauteur de la bande basse (voile + grille), fraction de la hauteur. Défaut 0.4. */
+  bandFraction?: number;
+};
+
+export function stampStripOverlaySvg(opts: StampOverlayOptions): string {
+  const { goal, filledCount } = opts;
+  const shape: StampShape = opts.shape ?? "circle";
+  // Sur le voile sombre, on force des couleurs claires (contraste WCAG garanti
+  // quelle que soit la photo) : plein = blanc, vide = contour blanc translucide.
+  const filledFill = "#FFFFFF";
+  const emptyStroke = "#FFFFFF";
+  const width = opts.width ?? 1125;
+  const height = opts.height ?? 369;
+  const band = Math.min(0.6, Math.max(0.3, opts.bandFraction ?? 0.4));
+  const bandTop = height * (1 - band);
+  const bandH = height - bandTop;
+
+  const { cols, rows } = stampGrid(goal);
+  const cells = stampCells(goal, filledCount);
+
+  // Grille confinée à la bande basse (sur le voile sombre).
+  const padX = width * 0.06;
+  const padY = bandH * 0.16;
+  const gridW = width - padX * 2;
+  const gridH = bandH - padY * 2;
+  const cellW = gridW / cols;
+  const cellH = gridH / rows;
+  const r = Math.min(cellW, cellH) * 0.34;
+  const stroke = Math.max(2, r * 0.12);
+
+  const shapes = cells
+    .map((cell) => {
+      const col = cell.index % cols;
+      const row = Math.floor(cell.index / cols);
+      const cx = padX + cellW * col + cellW / 2;
+      const cy = bandTop + padY + cellH * row + cellH / 2;
+      const attrs = cell.filled
+        ? `fill="${filledFill}"`
+        : `fill="none" stroke="${emptyStroke}" stroke-width="${stroke.toFixed(1)}" opacity="0.9"`;
+      return shapePath(shape, cx, cy, r).replace("{{attrs}}", attrs);
+    })
+    .join("");
+
+  // Voile : transparent en haut de la bande → sombre opaque en bas (alvéoles lisibles).
+  const veilStart = (bandTop / height).toFixed(4);
+  const veilMid = (1 - band * 0.6).toFixed(4);
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
+    `<defs><linearGradient id="veil" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0" stop-color="#0B0C0E" stop-opacity="0" />` +
+    `<stop offset="${veilStart}" stop-color="#0B0C0E" stop-opacity="0" />` +
+    `<stop offset="${veilMid}" stop-color="#0B0C0E" stop-opacity="0.62" />` +
+    `<stop offset="1" stop-color="#0B0C0E" stop-opacity="0.85" />` +
+    `</linearGradient></defs>` +
+    `<rect width="${width}" height="${height}" fill="url(#veil)" />` +
+    shapes +
+    `</svg>`
+  );
+}
+
+// Décision de rendu du strip — PURE, testable (3 scénarios de la mission).
+//   "composite" : design publié tampons + photo → photo + voile + grille
+//   "grid"      : design publié tampons sans photo → grille sur fond couleur (A)
+//   "none"      : pas de design publié / pas une carte tampons → aucun strip généré
+export function chooseStripPlan(args: {
+  hasDesign: boolean;
+  isStampsCard: boolean;
+  hasPhoto: boolean;
+}): "composite" | "grid" | "none" {
+  if (!args.hasDesign || !args.isStampsCard) return "none";
+  return args.hasPhoto ? "composite" : "grid";
+}
