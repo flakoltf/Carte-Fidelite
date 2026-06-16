@@ -402,3 +402,90 @@ Veille relancée ; fingerprint : studio `4e428e8`, hygiène `9f2d2a5`, sécurit�
 `f8178dc` (#35), outil démo `f2d1942`.
 
 ---
+
+# Méta-surveillance — vague 4 — 2026-06-16 ~21:00 (Studio B + Hygiène A3/A8)
+
+## Verdict instantané : 🟢 VERT — l'INTÉGRALITÉ du plan d'action d'audit (A1→A8) est désormais couverte
+
+Nouveaux pushs : **Studio** (`4e428e8`→`429e3cb`, « B 1/2 » règles programme) et
+**Hygiène DB** (`9f2d2a5`→`dd5652b`, 2 commits : A8 garde 5 tables + A3 vite fix).
+**Toutes les PR agents sont ouvertes et DRAFT** : #33 Studio, #35 Sécurité,
+**#36 Outil démo**, **#37 Hygiène DB**. Aucune dérive.
+
+## Diff par agent (nouveautés ce tour)
+
+| Agent | HEAD | Nouveau | Fichiers | +/- |
+|---|---|---|---|---|
+| **Studio** (#33) | `429e3cb` | `feat(studio): B (1/2) persistance règles à la publication` | `publish/route.ts` (+32), `loyalty/studioRules.ts` (+67 neuf), `__tests__/studioRules.test.ts` (+57) | +156 |
+| **Hygiène DB** (#37) | `dd5652b` | `543541e` garde anti-drift 5 tables ; `dd5652b` `npm audit fix` vite | `columnsSync.test.ts` (+200 neuf), `package-lock.json` (+453/-174) | +479/-174 |
+| Sécurité (#35) | `f8178dc` | — | — | — |
+| Outil démo (#36) | `f2d1942` | — | — | — |
+
+## Dérives capturées (par code D)
+
+| Code | Statut | Preuve |
+|---|---|---|
+| **D17 / INV.3 (tenancy)** — Studio B | ✅ **HONORÉ — vérifié** | `publish/route.ts` : `merchantId = await currentMerchantId()` ; la nouvelle écriture des règles = `supabaseAdmin.from('merchants').update({loyalty_type,loyalty_config,reward_label}).eq('id', merchantId)` → **tenant strict**. |
+| **D17 / INV.1** — Studio B | ✅ N/A propre | Audit via action **existante** `MERCHANT_UPDATED` (pas de nouvelle `AuditAction` → aucune migration jumelle requise). Validation `buildLoyaltyUpdate` **avant** écriture (422 si invalide). |
+| **D17 / INV.2** — Studio B | ✅ RAS | `grep loyaltyclass/.put/googleClass/mapGoogle` sur `429e3cb` → 0. |
+| **D14 / D01 (scope)** | ✅ RAS | Studio : `publish/route.ts` + `loyalty/` (la branche est `…-RULES-stamp-render` → règles dans le périmètre). Hygiène : `columnsSync.test.ts` + `package-lock.json` (= lot gardes+hygiène). |
+| **D04 (secret)** | ✅ RAS | Hygiène : `package.json` **NON modifié** (lock-only) ; aucun secret dans le lock. |
+| **D03 (migration prod)** | ✅ RAS | Aucun fichier migration ce tour. Prod toujours 45 (inchangé). |
+| **D02 (PR non-DRAFT)** | ✅ RAS | #36 et #37 = **DRAFT** (les 4 agents ont désormais 1 PR draft chacun). |
+| D05 | ✅ RAS | Commits linéaires, ancêtres intacts. |
+
+## Cross-checks reproduits (loop C)
+
+1. **Studio B tenancy** (INV.3) → ✅ `.eq('id', merchantId)` présent sur l'update
+   merchants (vérifié dans le diff + grep).
+2. **A3 vite fix réel et propre** → ✅ `package-lock` : `vite` → **8.0.16**
+   (résout la GHSA *high*). `package.json` **inchangé** (pas de bump de dépendance
+   applicative forcé). Le churn lock (+453/-174) = re-résolution npm + `string_decoder`
+   ajouté ; aucune dépendance applicative détournée. **Clôt aussi le `package-lock`
+   flottant signalé vague 0** (intégré proprement ici).
+3. **A8 garde 5 tables** → ✅ `columnsSync.test.ts` couvre **les 6 tables** :
+   `customers`, `loyalty_cards`, `scan_history`, `campaigns`, `audit_logs` (+ `merchants`
+   déjà gardé). Étend la couverture anti-drift comme recommandé (action A8).
+
+## Cohérence inter-agents
+
+- **`auditLog.ts`** : non touché ce tour. Situation inchangée vs vague 3 (Hygiène +
+  Outil démo l'ont tous deux étendu, marketing_consent préservé des deux côtés ;
+  unique résidu = dédoublonnage cosmétique au double-merge). RAS nouveau.
+- **Studio ↔ autres** : `publish/route.ts` et `loyalty/studioRules.ts` ne sont
+  touchés par aucun autre agent. 0 conflit.
+- **Hygiène DB ↔ Sécurité sur `package-lock.json`** : Sécurité ne touche pas le
+  lock (uniquement `next.config.ts`). **Pas de collision.**
+
+## Bilan plan d'action audit (docs/AUDIT-VERIF-2026-06-16-2212.md)
+
+| Action | Agent | État |
+|---|---|---|
+| A1 composite tampons | Studio | ✅ vague 2 (A.2) |
+| A2 roter mdp démo | Outil démo | ✅ vague 3 |
+| A3 `npm audit fix` (vite) | Hygiène DB | ✅ **vague 4** |
+| A4 formaliser `MARKETING_CONSENT_UPDATED` | Hygiène DB + Outil démo | ✅ vagues 1+3 |
+| A5 réparer builds preview | Sécurité | ✅ vague 3 |
+| A6 CSP enforcing | Sécurité | ✅ vague 3 |
+| A7 email test | Outil démo | ✅ vague 3 |
+| A8 étendre garde ColumnsSync | Hygiène DB | ✅ **vague 4** |
+
+**→ A1 à A8 : 8/8 adressées.** (« B 1/2 » règles programme = bonus au-delà du plan.)
+
+## Recommandation à l'utilisateur
+
+🟢 **RAS — les 4 agents tiennent un niveau homogène et élevé.** Le plan d'action
+complet de l'audit d'hier (A1→A8) est couvert, plus le début du chantier « règles
+programme » (Studio B). Aucune dérive Dxx sur 4 vagues.
+
+**Prudences déjà posées (toujours valables, non bloquantes)** :
+1. CSP enforcing → 1 smoke-test live avant merge (#35).
+2. Double-merge `auditLog.ts` → dédoublonner `MARKETING_CONSENT_UPDATED`.
+3. **Nouveau** : à l'intégration, vérifier que la garde `columnsSync` (Hygiène, #37)
+   reste **verte** une fois mergée avec les colonnes lues par les nouveaux endpoints
+   d'Outil démo (#36) — le test lit les `.select()` du code ; un `.select()`
+   d'Outil démo sur une colonne non gardée pourrait faire rougir la garde après merge.
+
+Veille **toujours active** (watcher `blo0odqof` en cours, baseline = état vague 4).
+
+---
