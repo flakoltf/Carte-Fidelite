@@ -10,6 +10,9 @@ export type MerchantRow = {
   slug: string | null;
   email: string | null;
   role: string | null;
+  // Optionnel : présent uniquement quand la requête le sélectionne (ex. rotation
+  // du mot de passe démo, qui doit cibler le compte Auth via user_id).
+  user_id?: string | null;
 };
 
 export interface SelectBuilder
