@@ -63,6 +63,13 @@ export const AUDIT_ACTIONS = [
   // supabase/migrations/20260618_audit_actions_demo.sql
   'DEMO_ACCOUNT_SEEDED',
   'DEMO_ACCOUNT_RESET',
+  // Outillage de prospection : rotation du mot de passe démo (1-clic) + smoke
+  // email Resend (1-clic). Orphelin de prod MARKETING_CONSENT_UPDATED formalisé
+  // au passage (présent en base, absent du code — cf. audit 2026-06-16).
+  // Migration jumelle : supabase/migrations/20260620_audit_actions_rotate_email.sql
+  'DEMO_ACCOUNT_ROTATED',
+  'EMAIL_SMOKE_SENT',
+  'MARKETING_CONSENT_UPDATED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
