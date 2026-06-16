@@ -137,3 +137,79 @@ ligne de départ.
 Prochain tour : boucle de veille 60 s sur les 4 branches + détection de tout push.
 
 ---
+
+# Méta-surveillance — vague 1 — 2026-06-16 22:43 (push détecté 20:43 UTC)
+
+## Verdict instantané : 🟢 VERT (push conforme — résout même une action d'audit)
+
+**Agent Hygiène DB** a poussé `chore/db-hygiene-and-guards` (`9f2d2a5`, 2 commits).
+Travail **propre, dans le périmètre, sans aucune dérive**. Il **résout l'action A4**
+de l'audit d'hier (formalisation de l'orphelin `MARKETING_CONSENT_UPDATED`).
+
+## Diff par agent
+
+| Agent | Branche | HEAD | Commits/main | Fichiers | +/- |
+|---|---|---|---|---|---|
+| **Hygiène DB** | `chore/db-hygiene-and-guards` | `9f2d2a5` (flakoltf, 22:42) | **2** | `auditLog.ts` (+5), `20260611_audit_actions_marketing_consent.sql` (+29 neuf), `20260611_marketing_consent.sql` (+18 neuf), `20260610_audit_actions_card_design_dedup.sql` (+28 neuf), `20260618_audit_actions_demo.sql` (+12/-6 **modif**) | +92 / -6 |
+| Studio | `feat/studio-rules-stamp-render` | `77f4554` | 1 | (inchangé vague 0) | +222 |
+| Sécurité | `feat/security-headers-preview` | `b2613e2` | 0 | — | — |
+| Outil démo | `feat/demo-rotate-pass-and-email-smoke` | absente | — | — | — |
+
+Les 2 commits : (1) `34312ff` formalise 3 migrations prod orphelines
+(marketing_consent + dédup card_design) ; (2) `9f2d2a5` ajoute
+`MARKETING_CONSENT_UPDATED` à `AUDIT_ACTIONS` dans `auditLog.ts`.
+
+## Dérives capturées (par code D)
+
+| Code | Statut | Preuve |
+|---|---|---|
+| **D03 (migration prod)** | ✅ **RAS — vérifié en live** | `select count(*) from supabase_migrations.schema_migrations` → **45**, latest `20260615214932`. **Inchangé** vs baseline (45). Aucune migration appliquée. Les commentaires des fichiers le disent (« NON ré-appliquée, idempotente ») et le live le confirme. |
+| **D17 / INV.1** | ✅ **HONORÉ — reproduit indépendamment** | Reproduction de la logique `auditActionsSync` depuis les refs git : code `AUDIT_ACTIONS` = **48** actions ⊆ CHECK de la migration lexicalement la plus récente (`20260618_audit_actions_demo.sql`) = **51**. **0 action code absente du CHECK.** Orphelins CHECK-only = `PAYMENT_*`/`SUBSCRIPTION_CANCELED` (billing réservé, autorisés). Le live contient bien `MARKETING_CONSENT_UPDATED` (`has_marketing_consent=true`). |
+| D01 / D14 (scope) | ✅ RAS | Tous les fichiers ∈ lot « hygiène DB + auditLog » : `auditLog.ts` + `supabase/migrations/`. Pas de débordement. |
+| D02 (PR) | ✅ RAS | Aucune PR ouverte pour cette branche (toujours seulement #33/#34 DRAFT). |
+| D04 (secret) | ✅ RAS | Diff = SQL DDL + 1 action TS. Aucun credential. |
+| D05 (force-push) | ✅ RAS | 2 commits linéaires au-dessus de `main`. Pas de réécriture. |
+| D11/D12 | ✅ RAS | Les claims des commits sont exacts (vérifiés SQL + git). |
+
+## Cross-checks reproduits (loop C)
+
+1. **La modif de `20260618_audit_actions_demo.sql` ne SUPPRIME aucune action**
+   → ✅ vérifié. Le diff ajoute `'MARKETING_CONSENT_UPDATED'` après `'SCAN_REVERTED'`
+   ; `DEMO_ACCOUNT_SEEDED`/`DEMO_ACCOUNT_RESET` préservés. Liste finale = 51,
+   identique au CHECK live.
+2. **INV.1 subset** code(48) ⊆ migration(51) → ✅ (cf. tableau, `comm -23` vide).
+3. **D03 état prod** `schema_migrations`=45 inchangé → ✅.
+
+## Cohérence inter-agents (auditLog.ts surtout)
+
+⚠️ **Point d'attention activé.** Hygiène DB a **édité `20260618_audit_actions_demo.sql`**
+— le fichier du **lot Outil démo** (chevauchement annoncé dans le mandat). L'édition
+est **bénigne et coopérative** : elle *préserve* les actions démo
+(`DEMO_ACCOUNT_SEEDED/RESET`) tout en ajoutant `MARKETING_CONSENT_UPDATED`. **Aucun
+écrasement.** MAIS :
+
+- **Risque futur** : si l'agent **Outil démo** ré-édite **ce même fichier** ou
+  **`auditLog.ts`** (il est censé ajouter ses propres `AuditAction`), il devra
+  **partir de la version d'Hygiène DB**, sinon il **perdra** `MARKETING_CONSENT_UPDATED`
+  ou réintroduira le drift. À vérifier **impérativement** au push d'Outil démo :
+  la liste finale doit contenir **et** les actions démo **et** marketing_consent.
+- **Smell mineur (non-Dxx)** : éditer une migration déjà committée sur `main`
+  (`20260618_*`) est en principe à éviter (immutabilité). **Mitigé** ici : cette
+  migration n'a **jamais** été appliquée en prod (prod @ `20260615214932`, le
+  `20260618_*` est futur et hors `schema_migrations`). Donc réécriture sans risque.
+
+## Recommandation à l'utilisateur
+
+🟢 **RAS — push de qualité.** Hygiène DB clôt proprement l'action A4 de l'audit
+(orphelin `MARKETING_CONSENT_UPDATED` formalisé, code aligné, aucune migration
+appliquée en prod). Rien à corriger.
+
+**1 consigne de coordination à transmettre à l'agent Outil démo** : sa branche
+devra **rebaser/partir de `chore/db-hygiene-and-guards`** (ou au minimum reprendre
+la version courante d'`auditLog.ts` + `20260618_audit_actions_demo.sql`) **avant**
+d'ajouter ses propres actions, faute de quoi le merge perdra `MARKETING_CONSENT_UPDATED`
+ou recréera le drift que cette PR vient de corriger.
+
+Veille relancée (fetch/60 s) ; fingerprint mis à jour (chore présent @ `9f2d2a5`).
+
+---
