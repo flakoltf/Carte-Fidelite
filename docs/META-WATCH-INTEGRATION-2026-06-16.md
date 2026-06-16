@@ -71,3 +71,60 @@ les 4 PR doivent rester **DRAFT et non mergées** ; tout merge = escalation D02.
 J'observe en continu.
 
 ---
+
+# ÉVÉNEMENT — coupure de courant — 2026-06-17 ~22:07Z
+
+## Verdict : 🟢 INVARIANTS INTACTS — aucune perte côté remote, 1 point de vigilance local
+
+**Faux positif watcher** : à 22:07:30Z le watcher a signalé un « CHANGE » qui était
+en réalité `gh pr list` renvoyant **vide** pour un cycle (réseau coupé par la panne).
+Aucun tip git n'avait bougé. `gh` répond de nouveau normalement.
+
+## Contrôles post-coupure (re-vérifiés)
+
+| Invariant | État | Verdict |
+|---|---|---|
+| **D02** PR mergées | #33/#35/#36/#37 = OPEN / DRAFT / `merged=null` | ✅ aucune mergée |
+| **D03** prod migrations | `schema_migrations` = **45** (`20260615214932`) | ✅ inchangé |
+| Force-push (tips PR) | `dd5652b`/`f2d1942`/`f8178dc`/`429e3cb` | ✅ identiques baseline |
+| `main` | `b2613e2` | ✅ inchangé |
+| Branches conso (remote) | toujours absentes | ✅ rien poussé |
+
+## Évolution de setup (positif) : worktrees par agent
+
+Contrairement à la phase précédente (arbre partagé, fragilité signalée), **chaque
+agent a désormais son worktree isolé** — l'arbre principal est revenu sur `main`
+propre :
+- `~/.cf-worktrees/demo-rotate` → #36 `f2d1942`
+- `…/db-hygiene` → #37 `dd5652b`
+- `…/studio-rules` → #33 `429e3cb`
+- `~/Projects/wt-studio-suite` → `feat/studio-rules-suite` @ `b2613e2` (**0 commit** —
+  worktree prêt, agent Studio Suite pas encore au travail)
+
+## ⚠️ POINT DE VIGILANCE — WIP parké dans un `git stash` (risque d'intégration)
+
+`stash@{0}` (« On feat/studio-rules-stamp-render : WIP demo-rotate/email-smoke —
+récupéré d'un leak d'explorateur, à réattacher à feat/demo-rotate ») contient une
+**quasi-réplique du travail de #36** (548 insertions) : `DemoControls.tsx`, routes
+rotate-password/email-smoke, `auditLog.ts` (+7), `demo/rotate.ts`, `demo/db.ts`, +
+**une migration `20260619_audit_actions_rotate_email.sql`**.
+
+**Hazard** : #36 a DÉJÀ ce travail committé (`f2d1942`) **avec une migration
+`20260620_*`** (date différente) et un test à 90 lignes (vs 91 dans le stash). Un
+« réattach » **aveugle** du stash sur #36 créerait un **doublon de migration**
+(`20260619` + `20260620`, deux fois les mêmes actions) ou un conflit. **Ne PAS
+appliquer ce stash sans diff manuel** ; le travail est déjà sur #36 — le stash est
+vraisemblablement une **version antérieure/divergente** à écarter, pas à fusionner.
+
+*(Constat read-only ; je n'y touche pas. À trancher par l'Intégrateur/le chef.)*
+
+## Sur le redémarrage des agents
+
+**Hors de mon mandat** : je suis l'auditeur **read-only**, je n'instancie ni ne
+relance les agents codeurs (indépendance + je n'ai pas leurs sessions). État fourni
+ci-dessus pour permettre un redémarrage **sûr** par l'opérateur. Rien n'est perdu
+côté remote ; le seul travail non-committé est le `stash@{0}` (à écarter, cf. supra)
+et un commit non-poussé sur `design/refonte-ui` (branche hors périmètre, sans
+rapport avec la panne).
+
+---
