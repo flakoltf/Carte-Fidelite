@@ -1,11 +1,17 @@
 -- supabase/migrations/20260618_audit_actions_demo.sql
 -- (Compte démo de prospection — seed/reset 1-clic)
 --
--- Migration jumelle du CHECK audit (invariant n°1) : repart de la liste de
--- 20260615_audit_actions_guided.sql et ajoute DEMO_ACCOUNT_SEEDED /
--- DEMO_ACCOUNT_RESET. À appliquer EN DERNIER (le test auditActionsSync lit la
--- migration lexicalement la plus récente contenant le CHECK ; ce fichier
--- 20260618_* trie après tous les 2026061x existants).
+-- Migration jumelle du CHECK audit (invariant n°1). À appliquer EN DERNIER (le
+-- test auditActionsSync lit la migration lexicalement la plus récente contenant
+-- le CHECK ; ce fichier 20260618_* trie après tous les 2026061x existants).
+--
+-- CORRECTION DE FIDÉLITÉ (PR chore/db-hygiene) : ce fichier reproduit désormais
+-- À L'IDENTIQUE le statement RÉELLEMENT appliqué en prod (schema_migrations
+-- version 20260615213952), qui « repart de la liste LIVE en prod et préserve
+-- MARKETING_CONSENT_UPDATED ». La copie repo précédente avait perdu cette action
+-- (drift BLOC 2.6 de l'audit du 16/06) → un fresh-db divergeait de la prod.
+-- On RAJOUTE donc MARKETING_CONSENT_UPDATED (entre SCAN_REVERTED et les actions
+-- DEMO_*). La liste finale = 51 actions, identique au CHECK live.
 
 ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_action_check;
 ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_action_check
@@ -30,7 +36,7 @@ ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_action_check
     'MERCHANT_SELF_PROVISIONED','ONBOARDING_COMPLETED',
     'ONBOARDING_MODE_SELECTED','CONCIERGE_CARD_PROVISIONED',
     'CONCIERGE_DESIGN_DELIVERED',
-    'SCAN_REVERTED',
+    'SCAN_REVERTED','MARKETING_CONSENT_UPDATED',
     -- Compte démo de prospection (2026-06-18)
     'DEMO_ACCOUNT_SEEDED','DEMO_ACCOUNT_RESET'
   ]));

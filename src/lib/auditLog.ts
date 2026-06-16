@@ -59,6 +59,11 @@ export const AUDIT_ACTIONS = [
   // Expérience guidée (annulation de tampon au comptoir) — migration jumelle :
   // supabase/migrations/20260615_audit_actions_guided.sql
   'SCAN_REVERTED',
+  // Consentement marketing nLPD/RGPD — émis lors d'un changement d'opt-in.
+  // Présent dans le CHECK prod depuis un patch hors-repo (20260611223654) ;
+  // formalisé dans supabase/migrations/20260611_audit_actions_marketing_consent.sql
+  // (et préservé par 20260618_audit_actions_demo.sql, la migration la plus récente).
+  'MARKETING_CONSENT_UPDATED',
   // Compte démo de prospection (seed/reset 1-clic) — migration jumelle :
   // supabase/migrations/20260618_audit_actions_demo.sql
   'DEMO_ACCOUNT_SEEDED',
