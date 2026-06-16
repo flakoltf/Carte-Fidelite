@@ -290,3 +290,115 @@ Seule suggestion : **mettre à jour la description de PR #33** (elle dit encore
 Veille relancée ; fingerprint : studio `4e428e8`, sécurité présente vide `b2613e2`.
 
 ---
+
+# Méta-surveillance — vague 3 — 2026-06-16 22:53-22:54 (les 4 agents ont du contenu)
+
+## Verdict instantané : 🟢 VERT (2 nouveaux pushs conformes ; couverture d'audit massive)
+
+**Agent Outil démo** a poussé pour la 1ʳᵉ fois (`feat/demo-rotate-pass-and-email-smoke`
+@ `f2d1942`) et **Agent Sécurité** a poussé son vrai travail
+(`feat/security-headers-preview` @ `f8178dc`) + **ouvert la PR #35 (DRAFT)**. Les
+deux sont **propres, dans le périmètre, sans dérive**. À eux deux ils traitent les
+actions d'audit **A2, A4, A5, A6, A7**. **Les 4 agents ont désormais du contenu.**
+
+## Diff par agent (vs `origin/main` @ `b2613e2`)
+
+| Agent | Branche | HEAD | Base | Commits | Fichiers | +/- |
+|---|---|---|---|---|---|---|
+| Studio | `feat/studio-rules-stamp-render` (#33) | `4e428e8` | main | 2 | (vague 2) | +455 |
+| Hygiène DB | `chore/db-hygiene-and-guards` | `9f2d2a5` | main | 2 | (vague 1) | +92/-6 |
+| **Sécurité** | `feat/security-headers-preview` (**#35**) | `f8178dc` | main | **1** | `next.config.ts` | **+65/-10** |
+| **Outil démo** | `feat/demo-rotate-pass-and-email-smoke` | `f2d1942` | main | **1** | 10 fichiers (routes admin `demo/rotate-password`, `email-smoke`, `DemoControls.tsx`, `demo/rotate.ts`, `demo/db.ts`, `auditLog.ts`, migration `20260620_*`, +4 tests) | **+678/-2** |
+
+## Dérives capturées (par code D)
+
+| Code | Statut | Preuve |
+|---|---|---|
+| **D03 (migration prod)** | ✅ **RAS — re-vérifié** | `schema_migrations` = **45**, latest `20260615214932`. Inchangé. Le nouveau fichier `20260620_*` (Outil démo) **n'est pas** appliqué en prod. |
+| **D02 (PR sans accord / non-DRAFT)** | ✅ **RAS** | Nouvelle **PR #35** (`feat/security-headers-preview`) = **DRAFT**. Toutes les PR agents (#33, #35) restent DRAFT. |
+| **D04 (secret en clair)** | ✅ **RAS** | Outil démo : scan `sk_`/`re_`/`eyJ`/`password=`/`secret=` sur `rotate.ts` + routes → **0 hit** (le mdp est généré, pas codé en dur). Sécurité : les fallbacks de build sont des **placeholders NON-secrets** (`preview-build-placeholder-*`). |
+| **D14 / D01 (scope)** | ✅ **RAS** | Sécurité : `next.config.ts` **seul** (= son lot racine). Outil démo : routes `admin/demo/*`+`admin/email-smoke`, `lib/demo/*`, `auditLog.ts` (chevauchement **déclaré**), 1 migration audit (= son lot). Aucun débordement. |
+| **D17 / INV.1** | ✅ **HONORÉ (2 branches)** | Outil démo : code (50) ⊆ sa migration latest `20260620` (53), `comm -23` **vide**. (Hygiène DB déjà vérifié vague 1.) |
+| **D17 / INV.3 (tenancy)** | ✅ RAS | Les 2 nouvelles routes admin posent `requireAdminApi()` **en premier**, rate-limit (`demo-rotate` 5/h, `email-smoke` 3/h) et audit. |
+| D05 (force-push) | ✅ RAS | Tous les pushs = ancêtre `b2613e2` intact, commits linéaires. |
+
+## Cross-checks reproduits (loop C)
+
+1. **Outil démo INV.1** : code 50 ⊆ CHECK migration `20260620` 53 → ✅ (reproduit
+   depuis git, `comm -23` vide). Actions neuves = `DEMO_ACCOUNT_ROTATED`,
+   `EMAIL_SMOKE_SENT` (+ `MARKETING_CONSENT_UPDATED` formalisé). Twin migration
+   présente. INV.1 respecté.
+2. **Gardes des routes admin** (claim A2/A7) → ✅. `rotate-password/route.ts:16`
+   `requireAdminApi()` puis rate-limit + audit. `email-smoke/route.ts:19`
+   `requireAdminApi()` + `isEmailConfigured()` gate + rate-limit + audit. Conforme
+   au modèle `demo/seed` validé par l'audit (BLOC 8.1).
+3. **Sécurité — la CSP enforcing ne casse pas l'app** (risque évalué) → ✅ **mitigé**.
+   - Polices via **`next/font/google`** (`layout.tsx:2`) ⇒ **self-hostées** au build,
+     servies depuis `'self'` ⇒ `font-src 'self'` + CSS inline (`style-src
+     'unsafe-inline'`) couvrent. **Pas de Google Fonts externe** (0 `fonts.googleapis`).
+   - URLs Wallet (`pay.google.com/save`, `maps/search`, `api.push.apple.com`,
+     `googleapis.com/auth/wallet`) = **liens de navigation ou appels serveur** →
+     **hors gouvernance CSP navigateur**. Pas bloquées.
+   - `'unsafe-inline'` conservé pour script/style (approche officielle Next « Without
+     Nonces ») ⇒ scripts d'hydratation Next non cassés. `connect-src` = Supabase +
+     Sentry (cohérent audit). `img-src` très permissif (`https:`).
+4. **Filet build preview** (claim A5) → ✅ raisonné. Placeholders **uniquement** si
+   `VERCEL_ENV !== "production"` **et** variable absente (`if (!process.env[key])`) →
+   **jamais** d'écrasement, fail-closed préservé en prod.
+
+## Cohérence inter-agents (auditLog.ts + migrations — LE point chaud)
+
+**Constat majeur — POSITIF.** Les **DEUX** agents qui touchent `auditLog.ts`
+(Hygiène DB **et** Outil démo) ont **chacun** ajouté `MARKETING_CONSENT_UPDATED`.
+⟹ Quel que soit l'ordre de merge, **l'orphelin reste formalisé** : le risque de
+ré-introduction du drift (que j'avais signalé vague 1) **ne se matérialise pas**.
+
+**Analyse de merge (factuelle) :**
+- `auditLog.ts` : Hygiène insère `MARKETING_CONSENT_UPDATED` **après `SCAN_REVERTED`**
+  (avant les `DEMO_*`) ; Outil démo insère `DEMO_ROTATED`+`EMAIL_SMOKE_SENT`+
+  `MARKETING_CONSENT_UPDATED` **après `DEMO_ACCOUNT_RESET`**. Hunks adjacents mais
+  distincts ⇒ git mergera vraisemblablement les deux ⇒ **`MARKETING_CONSENT_UPDATED`
+  apparaîtra 2× dans le tableau `as const`**. Effet : **cosmétique uniquement**
+  (doublon de chaîne ; le test `auditActionsSync` compare en ensembliste, le CHECK
+  SQL est insensible aux doublons). À **dédoublonner à l'intégration**.
+- Migrations CHECK : la lexicalement-dernière `20260620` (Outil démo) **contient
+  l'union** (51 base + `DEMO_ROTATED` + `EMAIL_SMOKE_SENT` = 53, marketing inclus).
+  Le code mergé maximal = 50 ⊆ 53 ✅. Donc **même un double-merge laisse INV.1 vert**.
+  `20260618` (Hygiène) devient simplement superseded pour le test (lecture du plus
+  récent). **Aucun conflit de fichier migration** (fichiers distincts).
+
+**Verdict cohérence : 🟢 SAINE.** Aucun problème d'intégration bloquant. Unique
+résidu = 1 dédoublonnage cosmétique de `MARKETING_CONSENT_UPDATED` dans `auditLog.ts`
+si les deux branches mergent.
+
+**Sécurité ↔ Studio (racine)** : Studio ne touche pas `next.config.ts`, Sécurité ne
+touche que lui. **0 conflit.**
+
+## Recommandation à l'utilisateur
+
+🟢 **RAS sur les 4 branches — qualité homogène et forte couverture d'audit.**
+État des actions de l'audit d'hier :
+
+| Action audit | Traitée par | État |
+|---|---|---|
+| A2 (roter mdp démo) | Outil démo | ✅ endpoint `demo/rotate-password` gardé+audité |
+| A4 (formaliser `MARKETING_CONSENT_UPDATED`) | Hygiène DB **+** Outil démo | ✅ (2×) |
+| A5 (réparer builds preview) | Sécurité | ✅ filet placeholders non-prod |
+| A6 (CSP enforcing) | Sécurité | ✅ enforcing sans nonce, mitigé sûr |
+| A7 (email test) | Outil démo | ✅ endpoint `email-smoke` gardé |
+| A1 (composite tampons) | Studio (#33) | ✅ A.2 composite (vague 2) |
+
+**2 prudences (non bloquantes) à transmettre :**
+1. **CSP enforcing sans `report-uri`** : la PR passe en enforcing sur la base d'un
+   **raisonnement** (solide), pas de **télémétrie** (le Report-Only n'avait pas
+   d'endpoint de report — rien n'était agrégé). **Avant merge**, faire **1 smoke-test
+   live** de `/c/boulangerie-demo` (boutons Wallet), `/login`, `/dashboard` console
+   ouverte, pour confirmer 0 violation CSP bloquante.
+2. **Intégration auditLog.ts** : si Hygiène DB **et** Outil démo mergent tous deux,
+   **dédoublonner `MARKETING_CONSENT_UPDATED`** dans le tableau (cosmétique). La
+   migration `20260620` doit rester la lexicalement-dernière (elle porte l'union).
+
+Veille relancée ; fingerprint : studio `4e428e8`, hygiène `9f2d2a5`, sécurité
+`f8178dc` (#35), outil démo `f2d1942`.
+
+---
