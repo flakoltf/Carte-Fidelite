@@ -22,6 +22,7 @@ import {
   designToPublishRow,
   stampGoalForMerchant,
 } from '@/lib/merchant/cardStudio';
+import { buildLoyaltyUpdate, type LoyaltyMerchantUpdate } from '@/lib/loyalty/studioRules';
 
 export async function POST(req: Request) {
   const merchantId = await currentMerchantId();
@@ -44,6 +45,16 @@ export async function POST(req: Request) {
   const { errors, warnings } = validateStudioDesign(design);
   if (errors.length) return NextResponse.json({ errors, warnings }, { status: 422 });
 
+  // B — Règles du programme (optionnel) : validées AVANT toute écriture pour ne
+  // jamais publier un design avec des règles invalides. Réutilise validate.ts.
+  let loyaltyUpdate: LoyaltyMerchantUpdate | null = null;
+  const programInput = (body as { program?: unknown }).program;
+  if (programInput !== undefined && programInput !== null) {
+    const lr = buildLoyaltyUpdate(programInput as Parameters<typeof buildLoyaltyUpdate>[0]);
+    if (!lr.ok) return NextResponse.json({ errors: [lr.error], warnings }, { status: 422 });
+    loyaltyUpdate = lr.update;
+  }
+
   try {
     // Versionnage simple : lecture du compteur courant puis +1 (contention
     // quasi nulle : un seul éditeur par tenant ; pas besoin de RPC atomique).
@@ -65,6 +76,27 @@ export async function POST(req: Request) {
     const goal = stampGoalForMerchant(design);
     if (goal !== null) {
       await supabaseAdmin.from('merchants').update({ stamp_goal: goal }).eq('id', merchantId);
+    }
+
+    // B — Persiste les règles du programme (loyalty_type/config + reward_label).
+    // Tenant strict (.eq('id', merchantId), invariant 3) ; pas de migration (jsonb
+    // + colonne reward_label existante) ; action d'audit existante (#1 respecté).
+    if (loyaltyUpdate) {
+      await supabaseAdmin
+        .from('merchants')
+        .update({
+          loyalty_type: loyaltyUpdate.loyalty_type,
+          loyalty_config: loyaltyUpdate.loyalty_config,
+          reward_label: loyaltyUpdate.reward_label,
+        })
+        .eq('id', merchantId);
+      await logAuditEvent({
+        action: 'MERCHANT_UPDATED',
+        merchant_id: merchantId,
+        user_id: userId,
+        details: { via: 'studio-publish', loyalty_type: loyaltyUpdate.loyalty_type },
+        ...extractRequestMeta(req),
+      });
     }
 
     await logAuditEvent({
