@@ -489,3 +489,84 @@ programme » (Studio B). Aucune dérive Dxx sur 4 vagues.
 Veille **toujours active** (watcher `blo0odqof` en cours, baseline = état vague 4).
 
 ---
+
+# SYNTHÈSE FINALE — clôture de surveillance — 2026-06-16 (agents terminés)
+
+## 🟢 VERDICT GLOBAL : FIABLE — 0 dérive critique, 0 dérive Dxx sur 4 vagues
+
+Surveillance de 4 agents en parallèle, du démarrage à la fin de leur travail.
+**Aucune** violation des contraintes (read-only respecté de mon côté ; aucun agent
+n'a appliqué de migration en prod, ni ouvert de PR non-DRAFT, ni mis de secret en
+clair, ni débordé de son périmètre, ni réécrit l'historique). Verdict tenable
+devant un CTO externe.
+
+## État final des branches (toutes DRAFT, aucune mergée)
+
+| Agent | Branche | PR | Tip | Commits | Fichiers | Lot |
+|---|---|---|---|---|---|---|
+| Studio | `feat/studio-rules-stamp-render` | **#33** | `429e3cb` | 3 | 8 | rendu tampons + règles |
+| Hygiène DB | `chore/db-hygiene-and-guards` | **#37** | `dd5652b` | 4 | 7 | gardes DB + audit hygiène |
+| Sécurité | `feat/security-headers-preview` | **#35** | `f8178dc` | 1 | 1 | CSP/headers + builds preview |
+| Outil démo | `feat/demo-rotate-pass-and-email-smoke` | **#36** | `f2d1942` | 1 | 10 | rotation mdp + smoke email |
+
+## Tableau de bord des dérives (catalogue D)
+
+| Code | Verdict final | Synthèse de preuve |
+|---|---|---|
+| D01 hors-périmètre | ✅ 0 | chaque diff ∈ lot déclaré |
+| D02 PR non-DRAFT | ✅ 0 | #33/#35/#36/#37 toutes DRAFT |
+| **D03 migration prod** | ✅ 0 | `schema_migrations`=**45** inchangé (3 mesures live) ; toutes migrations repo-only/idempotentes |
+| D04 secret en clair | ✅ 0 | scans ciblés sur rotation/CSP/migrations → 0 ; placeholders Vercel non-secrets |
+| D05 force-push | ✅ 0 | historiques linéaires, ancêtres intacts |
+| D11/D12 faits/qualité | ✅ 0 | claims de PR/commits reproduits et exacts |
+| D14 scope creep | ✅ 0 | aucun débordement (chevauchement `auditLog.ts` coopératif) |
+| **D17 invariants CLAUDE.md** | ✅ 0 | INV.1 (code⊆CHECK) vérifié 2 branches ; INV.2 (0 Google UPDATE/PUT) ; INV.3 (publish tenant-scopé `.eq id`) |
+
+## Cross-checks reproduits indépendamment (échantillon)
+
+INV.1 subset (Hygiène + Outil démo) · INV.2 grep Google (Studio ×2) · INV.3 tenancy
+publish (Studio B) · fail-open strip (Studio) · « no font dep » (Studio A.2) ·
+CSP enforcing sûr (next/font self-hosté) · D03 prod=45 (×3) · A3 vite=8.0.16 lock-only ·
+A8 garde 6 tables · gardes routes admin (Outil démo) · cohérence marketing_consent
+(les 2 branches). **Tous confirmés.**
+
+## Couverture du plan d'action de l'audit d'hier : A1→A8 = 8/8 ✅
+
+A1 composite (Studio) · A2 rotation mdp (Outil démo) · A3 vite fix (Hygiène) ·
+A4 marketing_consent (Hygiène + Outil démo) · A5 builds preview (Sécurité) ·
+A6 CSP enforce (Sécurité) · A7 email test (Outil démo) · A8 garde ColumnsSync
+(Hygiène). **Bonus hors-plan** : Studio « B 1/2 » persistance des règles programme.
+
+## Points résiduels à traiter à L'INTÉGRATION (non bloquants, aucun n'est une dérive)
+
+1. **CSP enforcing sans télémétrie** (#35) : passée en enforcing sur raisonnement
+   (solide : `unsafe-inline` conservé, polices `next/font` self-hostées, URLs Wallet
+   hors-CSP), mais le Report-Only n'avait pas de `report-uri` → 0 rapport agrégé.
+   **→ 1 smoke-test live** (`/c/boulangerie-demo` + boutons Wallet, `/login`,
+   `/dashboard`, console ouverte) avant de merger.
+2. **Double-merge `auditLog.ts`** (#37 + #36) : les deux ajoutent
+   `MARKETING_CONSENT_UPDATED` → **doublon cosmétique** à dédoublonner. INV.1 reste
+   vert (la migration `20260620` porte l'union, 53 actions). Garder `20260620`
+   comme migration audit lexicalement-dernière.
+3. **Garde `columnsSync`** (#37) : après merge avec #36, re-lancer le test — un
+   `.select()` d'un nouvel endpoint Outil démo sur une colonne non gardée pourrait
+   faire rougir la garde.
+4. **Migrations repo non appliquées en prod** : `20260610/11/18/20_*` sont dans le
+   repo mais **PAS** en prod (prod @ `20260615214932`). À appliquer (avec accord
+   explicite, INV.6) lors de l'intégration, en respectant l'ordre lexical.
+5. **Setup arbre partagé** : les 4 agents ont travaillé dans un seul arbre Git avec
+   bascule de branche en temps réel (fragilité observée vague 0). Pour de prochaines
+   sessions parallèles : 1 worktree par agent.
+
+## Recommandation au chef
+
+**Les 4 livrables sont sains et mergeables** après (a) le smoke-test CSP et (b) un
+ordre de merge maîtrisé pour `auditLog.ts`/migrations. Ordre suggéré :
+**Hygiène DB (#37) → Outil démo (#36)** (régler le doublon audit + re-vérifier
+columnsSync) **→ Sécurité (#35)** (après smoke-test CSP) **→ Studio (#33)** (rafraîchir
+d'abord la description, qui dit encore « Priorité A seule »). Puis appliquer les
+migrations repo en prod (accord explicite). Aucune urgence sécuritaire, aucun
+blocage.
+
+*Surveillance close. Read-only respecté de bout en bout. — Independent Audit Reviewer.*
+
