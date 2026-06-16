@@ -213,3 +213,80 @@ ou recréera le drift que cette PR vient de corriger.
 Veille relancée (fetch/60 s) ; fingerprint mis à jour (chore présent @ `9f2d2a5`).
 
 ---
+
+# Méta-surveillance — vague 2 — 2026-06-16 22:50 (push détecté 20:51 UTC)
+
+## Verdict instantané : 🟢 VERT (Studio livre le composite A.2 — comble un trou de l'audit)
+
+**Agent Studio** a poussé un 2ᵉ commit sur `feat/studio-rules-stamp-render`
+(`77f4554` → `4e428e8`) : **A.2 — strip Apple COMPOSITE** (photo + voile sombre +
+grille, WCAG). C'est exactement le **composite** que l'audit d'hier (BLOC 12.3)
+notait comme « pas encore fait ». Conforme, dans le périmètre, INV.2 préservé.
+
+**+ Évènement** : `feat/security-headers-preview` est apparue sur le remote à
+`b2613e2` (= `main`, **0 commit**) — l'agent **Sécurité** a publié une branche
+vide (travail en cours non encore committé).
+
+## Diff par agent
+
+| Agent | Branche | HEAD | Commits/main | Nouveau ce tour | +/- (commit) |
+|---|---|---|---|---|---|
+| **Studio** | `feat/studio-rules-stamp-render` (#33) | `4e428e8` (22:50) | **2** | `applePass.ts` (+31/-20), `stampStrip.ts` (+82), `stampStripRaster.ts` (+37 neuf), `__tests__/stampStripComposite.test.ts` (+83 neuf, 10 tests) | +233 / -20 |
+| Hygiène DB | `chore/db-hygiene-and-guards` | `9f2d2a5` | 2 | — | — |
+| **Sécurité** | `feat/security-headers-preview` | `b2613e2` | **0** (branche vide poussée) | — | — |
+| Outil démo | `feat/demo-rotate-pass-and-email-smoke` | absente | — | — | — |
+
+## Dérives capturées (par code D)
+
+| Code | Statut | Preuve |
+|---|---|---|
+| **D17 / INV.2** (Google jamais UPDATE/PUT) | ✅ **RAS** | `grep -inE "loyaltyclass\|\.put\(\|googleClass\|mapGoogle\|google"` sur le commit `4e428e8` → **0 hit**. Diff strictement Apple. |
+| D01 / D14 (scope) | ✅ RAS | 4 fichiers, tous ∈ lot rendu Studio (`applePass.ts`, `cardDesign/`). |
+| D02 (PR) | ✅ RAS | #33 toujours **DRAFT**. |
+| D04 / D05 | ✅ RAS | Pas de secret ; commit linéaire (pas de force-push, `77f4554` toujours ancêtre). |
+| D12 (qualité) | ✅ RAS | Voir cross-checks — claims étayés. |
+
+## Cross-checks reproduits (loop B/C)
+
+1. **FAIL-OPEN préservé malgré le refactor** → ✅. Le `try/catch` enveloppe
+   toujours toute la génération ; `catch` → `console.error` + pass valide
+   (commentaire mis à jour : « toute erreur → on garde l'existant »).
+2. **Changement de précédence maîtrisé** → ✅. Avant : `if (isStampsCard &&
+   !designLogoBuffers["strip.png"])` (grille seulement SANS photo). Après :
+   `if (isStampsCard)` + `chooseStripPlan({hasPhoto})` → `composite` (photo+voile+
+   grille) si photo, `grid` sinon. Implémente la « décision produit à trancher »
+   de la PR (slot Photo F1 vs grille A) **sans masquer** les tampons.
+3. **« Aucune dépendance de police » (claim PR) toujours vrai** → ✅.
+   `stampStripRaster.ts` n'utilise **aucun** `font`/`<text>`/emoji (grep → 0) ;
+   compositing 100 % `sharp` (photo `cover` + overlay SVG vectoriel). `stampStrip.ts`
+   reste **pur** (IO isolé dans le nouveau fichier raster). Bonne hygiène.
+4. **Tests** → `stampStripComposite.test.ts` = **10 cas** (`it/test`). +9 tests
+   `stampStrip` (vague 0) + 10 composite. (Exécution vitest non relancée ici —
+   node_modules absent du worktree isolé ; vérif par lecture + la CI GitHub reste
+   le juge.)
+
+## Cohérence inter-agents
+
+- **Studio ↔ Sécurité (fichiers racine)** : Studio ne touche **pas**
+  `next.config.ts` (uniquement `src/lib/`). Sécurité a poussé une branche vide.
+  **Aucun conflit.** RAS.
+- **auditLog.ts** : non touché par Studio. RAS.
+
+## Note (non-dérive) : description de PR #33 désormais en retard
+
+Le corps de la PR #33 décrit encore « **Priorité A seule** » et la « décision
+produit à trancher » comme **non tranchée**. Le commit `4e428e8` **tranche** (mode
+composite) et livre A.2. ⟹ La description ne reflète plus l'état de la branche.
+**Pas une dérive** (la PR reste DRAFT, le code est sain), mais à rafraîchir avant
+toute revue/merge pour éviter une lecture trompeuse.
+
+## Recommandation à l'utilisateur
+
+🟢 **RAS — bon incrément.** Studio comble le trou « composite » identifié par
+l'audit, proprement (Apple-only, fail-open, sans dépendance de police, testé).
+Seule suggestion : **mettre à jour la description de PR #33** (elle dit encore
+« A seule / décision non tranchée », c'est désormais faux).
+
+Veille relancée ; fingerprint : studio `4e428e8`, sécurité présente vide `b2613e2`.
+
+---
