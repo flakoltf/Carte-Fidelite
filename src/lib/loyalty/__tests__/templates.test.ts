@@ -117,3 +117,52 @@ describe("helpers", () => {
     expect(getTemplate(sector).sector).toBe("cafe");
   });
 });
+
+describe("T3 — mapping métier → secteur attendu", () => {
+  // Chaque BusinessType doit retomber sur le secteur prévu (table figée).
+  const EXPECTED: Record<string, BusinessSector> = {
+    cafe: "cafe",
+    boulangerie: "boulangerie",
+    restaurant: "restaurant",
+    salon: "salon",
+    sport: "sport",
+    boutique: "retail",
+    autre: "pressing",
+  };
+  for (const bt of BUSINESS_TYPES) {
+    it(`templateForBusinessType("${bt}") → secteur "${EXPECTED[bt]}"`, () => {
+      expect(templateForBusinessType(bt)?.sector).toBe(EXPECTED[bt]);
+    });
+  }
+});
+
+describe("T3 — paliers ordonnés", () => {
+  const strictAsc = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]);
+
+  it("retail (tiered) : seuils strictement croissants", () => {
+    const retail = getTemplate("retail");
+    expect(retail.loyaltyType).toBe("tiered");
+    if (retail.loyaltyType === "tiered") {
+      expect(strictAsc(retail.config.tiers.map((t) => t.at))).toBe(true);
+    }
+  });
+
+  it("sport (visit_based) : paliers strictement croissants", () => {
+    const sport = getTemplate("sport");
+    expect(sport.loyaltyType).toBe("visit_based");
+    if (sport.loyaltyType === "visit_based") {
+      expect(strictAsc(sport.config.milestones)).toBe(true);
+    }
+  });
+});
+
+describe("T3 — palettes au format hex #RRGGBB", () => {
+  const HEX = /^#[0-9a-fA-F]{6}$/;
+  for (const t of LOYALTY_TEMPLATES) {
+    it(`${t.sector} : background/foreground/label sont des #RRGGBB`, () => {
+      expect(t.palette.background).toMatch(HEX);
+      expect(t.palette.foreground).toMatch(HEX);
+      expect(t.palette.label).toMatch(HEX);
+    });
+  }
+});
