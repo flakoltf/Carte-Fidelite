@@ -83,7 +83,7 @@ describe("<RedeemFullScreen>", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/redeem");
+    expect(url).toBe("/api/scan/redeem");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ cardId: "QR-PAYLOAD" });
     expect(screen.getByText("Récompense offerte")).toBeTruthy();
