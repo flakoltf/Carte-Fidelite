@@ -113,7 +113,7 @@ export const LOYALTY_TEMPLATES: readonly LoyaltyTemplate[] = [
     loyaltyType: "amount_points",
     cardType: "points",
     businessType: "restaurant",
-    defaultProgramName: "Cumulez 1 point par franc, 20 CHF offerts",
+    defaultProgramName: "1 point par franc, CHF 20 offerts à 200 pts",
     defaultRewardLabel: "CHF 20 offerts",
     config: {
       type: "amount_points",
@@ -169,7 +169,7 @@ export const LOYALTY_TEMPLATES: readonly LoyaltyTemplate[] = [
     loyaltyType: "amount_points",
     cardType: "points",
     businessType: "boutique",
-    defaultProgramName: "Cumulez 1 point par franc, 50 CHF offerts",
+    defaultProgramName: "1 point par franc, CHF 50 offerts à 500 pts",
     defaultRewardLabel: "CHF 50 offerts",
     config: {
       type: "amount_points",
