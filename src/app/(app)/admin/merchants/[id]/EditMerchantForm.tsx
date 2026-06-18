@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Store, RefreshCw, Check, AlertCircle, Plus, Trash2 } from "lucide-react";
+import type { LoyaltyType } from "@/lib/loyalty/types";
 
 const BUSINESS_OPTIONS = ["cafe", "restaurant", "boulangerie", "boutique", "salon", "sport", "autre"];
-
-type LoyaltyType = "stamp_card" | "visit_based" | "tiered";
 
 interface Props {
   merchant: {
