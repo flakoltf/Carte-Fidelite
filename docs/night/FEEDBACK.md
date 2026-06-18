@@ -65,3 +65,22 @@
 - **Démarre sur worktree dédié**, branche `agent/mecanique-points` basée sur `origin/integration/overnight-2026-06-18` (PAS sur `main` — pour avoir CSP + Studio).
 - **Coordination Templates** : dès que M1 est poussé (extension `LoyaltyType` + validate), notifier dans STATUS.md → ça débloque T4 côté Templates.
 
+---
+
+## 2026-06-18T12:30:03Z [MECANIQUE-POINTS] [343e18d] M1+M2 DONE
+- Verdict côté worker : M1 et M2 livrés sur worktree dédié `../halocard-mecanique-points` (branche `agent/mecanique-points`, base `integration/overnight-2026-06-18@62933f1`). Gate à chaque push : `tsc --noEmit` clean · `eslint` clean · `vitest run` **805/805** (111 fichiers, +26 tests amount_points ; base 779).
+- **M1 @ed8144f — type/config/validate/engine/resolve :**
+  - `types.ts` : `LoyaltyType` += `amount_points` ; `AmountPointsConfig` ; union `LoyaltyProgram` étendue ; `LOYALTY_TYPES` complété.
+  - `validate.ts` : `amount_points` accepté ssi `pointsPerChf > 0` (fraction OK), `rewardThreshold` entier ≥ 1, `rewardLabel` 1-80, `maxPointsPerScan` entier ≥ 1 si fourni.
+  - `engine.ts` : `applyScan(program, currentValue, scanAmountChf?)` crédite `min(floor(montant×pointsPerChf), maxPointsPerScan ?? 1000)` ; `rewardReady = currentValue+earned ≥ rewardThreshold` ; event `reward_ready` au SEUL franchissement (pas de redéclenchement) ; **lève** si montant manquant/≤0 (bug d'appel à faire remonter). `programCanRedeem` : solde ≥ seuil. `initialStampsForEnroll` : 0 (déjà couvert pour non-stamp).
+  - `resolveProgram.ts` : passe-through `amount_points` (fallback `stamp_card` si jsonb corrompu).
+  - `EditMerchantForm.tsx` : pointe sur le `LoyaltyType` canonique (sinon le build cassait quand `program.type` est passé en prop). L'UI admin pour amount_points reste à faire (ressort de T4/Templates).
+- **M2 @343e18d — migration `supabase/migrations/20260618_amount_points.sql` (REPO seulement, NON appliquée en prod) :** étend `merchants_loyalty_type_chk`, ajoute `loyalty_cards.points_balance` + `loyalty_cards.last_scan_amount_chf`. Additive + idempotente (rejouable).
+- **⚠️ Corrections vs le brouillon SQL du cahier (invariant 6 « vérifier l'état réel ») — à valider par le CHEF :**
+  1. La contrainte réelle est `merchants_loyalty_type_chk`, PAS `merchants_loyalty_type_check`. Le SQL du cahier aurait laissé l'ancienne contrainte (3 valeurs) ACTIVE → inserts `amount_points` rejetés. J'ai drop/re-add le bon nom (+ drop défensif de `_check`).
+  2. La table des cartes est `loyalty_cards`, PAS `cards` (aucune table `cards` n'existe ; runtime `scan`/`redeem` lisent `loyalty_cards`). Colonnes ajoutées sur `loyalty_cards`.
+- **Écart assumé (à valider) :** le cahier disait « Ajoute `currentValue` dans `ScanEvent` » — non fait tel quel : `ScanEvent` est une union discriminée d'événements (pas un porteur de valeur) et y ajouter un champ casserait les `toEqual` exacts du baseline. La valeur courante est déjà portée par `ScanResult.newCount` (= nouveau solde pour amount_points). Documenté en commentaire dans `types.ts`.
+- **Invariants respectés :** aucune nouvelle `AuditAction` (donc pas de jumelle `audit_logs_action_check`) · pas de secret · 0 commit sur `main` ni sur `integration` (push uniquement sur `agent/mecanique-points`) · worktree dédié · migration NON appliquée en prod.
+- **Reste hors-périmètre M (signalé, non démarré) :** RPC atomique de crédit par montant (`scan_increment` ne gère pas amount_points) + branchement route `/api/scan` + UI (l'`<AmountPad>` d'UX-COMPTOIR est déjà prêt côté front). À planifier par l'orchestrateur (M3 ?).
+- Attente : revue CHEF. Je m'arrête proprement.
+
