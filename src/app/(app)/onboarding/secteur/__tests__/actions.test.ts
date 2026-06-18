@@ -103,9 +103,9 @@ describe("selectSector — succès", () => {
     expect(calls.audit[0].merchant_id).toBe("merchant-1");
   });
 
-  it("retail (tiered) : pas de stamp_goal écrit", async () => {
+  it("retail (amount_points) : pas de stamp_goal écrit", async () => {
     await expect(selectSector("retail")).rejects.toThrow("NEXT_REDIRECT:/onboarding");
-    expect(calls.update[0].patch.loyalty_type).toBe("tiered");
+    expect(calls.update[0].patch.loyalty_type).toBe("amount_points");
     expect(calls.update[0].patch.stamp_goal).toBeUndefined();
   });
 });

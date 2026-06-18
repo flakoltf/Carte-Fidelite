@@ -71,7 +71,7 @@ describe("serializeSectorDraft / parseSectorDraft", () => {
     }
   });
 
-  it("conserve l'icône absente (retail, tiered) sans la fabriquer", () => {
+  it("conserve l'icône absente (retail, amount_points) sans la fabriquer", () => {
     const retail = getTemplate("retail");
     expect(retail.suggestedStampIcon).toBeUndefined();
     const res = buildSectorSelection("retail");

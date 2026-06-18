@@ -126,6 +126,11 @@ export default function OnboardingClient({
 
   // Étape programme
   const preset = useMemo(() => sectorPreset(businessType), [businessType]);
+  // « Points par montant » : programme déjà configuré par l'étape 0 (secteur
+  // restaurant/boutique). Le wizard ne propose ici que tampons/visites — on
+  // affiche donc un récapitulatif en lecture seule et on NE ré-enregistre PAS
+  // (sinon on écraserait la config amount_points par un stamp_card).
+  const isAmountPoints = initialState.loyaltyType === "amount_points";
   const [programType, setProgramType] = useState<"stamp_card" | "visit_based">(
     initialState.loyaltyType === "visit_based" ? "visit_based" : "stamp_card"
   );
@@ -202,6 +207,11 @@ export default function OnboardingClient({
 
   async function saveProgram(e: React.FormEvent) {
     e.preventDefault();
+    // amount_points : déjà persisté à l'étape 0, le wizard ne le ré-enregistre pas.
+    if (isAmountPoints) {
+      goTo("design");
+      return;
+    }
     setSaving(true);
     setError("");
     const body =
@@ -587,13 +597,34 @@ export default function OnboardingClient({
                 <p className="text-xs text-galet-ink">{preset.programHint}</p>
               </div>
 
-              {sectorDraft && (
+              {sectorDraft && !isAmountPoints && (
                 <p className="rounded-2xl border border-halo/30 bg-halo/[0.05] p-3.5 text-sm text-galet-ink">
                   <span className="font-medium text-onyx">Récompense suggérée :</span>{" "}
                   {sectorDraft.rewardLabel}. À ajuster à votre convenance ci-dessous.
                 </p>
               )}
 
+              {isAmountPoints && (
+                <div className="space-y-2 rounded-2xl border border-halo/30 bg-halo/[0.05] p-4 text-sm leading-relaxed text-galet-ink">
+                  <span className="flex items-center gap-2 font-semibold text-onyx">
+                    <Sparkles className="h-4 w-4 text-halo" aria-hidden /> Programme « points par montant »
+                  </span>
+                  <p>
+                    Vos clients cumulent <span className="font-medium text-onyx">1 point par franc dépensé</span>
+                    {sectorDraft ? (
+                      <>
+                        {" "}et reçoivent{" "}
+                        <span className="font-medium text-onyx">{sectorDraft.rewardLabel.toLowerCase()}</span>
+                      </>
+                    ) : null}
+                    . Le réglage fin (points par franc, seuil, récompense) se peaufine dans le studio — c&apos;est déjà
+                    prêt pour votre secteur.
+                  </p>
+                </div>
+              )}
+
+              {!isAmountPoints && (
+                <>
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -676,6 +707,8 @@ export default function OnboardingClient({
                     Ex. « 3, 6, 10 » : une attention à la 3e visite, une autre à la 6e, la grande récompense à la 10e.
                   </p>
                 </div>
+              )}
+                </>
               )}
 
               <ErrorBox message={error} />
@@ -885,7 +918,11 @@ export default function OnboardingClient({
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-halo" aria-hidden /> {shopName || initialState.shopName} — {preset.label.toLowerCase()}</li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-halo" aria-hidden />
-                  {programType === "stamp_card" ? `Carte à tampons — récompense au ${goal}e passage` : `Paliers de visites — ${milestonesText}`}
+                  {isAmountPoints
+                    ? "Carte à points — 1 point par franc dépensé"
+                    : programType === "stamp_card"
+                      ? `Carte à tampons — récompense au ${goal}e passage`
+                      : `Paliers de visites — ${milestonesText}`}
                 </li>
                 {sectorDraft && (
                   <li className="flex items-center gap-2">

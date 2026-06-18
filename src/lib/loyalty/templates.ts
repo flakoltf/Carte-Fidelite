@@ -5,10 +5,12 @@
 //
 // INVARIANT : chaque template DOIT produire un couple (loyaltyType, config)
 // accepté par `validateLoyaltyProgram` — sinon « cliquer un secteur » créerait
-// un programme que le moteur refuse. Le moteur ne connaît que TROIS mécaniques :
-// `stamp_card | visit_based | tiered` (cf. lib/loyalty/types.ts + validate.ts).
-// Il n'existe PAS de mécanique « amount_points » côté moteur ; les secteurs « à
-// points » sont donc rendus par `tiered` (carte à points avec paliers de statut).
+// un programme que le moteur refuse. Le moteur connaît QUATRE mécaniques :
+// `stamp_card | visit_based | tiered | amount_points` (cf. lib/loyalty/types.ts
+// + validate.ts). `amount_points` (points crédités au prorata du montant
+// dépensé) équipe les secteurs au ticket élevé ou variable — restaurant et
+// boutique. Les cartes à points (`tiered`, `amount_points`) portent
+// `cardType: "points"` ; pas d'icône de tampon.
 
 import type {
   LoyaltyType,
@@ -16,6 +18,7 @@ import type {
   StampCardConfig,
   VisitBasedConfig,
   TieredConfig,
+  AmountPointsConfig,
 } from "./types";
 import type { CardTypeKey } from "@/lib/cardDesign/types";
 import type { BusinessType } from "@/lib/merchant-config/types";
@@ -73,6 +76,7 @@ export type LoyaltyTemplate = TemplateBase &
     | { loyaltyType: "stamp_card"; config: StampCardConfig }
     | { loyaltyType: "visit_based"; config: VisitBasedConfig }
     | { loyaltyType: "tiered"; config: TieredConfig }
+    | { loyaltyType: "amount_points"; config: AmountPointsConfig }
   );
 
 export const LOYALTY_TEMPLATES: readonly LoyaltyTemplate[] = [
@@ -106,14 +110,18 @@ export const LOYALTY_TEMPLATES: readonly LoyaltyTemplate[] = [
     sector: "restaurant",
     displayName: "Restaurant / Traiteur",
     emoji: "🍽️",
-    loyaltyType: "stamp_card",
-    cardType: "stamps",
+    loyaltyType: "amount_points",
+    cardType: "points",
     businessType: "restaurant",
-    defaultProgramName: "Votre 10e repas offert",
-    defaultRewardLabel: "Repas offert (midi)",
-    config: { goal: 10 },
+    defaultProgramName: "Cumulez 1 point par franc, 20 CHF offerts",
+    defaultRewardLabel: "CHF 20 offerts",
+    config: {
+      type: "amount_points",
+      pointsPerChf: 1,
+      rewardThreshold: 200,
+      rewardLabel: "CHF 20 offerts",
+    },
     palette: { background: "#1F2937", foreground: "#FDF6EC", label: "#E8B04B" },
-    suggestedStampIcon: "🍽️",
   },
   {
     sector: "salon",
@@ -158,17 +166,16 @@ export const LOYALTY_TEMPLATES: readonly LoyaltyTemplate[] = [
     sector: "retail",
     displayName: "Boutique / Commerce",
     emoji: "🛍️",
-    loyaltyType: "tiered",
+    loyaltyType: "amount_points",
     cardType: "points",
     businessType: "boutique",
-    defaultProgramName: "Montez en statut : Bronze, Argent, Or",
-    defaultRewardLabel: "Avantages selon votre statut",
+    defaultProgramName: "Cumulez 1 point par franc, 50 CHF offerts",
+    defaultRewardLabel: "CHF 50 offerts",
     config: {
-      tiers: [
-        { name: "Bronze", at: 5 },
-        { name: "Argent", at: 15 },
-        { name: "Or", at: 30 },
-      ],
+      type: "amount_points",
+      pointsPerChf: 1,
+      rewardThreshold: 500,
+      rewardLabel: "CHF 50 offerts",
     },
     palette: { background: "#10403B", foreground: "#F2F7F5", label: "#8FD0C5" },
   },
@@ -216,4 +223,5 @@ export const TEMPLATE_LOYALTY_TYPES: readonly LoyaltyType[] = [
   "stamp_card",
   "visit_based",
   "tiered",
+  "amount_points",
 ];

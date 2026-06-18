@@ -81,6 +81,16 @@ describe("LOYALTY_TEMPLATES — invariants par mécanique", () => {
         expect(t.config.tiers.length).toBeGreaterThan(0);
       });
     }
+    if (t.loyaltyType === "amount_points") {
+      it(`${t.sector} : points par montant — carte à points, sans tampon`, () => {
+        expect(t.cardType).toBe("points");
+        expect(t.suggestedStampIcon).toBeUndefined();
+        expect(t.config.pointsPerChf).toBeGreaterThan(0);
+        expect(Number.isInteger(t.config.rewardThreshold)).toBe(true);
+        expect(t.config.rewardThreshold).toBeGreaterThanOrEqual(1);
+        expect(t.config.rewardLabel.trim().length).toBeGreaterThan(0);
+      });
+    }
   }
 });
 
@@ -139,19 +149,35 @@ describe("T3 — mapping métier → secteur attendu", () => {
 describe("T3 — paliers ordonnés", () => {
   const strictAsc = (xs: number[]) => xs.every((x, i) => i === 0 || x > xs[i - 1]);
 
-  it("retail (tiered) : seuils strictement croissants", () => {
-    const retail = getTemplate("retail");
-    expect(retail.loyaltyType).toBe("tiered");
-    if (retail.loyaltyType === "tiered") {
-      expect(strictAsc(retail.config.tiers.map((t) => t.at))).toBe(true);
-    }
-  });
-
   it("sport (visit_based) : paliers strictement croissants", () => {
     const sport = getTemplate("sport");
     expect(sport.loyaltyType).toBe("visit_based");
     if (sport.loyaltyType === "visit_based") {
       expect(strictAsc(sport.config.milestones)).toBe(true);
+    }
+  });
+
+  it("tout template tiered/visit_based a des paliers strictement croissants", () => {
+    for (const t of LOYALTY_TEMPLATES) {
+      if (t.loyaltyType === "visit_based") expect(strictAsc(t.config.milestones)).toBe(true);
+      if (t.loyaltyType === "tiered") expect(strictAsc(t.config.tiers.map((x) => x.at))).toBe(true);
+    }
+  });
+
+  it("T4 — restaurant & retail sont en amount_points (1 pt/CHF, seuils 200/500)", () => {
+    const restaurant = getTemplate("restaurant");
+    expect(restaurant.loyaltyType).toBe("amount_points");
+    if (restaurant.loyaltyType === "amount_points") {
+      expect(restaurant.config.pointsPerChf).toBe(1);
+      expect(restaurant.config.rewardThreshold).toBe(200);
+      expect(restaurant.cardType).toBe("points");
+    }
+    const retail = getTemplate("retail");
+    expect(retail.loyaltyType).toBe("amount_points");
+    if (retail.loyaltyType === "amount_points") {
+      expect(retail.config.pointsPerChf).toBe(1);
+      expect(retail.config.rewardThreshold).toBe(500);
+      expect(retail.cardType).toBe("points");
     }
   });
 });
