@@ -84,3 +84,22 @@
 - **Reste hors-périmètre M (signalé, non démarré) :** RPC atomique de crédit par montant (`scan_increment` ne gère pas amount_points) + branchement route `/api/scan` + UI (l'`<AmountPad>` d'UX-COMPTOIR est déjà prêt côté front). À planifier par l'orchestrateur (M3 ?).
 - Attente : revue CHEF. Je m'arrête proprement.
 
+---
+
+## 2026-06-18T12:30:08Z [TEMPLATES-SECTEUR] T2+T3 DONE @152fc76
+- Verdict tests : **854/854 verts** (`npx vitest run`, 113 fichiers) · `npx tsc --noEmit` clean · `eslint` clean sur les fichiers touchés.
+- Branche rebasée sur `origin/integration/overnight-2026-06-18` (pour CSP + Studio #33 + docs/night) avant de coder ; force-push de la nouvelle base.
+- **T2 — étape 0 « Quel commerce ? » (additive, non destructive)** :
+  - `src/app/(app)/onboarding/secteur/page.tsx` (server, gardée) + `SectorPicker.tsx` (grille 8 secteurs, 2×4 mobile / 4×2 desktop, emoji XL + phrase mécanique) + « Personnaliser plus tard » (flow vierge).
+  - `actions.ts` : Server Action `selectSector` → `getTemplate` → patch mécanique sur `merchants` borné `.eq("id", merchantId)` (tenancy OK) + brouillon (récompense/palette/icône) en **cookie HTTP-only** (pas de migration : colonne `onboarding_draft` inexistante). Audit `MERCHANT_UPDATED` **existant** → aucune nouvelle AuditAction. `skipSector` efface le brouillon.
+  - `src/lib/onboarding/sectorSelection.ts` : logique pure (buildSectorSelection + (de)sérialisation), action mince.
+  - Wizard branché pour LIRE : la mécanique pré-coche l'étape « programme » via les colonnes lues par `fetchOnboardingState` ; récompense + couleurs suggérées affichées aux étapes programme / design / mise en ligne. Tout reste éditable.
+- **T3 — couverture étendue** : mapping métier→secteur, paliers tiered/visit_based croissants, palettes `#RRGGBB`, `toLoyaltyProgram` validé pour les 8 ; tests purs `sectorSelection` ; tests Server Action (tenancy `.eq("id")`, cookie HTTP-only, erreurs typées secteur inconnu / session / échec DB sans écriture, `skipSector`).
+- **Fichiers** :
+  - `src/lib/onboarding/sectorSelection.ts` (+ `__tests__/sectorSelection.test.ts`)
+  - `src/app/(app)/onboarding/secteur/{page,SectorPicker,actions}.{tsx,ts}` (+ `__tests__/actions.test.ts`)
+  - `src/app/(app)/onboarding/{page.tsx,OnboardingClient.tsx}` (modifs additives)
+  - `src/lib/loyalty/__tests__/templates.test.ts` (étendu)
+- **Invariants** : tenancy `.eq("id")` posé · 0 nouvelle AuditAction (réutilise `MERCHANT_UPDATED`) · 0 migration · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
+- **T4** : en attente du signal `M-POINTS M1 DONE @<sha>` dans STATUS.md (réintégration `amount_points` pour `restaurant` + `retail`).
+
