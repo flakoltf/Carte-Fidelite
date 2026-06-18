@@ -15,7 +15,7 @@
 | INTEGRATEUR | `integration/overnight-2026-06-18` | `742106f` | PASS (Orchestrateur + CHEF) | DONE @742106f |
 | UX-COMPTOIR | `agent/ux-comptoir` | — | **À RÉVEILLER (CHEF)** | U1 — branche pas encore poussée, WIP stashé |
 | TEMPLATES-SECTEUR | `agent/templates-secteur` | `b882d90` | PASS avec coordination (CHEF) | T2 (T1 ✅, T4 en attente de M-POINTS M1) |
-| MECANIQUE-POINTS | `agent/mecanique-points` | `72275d1` | **M4 DONE — route branchée (gate vert 805/805)** | M5 (flag beta) + M6 (tests route) en cours |
+| MECANIQUE-POINTS | `agent/mecanique-points` | `f139716` | **M1→M6 DONE — amount_points complet (gate vert 820/820)** | terminé — en attente revue CHEF |
 
 ## INTEGRATEUR
 - **DONE @742106f** — 5 branches traitées dans l'ordre prescrit, poussé sur `integration/overnight-2026-06-18`.
@@ -39,7 +39,9 @@
 - **M2 DONE @343e18d** — migration `supabase/migrations/20260618_amount_points.sql` (repo seulement, NON appliquée en prod). Additive + idempotente : étend `merchants_loyalty_type_chk` (+amount_points) + ajoute `loyalty_cards.points_balance` & `loyalty_cards.last_scan_amount_chf`. **Corrections vs brouillon du cahier après vérif schéma réel (invariant 6)** : la contrainte s'appelle `merchants_loyalty_type_chk` (pas `_check`) et la table est `loyalty_cards` (pas `cards`) — le SQL du cahier aurait laissé l'ancienne contrainte active et ciblé une table inexistante. Gate inchangé **805/805**.
 - **M3 DONE @4c37aa5** — RPC `public.scan_increment_amount` (migration `20260618_scan_increment_amount.sql`, repo seulement, NON appliquée en prod). Calquée sur `scan_increment` (FOR UPDATE, cooldown `make_interval`, SECURITY DEFINER, `search_path=public`, REVOKE execute). Crédit `min(floor(montant×pointsPerChf), p_max_points)` = miroir exact de `engine.applyScan` ; retour jsonb `{ok, currentValue, pointsEarned, rewardReady}`. **Déviations assumées vs brouillon (à valider CHEF)** : pas de `p_signature` (QR vérifié côté app via `verifyQRCode`, comme `scan_increment`), pas de check suspension (route lit `merchants.suspended_at`), garde `bad_amount`, REVEXEC ajouté. Gate **805/805**.
 - **M4 DONE @72275d1** — `/api/scan/route.ts` branché : quand `program.type === "amount_points"`, valide `amountChf` (number, >0, ≤10000, ≤2 déc.) puis crédite via la RPC atomique `scan_increment_amount`. Réponse `{ success, currentValue, pointsEarned, rewardReady, rewardLabel }`. Erreurs mappées (cooldown→429, card_not_found→404, bad_amount→400). Audit `CARD_SCANNED` (existante). Flot stamp/visit/tiered intact. **→ UX-COMPTOIR : l'endpoint `POST /api/scan` accepte désormais `{ cardId, amountChf }` pour les cartes amount_points — l'`<AmountPad>` peut s'y brancher.** Gate **805/805**.
-- En cours : **M5** (option beta `NEXT_PUBLIC_POINTS_BETA` dans le form mécanique) + **M6** (tests route).
+- **M5 DONE @d8235b8** — `EditMerchantForm` : 4e option « Points par CHF dépensés (BETA) » gated `NEXT_PUBLIC_POINTS_BETA === "1"` (ou si le compte est déjà amount_points). Mini-form pointsPerChf/rewardThreshold/rewardLabel (défauts 1 / 200 / « CHF 20 offerts »), prérempli depuis la config existante. Serveur amount_points fonctionne indépendamment du flag (validate/route/RPC). Persistance via la route admin PATCH (validate déjà amount_points-aware).
+- **M6 DONE @f139716** — `route.amountPoints.test.ts` (+15 tests) : 400 (montant absent/≤0/>10000/>2 déc./non-numérique), 200 + câblage RPC + réponse, mappage cooldown→429/card_not_found→404/err→500, gardes 401/403 tenant/403 suspendu. **Gate final : tsc clean · eslint clean · vitest 820/820 (112 fichiers).**
+- **amount_points COMPLET (M1→M6).** Reste optionnel hors-périmètre : branchement final de l'`<AmountPad>` UX-COMPTOIR sur `POST /api/scan` (l'endpoint est prêt) + application prod de 2 migrations (`20260618_amount_points.sql`, `20260618_scan_increment_amount.sql`) — repo seulement, à appliquer via Supabase MCP avec accord CHEF.
 
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
