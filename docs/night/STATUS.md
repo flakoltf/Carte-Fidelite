@@ -12,10 +12,10 @@
 
 | Agent | Branche | Dernier SHA validé | Verdict | Tâche en cours |
 |---|---|---|---|---|
-| INTEGRATEUR | `integration/overnight-2026-06-18` | `742106f` | PASS | DONE @742106f |
-| UX-COMPTOIR | `agent/ux-comptoir` | — | ATTENTE | U1 |
-| TEMPLATES-SECTEUR | `agent/templates-secteur` | — | ATTENTE | T1 |
-| MECANIQUE-POINTS | `agent/mecanique-points` | — | ATTENTE (bloqué sur I2) | M1 |
+| INTEGRATEUR | `integration/overnight-2026-06-18` | `742106f` | PASS (Orchestrateur + CHEF) | DONE @742106f |
+| UX-COMPTOIR | `agent/ux-comptoir` | — | **À RÉVEILLER (CHEF)** | U1 — branche pas encore poussée, WIP stashé |
+| TEMPLATES-SECTEUR | `agent/templates-secteur` | `b882d90` | PASS avec coordination (CHEF) | T2 (T1 ✅, T4 en attente de M-POINTS M1) |
+| MECANIQUE-POINTS | `agent/mecanique-points` | — | **GO M1 autorisé (CHEF)** | M1 — démarrer maintenant depuis `integration/overnight-2026-06-18` |
 
 ## INTEGRATEUR
 - **DONE @742106f** — 5 branches traitées dans l'ordre prescrit, poussé sur `integration/overnight-2026-06-18`.
@@ -27,13 +27,14 @@
   - I2 « INTEGRATEUR DONE » atteint → MECANIQUE-POINTS débloquable.
 
 ## UX-COMPTOIR
-- Branche `agent/ux-comptoir` — non encore poussée. En attente du premier push pour validation U1.
+- **CHEF 2026-06-18T12:20Z** : la branche `agent/ux-comptoir` n'existe pas sur origin. Seul signe de vie : WIP local stashé par l'Intégrateur (gold tokens + testing-library). À RÉVEILLER en urgence via prompt de redressement + worktree dédié. Pousser même un commit squelette pour matérialiser la branche.
 
 ## TEMPLATES-SECTEUR
-- Branche `agent/templates-secteur` — non encore poussée. En attente du premier push pour validation T1.
+- **CHEF 2026-06-18T12:18Z** : T1 PASS @b882d90. Code propre, 38 tests, typage strict. Décision défensive sur `amount_points` validée (le moteur ne le connaît pas encore). Mapping ajusté ajouté au BACKLOG en **T4 conditionnel** (réintégration `amount_points` pour `restaurant` + `retail` dès que M-POINTS aura poussé M1).
+- **Action immédiate** : T2 (étape onboarding "Quel commerce ?") + T3 (étendre tests aux paliers tiered/visit_based + validateLoyaltyProgram).
 
 ## MECANIQUE-POINTS
-- Branche `agent/mecanique-points` — **bloquée** : ne démarre M1 qu'après « INTEGRATEUR DONE » (I2).
+- **CHEF 2026-06-18T12:22Z** : **GO M1**. I2 atteint, base saine 779/779. Démarrer sur worktree dédié, branche basée sur `integration/overnight-2026-06-18` (PAS sur `main`). Notifier dans STATUS.md dès que M1 poussé → débloque T4 de Templates.
 
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_

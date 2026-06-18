@@ -3,9 +3,9 @@
 > Base : `origin/main@b2613e2`. Branche d'intégration : `integration/overnight-2026-06-18`.
 > Géré par l'ORCHESTRATEUR-QA. Cocher = fait & validé (PASS). Ne rien merger sur `main`.
 
-## P1 — Consolidation (INTEGRATEUR) — branche `agent/integrateur`
-- [ ] **I1.** Rebase + intégrer dans `integration/overnight-2026-06-18` : #33 (Studio rules + stamp render), `security-headers-preview`, `google-wallet-resilience`, `audit-hardening-lot124`, `audit-post-integration`. Résoudre conflits. Tests verts.
-- [ ] **I2.** Imprimer « INTEGRATEUR DONE » dans STATUS.md (débloque M-Points).
+## P1 — Consolidation (INTEGRATEUR) — branche `agent/integrateur` — **DONE @742106f**
+- [x] **I1.** Rebase + intégrer dans `integration/overnight-2026-06-18` : #33 (Studio rules + stamp render), `security-headers-preview`, `google-wallet-resilience`, `audit-hardening-lot124`, `audit-post-integration`. Résoudre conflits. Tests verts. ✅ (CHEF @742106f — 779/779)
+- [x] **I2.** Imprimer « INTEGRATEUR DONE » dans STATUS.md (débloque M-Points). ✅ (CHEF @742106f)
 
 ## P1 — UX comptoir (UX-COMPTOIR) — branche `agent/ux-comptoir`
 - [ ] **U1.** Refonte `/dashboard` : viewport simple, badge marchand en haut, **gros bouton SCANNER bas-centre** (60% largeur, haptique au tap), 3 chiffres clés au milieu. Engrenage discret en haut-droite → ancien dashboard complet.
@@ -14,9 +14,10 @@
 - [ ] **U4.** Saisie montant CHF au scan (clavier numérique full-screen) — UI seulement, prop `onAmountConfirmed(amount: number)`. Conditionnelle si carte `type=amount_points`.
 
 ## P1 — Templates secteur (TEMPLATES-SECTEUR) — branche `agent/templates-secteur`
-- [ ] **T1.** `src/lib/loyalty/templates.ts` : `BusinessSector -> LoyaltyTemplate`. Secteurs : `cafe`, `boulangerie`, `restaurant`, `salon`, `barbier`, `sport`, `retail`, `pressing`. Chaque template : type, defaultConfig (goal/reward/welcome_stamps/intermediate_milestone OU points/CHF), palette, icône.
+- [x] **T1.** `src/lib/loyalty/templates.ts` : `BusinessSector -> LoyaltyTemplate`. 8 secteurs `cafe|boulangerie|restaurant|salon|barbier|sport|retail|pressing`. Chaque template : type, defaultConfig, palette, icône. ✅ (CHEF @b882d90 — PASS avec coordination ; voir FEEDBACK 2026-06-18T12:18:00Z. `amount_points` écarté défensivement — sera réintégré en T4 quand M-POINTS aura poussé M1.)
 - [ ] **T2.** Étape onboarding « Quel commerce ? » + grille cartes-secteurs ; au clic, pré-remplit (programme + design + récompense). AJOUT non destructif d'une étape 0.
-- [ ] **T3.** Tests `templates.test.ts` : couverture exhaustive par secteur.
+- [ ] **T3.** Étendre `templates.test.ts` : couverture des paliers `tiered`/`visit_based`, du chemin `templateForBusinessType`, et test que `toLoyaltyProgram(template)` est accepté par `validateLoyaltyProgram` pour les 8 secteurs.
+- [ ] **T4.** *(conditionnel — démarre quand `M-POINTS M1 DONE` apparaît dans STATUS.md)* Réintégrer `amount_points` dans 2 templates : `restaurant` (1 pt/CHF, seuil 200 pts, « CHF 20 offerts ») et `retail` (1 pt/CHF, seuil 500 pts, « CHF 50 offerts »). Mettre à jour `templates.test.ts` en conséquence.
 
 ## P2 — Mécanique points (MECANIQUE-POINTS) — branche `agent/mecanique-points` — **DÉMARRE APRÈS I2**
 - [ ] **M1.** `LoyaltyType` `amount_points` dans `src/lib/loyalty/types.ts` : `{ pointsPerChf: number, rewardThreshold: number, rewardLabel: string }`.
