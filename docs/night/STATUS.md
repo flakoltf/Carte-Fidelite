@@ -3,9 +3,10 @@
 - **Base** : `origin/main@b2613e2`
 - **Branche d'intégration** : `integration/overnight-2026-06-18`
 - **Orchestrateur démarré** : 2026-06-18T11:47:50Z
-- **Dernier cycle de surveillance** : 2026-06-18T11:47:50Z (cycle 0 — init)
-- **Cycles consécutifs sans push** : 0
-- **Mode** : surveillance active (90 s)
+- **Dernier cycle de surveillance** : 2026-06-18T11:49:14Z (cycle 1)
+- **Cycles consécutifs sans push** : 1
+- **Mode** : surveillance active — aucune branche `agent/*` encore poussée (workers pas démarrés)
+- **Cadence** : ~270 s tant qu'aucun worker ; resserre à 90 s dès qu'une branche `agent/*` apparaît
 
 > Verdicts possibles : `PASS` · `FAIL` · `IN-PROGRESS` · `ATTENTE` (pas encore de branche/push)
 
