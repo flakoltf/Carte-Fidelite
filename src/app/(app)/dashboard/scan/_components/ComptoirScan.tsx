@@ -4,27 +4,39 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode } from "html5-qrcode";
 import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import type { LoyaltyType } from "@/lib/loyalty/types";
 import RedeemFullScreen from "./RedeemFullScreen";
+import AmountPad from "./AmountPad";
 
-type Mode = "idle" | "scanning" | "processing" | "added" | "reward" | "error";
+type Mode = "idle" | "scanning" | "amount" | "processing" | "added" | "reward" | "error";
 
-// Scan comptoir : caméra plein cadre, puis soit un tampon ajouté (retour rapide
-// au scan), soit l'écran doré « Offrir la récompense » (RedeemFullScreen) si la
-// carte est pleine. Pensé 1 main : un grand bouton, des états très lisibles.
-export default function ComptoirScan({ rewardLabel }: { rewardLabel: string }) {
+// Scan comptoir : caméra plein cadre, puis selon le programme du marchand :
+// - amount_points : on demande le montant CHF (<AmountPad>) AVANT de créditer ;
+// - sinon : crédit direct (tampon/visite).
+// Ensuite : écran doré « Offrir la récompense » (RedeemFullScreen) si la carte
+// est au seuil, sinon confirmation rapide. Pensé 1 main, états très lisibles.
+export default function ComptoirScan({
+  programType,
+  rewardLabel,
+}: {
+  programType: LoyaltyType;
+  rewardLabel: string;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [scanned, setScanned] = useState<string | null>(null);
 
-  const handleScan = useCallback(async (cardId: string) => {
+  // amountChf : présent UNIQUEMENT pour amount_points (envoyé dans le body) ;
+  // absent → comportement actuel (tampon/visite) strictement inchangé.
+  const handleScan = useCallback(async (cardId: string, amountChf?: number) => {
     setMode("processing");
     setScanned(cardId);
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json", "idempotency-key": crypto.randomUUID() },
-        body: JSON.stringify({ cardId }),
+        body: JSON.stringify(amountChf === undefined ? { cardId } : { cardId, amountChf }),
       });
       const data = await res.json().catch(() => ({}));
       if (!data?.success) {
@@ -36,8 +48,14 @@ export default function ComptoirScan({ rewardLabel }: { rewardLabel: string }) {
         setMode("reward");
         return;
       }
-      const name = data.card?.customers?.full_name as string | undefined;
-      setMessage(name ? `Tampon ajouté · ${name}` : "Tampon ajouté.");
+      if (amountChf === undefined) {
+        const name = data.card?.customers?.full_name as string | undefined;
+        setMessage(name ? `Tampon ajouté · ${name}` : "Tampon ajouté.");
+      } else {
+        // amount_points : la réponse porte pointsEarned/currentValue (pas de carte).
+        const pts = typeof data.pointsEarned === "number" ? data.pointsEarned : 0;
+        setMessage(`+${pts} point${pts > 1 ? "s" : ""} crédité${pts > 1 ? "s" : ""}`);
+      }
       setMode("added");
       if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(120);
     } catch {
@@ -45,6 +63,20 @@ export default function ComptoirScan({ rewardLabel }: { rewardLabel: string }) {
       setMessage("Erreur réseau. Réessayez.");
     }
   }, []);
+
+  // Carte décodée : amount_points → on passe par <AmountPad> avant de créditer ;
+  // les autres types créditent directement (flux inchangé).
+  const onDecoded = useCallback(
+    (cardId: string) => {
+      if (programType === "amount_points") {
+        setScanned(cardId);
+        setMode("amount");
+      } else {
+        void handleScan(cardId);
+      }
+    },
+    [programType, handleScan],
+  );
 
   useEffect(() => {
     if (mode !== "scanning") return;
@@ -69,7 +101,7 @@ export default function ComptoirScan({ rewardLabel }: { rewardLabel: string }) {
         (decodedText) => {
           if (handled) return;
           handled = true;
-          stop().finally(() => handleScan(decodedText));
+          stop().finally(() => onDecoded(decodedText));
         },
         () => {
           /* frame sans QR : ignoré */
@@ -83,7 +115,22 @@ export default function ComptoirScan({ rewardLabel }: { rewardLabel: string }) {
       handled = true;
       void stop();
     };
-  }, [mode, handleScan]);
+  }, [mode, onDecoded]);
+
+  // amount_points : saisie du montant CHF avant le crédit.
+  if (mode === "amount" && scanned) {
+    return (
+      <AmountPad
+        onConfirm={async (amountChf) => {
+          await handleScan(scanned, amountChf);
+        }}
+        onCancel={() => {
+          setScanned(null);
+          setMode("scanning");
+        }}
+      />
+    );
+  }
 
   // Écran doré 1-tap : plein écran par-dessus tout le reste.
   if (mode === "reward" && scanned) {
