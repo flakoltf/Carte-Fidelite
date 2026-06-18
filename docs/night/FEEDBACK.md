@@ -84,3 +84,19 @@
 - **Reste hors-périmètre M (signalé, non démarré) :** RPC atomique de crédit par montant (`scan_increment` ne gère pas amount_points) + branchement route `/api/scan` + UI (l'`<AmountPad>` d'UX-COMPTOIR est déjà prêt côté front). À planifier par l'orchestrateur (M3 ?).
 - Attente : revue CHEF. Je m'arrête proprement.
 
+---
+
+## 2026-06-18T12:46:02Z [MECANIQUE-POINTS] [4c37aa5] M3 DONE — RPC scan_increment_amount
+- Verdict côté worker : RPC livrée. Migration `supabase/migrations/20260618_scan_increment_amount.sql` (REPO seulement, **NON appliquée en prod** — apply via Supabase MCP avec accord, comme M2). Gate inchangé : `tsc` clean · `vitest` **805/805** (la RPC SQL n'est pas couverte par vitest ; sa logique de crédit est le miroir exact de `engine.applyScan`, déjà testée en M1).
+- **Préalable fait :** lu `20260604_scan_atomic_increment.sql` (la SEULE `scan_increment` ; `20260615_scan_revert.sql` à côté). Forme réelle relevée : retour **table** `(new_count, last_scan, status)`, `loyalty_cards%rowtype`, `FOR UPDATE`, cooldown `make_interval(secs=>…)` gardé par `>0`, `security definer`, `search_path=public`, **`revoke execute … from public, anon, authenticated`**. PAS de signature, PAS de suspension dans la RPC.
+- **Vérif route `/api/scan/route.ts` :** la signature QR est vérifiée CÔTÉ APP (`verifyQRCode`, ligne 53) AVANT la RPC ; la suspension est vérifiée CÔTÉ APP (`merchants.suspended_at`, ligne 68). La RPC reçoit déjà l'id de carte résolu.
+- **Déviations ASSUMÉES vs le brouillon SQL du cahier (à valider CHEF) :**
+  1. **Pas de `p_signature`** : inutilisé même dans le brouillon ; la signature est une responsabilité app (cf. ci-dessus), comme pour `scan_increment`. L'ajouter = paramètre mort dans une fonction `SECURITY DEFINER`.
+  2. **Pas de check suspension** : `scan_increment` n'en fait pas ; la suspension est gérée par la route. On reste fidèle à la forme existante.
+  3. **`REVOKE EXECUTE` ajouté** (absent du brouillon) — aligné sur `scan_increment`, sécurité service-role.
+  4. **Garde `bad_amount`** (`p_amount_chf` null/≤0 → `{ok:false, error:'bad_amount'}`) : miroir du `throw` de `engine.applyScan`.
+  5. Retour **jsonb** `{ok, currentValue, pointsEarned, rewardReady}` (demandé par le cahier ; plus riche que le retour table de `scan_increment`). Statuts d'erreur : `card_not_found` | `cooldown` | `bad_amount`.
+- **⚠️ Message d'assignation M3 TRONQUÉ** côté SQL (`$$;` non fermé) et après : je n'ai pas vu d'éventuelles étapes route/tests. J'ai livré la partie clairement spécifiée (le fichier RPC). **Reste à cadrer (M4 ?)** : brancher `/api/scan/route.ts` sur `scan_increment_amount` pour `program.type === "amount_points"` (lire le montant de la requête, passer `pointsPerChf`/`maxPointsPerScan`/`rewardThreshold` issus du programme résolu, mapper le jsonb vers la réponse `{success, rewardReady, …}`, audit `CARD_SCANNED`) + UI (`<AmountPad>` d'UX-COMPTOIR déjà prêt). Je NE l'ai pas fait spéculativement pour ne pas diverger de la portion tronquée.
+- **Invariants respectés :** aucune nouvelle `AuditAction` · pas de secret · 0 commit `main`/`integration` (push uniquement `agent/mecanique-points`) · worktree dédié · migration NON appliquée en prod.
+- Attente : revue CHEF + cadrage du branchement route. Je m'arrête proprement.
+
