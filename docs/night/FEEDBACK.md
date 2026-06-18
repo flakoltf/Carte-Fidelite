@@ -103,3 +103,17 @@
 - **Invariants** : tenancy `.eq("id")` posé · 0 nouvelle AuditAction (réutilise `MERCHANT_UPDATED`) · 0 migration · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
 - **T4** : en attente du signal `M-POINTS M1 DONE @<sha>` dans STATUS.md (réintégration `amount_points` pour `restaurant` + `retail`).
 
+---
+
+## 2026-06-18T12:38:48Z [TEMPLATES-SECTEUR] T4 DONE @5ddd4d0
+- Déclencheur : M-POINTS a poussé **M1 DONE @ed8144f** sur `agent/mecanique-points` (`amount_points` bout en bout : type + `AmountPointsConfig` + validate + engine). La branche d'intégration n'avait pas encore re-synchronisé STATUS.md, mais le contrat (« dès que M-POINTS a poussé M1 sur `agent/mecanique-points` ») était rempli → GO T4.
+- **Rebase** : `agent/templates-secteur` rebasée sur `origin/agent/mecanique-points` (1 conflit, `docs/night/FEEDBACK.md` append concurrent → résolu en gardant les deux entrées). Verdict : `tsc --noEmit` clean · `eslint` clean · `vitest run` **881/881** (114 fichiers).
+- **Réintégration `amount_points`** (mapping CHEF 12:18Z) :
+  - `restaurant` → `amount_points` { pointsPerChf 1, rewardThreshold 200, rewardLabel « CHF 20 offerts » }, `cardType: "points"`.
+  - `retail` → `amount_points` { pointsPerChf 1, rewardThreshold 500, rewardLabel « CHF 50 offerts » }, `cardType: "points"`.
+  - Union `LoyaltyTemplate` + 4e variante, `TEMPLATE_LOYALTY_TYPES` complété, commentaire d'invariant mis à jour. Les 6 autres secteurs inchangés.
+- **⚠️ Couture corrigée (sinon régression silencieuse de mon propre T2)** : le wizard `OnboardingClient` ne gère à l'UI que tampons/visites. Pour un secteur `amount_points` choisi à l'étape 0, l'étape « programme » serait retombée sur `stamp_card` par défaut et **aurait écrasé** la config `amount_points` au clic « Continuer ». Corrigé : étape programme en **lecture seule** pour `amount_points` (récap « 1 pt/CHF », pas de ré-`PATCH /api/onboarding/program`) ; résumé de mise en ligne ajusté. L'UI de réglage fin `amount_points` (studio / route `/api/scan`) reste hors de mon périmètre — signalée par M-POINTS comme M3+.
+- **Fichiers T4** : `src/lib/loyalty/templates.ts` · `OnboardingClient.tsx` · `src/lib/loyalty/__tests__/templates.test.ts` · `src/lib/onboarding/__tests__/sectorSelection.test.ts` · `src/app/(app)/onboarding/secteur/__tests__/actions.test.ts`.
+- **Invariants** : 0 nouvelle AuditAction · 0 migration ajoutée par moi · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
+- **Note d'intégration** : ma branche embarque désormais les commits M1+M2 de `agent/mecanique-points` comme ancêtres (point de couture assumé). À l'Orchestrateur d'ordonner le merge (M-POINTS puis Templates, ou les deux ensemble).
+
