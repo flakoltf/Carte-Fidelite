@@ -117,3 +117,13 @@
 - **Invariants** : 0 nouvelle AuditAction · 0 migration ajoutée par moi · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
 - **Note d'intégration** : ma branche embarque désormais les commits M1+M2 de `agent/mecanique-points` comme ancêtres (point de couture assumé). À l'Orchestrateur d'ordonner le merge (M-POINTS puis Templates, ou les deux ensemble).
 
+---
+
+## 2026-06-18T12:44:15Z [TEMPLATES-SECTEUR] T4 finalisé @016aa80
+- Suite au prompt CHEF (libellés canoniques + demande explicite d'éditer STATUS.md), deux ajustements sur le T4 déjà livré (@5ddd4d0) :
+  1. `defaultProgramName` alignés sur le wording canonique : restaurant « 1 point par franc, CHF 20 offerts à 200 pts », retail « 1 point par franc, CHF 50 offerts à 500 pts ». (config/rewardLabel/union/`TEMPLATE_LOYALTY_TYPES` inchangés, déjà conformes.)
+  2. `docs/night/STATUS.md` mis à jour (ligne TEMPLATES-SECTEUR + section) : **T4 DONE @016aa80**.
+- Test crucial demandé (T4.2) déjà présent : `validateLoyaltyProgram(t.loyaltyType, t.config).ok === true` pour les 8 secteurs (import depuis `../validate`) + vérifs spécifiques restaurant/retail (type `amount_points`, 200/500).
+- Gate : `tsc --noEmit` clean · `vitest run` vert (881 au total ; sous-ensemble loyalty/onboarding 194/194 après l'ajustement de wording).
+- **Backlog TEMPLATES-SECTEUR (T1→T4) terminé.** Rien sur `main`/`integration`.
+

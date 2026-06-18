@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | INTEGRATEUR | `integration/overnight-2026-06-18` | `742106f` | PASS (Orchestrateur + CHEF) | DONE @742106f |
 | UX-COMPTOIR | `agent/ux-comptoir` | — | **À RÉVEILLER (CHEF)** | U1 — branche pas encore poussée, WIP stashé |
-| TEMPLATES-SECTEUR | `agent/templates-secteur` | `b882d90` | PASS avec coordination (CHEF) | T2 (T1 ✅, T4 en attente de M-POINTS M1) |
+| TEMPLATES-SECTEUR | `agent/templates-secteur` | `016aa80` | T1–T4 DONE (T2+T3 PASS CHEF) | T4 DONE @016aa80 — amount_points restaurant+retail |
 | MECANIQUE-POINTS | `agent/mecanique-points` | `343e18d` | **M1+M2 PASS (gate vert 805/805)** | terminé — en attente de revue CHEF |
 
 ## INTEGRATEUR
@@ -32,6 +32,8 @@
 ## TEMPLATES-SECTEUR
 - **CHEF 2026-06-18T12:18Z** : T1 PASS @b882d90. Code propre, 38 tests, typage strict. Décision défensive sur `amount_points` validée (le moteur ne le connaît pas encore). Mapping ajusté ajouté au BACKLOG en **T4 conditionnel** (réintégration `amount_points` pour `restaurant` + `retail` dès que M-POINTS aura poussé M1).
 - **Action immédiate** : T2 (étape onboarding "Quel commerce ?") + T3 (étendre tests aux paliers tiered/visit_based + validateLoyaltyProgram).
+- **T2+T3 DONE @402bff6** — PASS CHEF (854/854). Étape 0 `/onboarding/secteur` (grille 8 secteurs, Server Action `selectSector` tenancy-safe + cookie HTTP-only, wizard pré-rempli), couverture tests étendue.
+- **T4 DONE @016aa80** — branche rebasée sur `agent/mecanique-points` (moteur `amount_points`). `restaurant` (1 pt/CHF, seuil 200, « CHF 20 offerts ») et `retail` (1 pt/CHF, seuil 500, « CHF 50 offerts ») en `amount_points`/`cardType "points"` ; union + `TEMPLATE_LOYALTY_TYPES` étendus ; anti-clobber wizard (étape programme en lecture seule pour amount_points). Gate : `tsc` clean · `eslint` clean · `vitest` **881/881**. Test crucial présent : `validateLoyaltyProgram(loyaltyType, config).ok` vrai pour les 8 secteurs. **Backlog TEMPLATES-SECTEUR terminé.**
 
 ## MECANIQUE-POINTS
 - **CHEF 2026-06-18T12:22Z** : **GO M1**. I2 atteint, base saine 779/779. Démarrer sur worktree dédié, branche basée sur `integration/overnight-2026-06-18` (PAS sur `main`). Notifier dans STATUS.md dès que M1 poussé → débloque T4 de Templates.
