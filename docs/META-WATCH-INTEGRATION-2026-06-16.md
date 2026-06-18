@@ -118,6 +118,46 @@ vraisemblablement une **version antérieure/divergente** à écarter, pas à fus
 
 *(Constat read-only ; je n'y touche pas. À trancher par l'Intégrateur/le chef.)*
 
+---
+
+# Vague 0bis — reprise post-redémarrage — 2026-06-18
+
+## Verdict : 🟢 invariants verts — 🟠 mais AUCUNE production des agents conso
+
+Après redémarrage des agents (annoncé par l'utilisateur) et ~1 jour écoulé : **rien
+n'a été produit par les 3 agents de consolidation.**
+
+| Contrôle | État | Verdict |
+|---|---|---|
+| D02 PR mergées | #33/#35/#36/#37 OPEN/DRAFT/`merged=null` ; seules MERGED = #26-#32 (15/06, historique) | ✅ |
+| D03 prod | `schema_migrations` = **45** | ✅ |
+| `main` | `b2613e2` inchangé | ✅ |
+| Force-push tips PR | inchangés | ✅ |
+
+**Production des agents conso = 0 commit :**
+- `docs/integration-log` : inexistante (local + remote) → **Intégrateur non démarré**.
+- `feat/studio-rules-suite` : local `b2613e2` (worktree `wt-studio-suite`), **0 commit**, non poussée.
+- `docs/smoke-csp-2026-06-16` : local `b2613e2` (worktree `wt-smoke-csp` **nouveau**),
+  **0 commit**, non poussée.
+- Dernier commit du repo, toutes branches : mon log d'événement (17/06 00:26).
+- `stash@{0}` (hazard #36) toujours présent, intact.
+
+→ **Signal au chef** : les agents ont des worktrees prêts mais ne produisent rien
+(stall probable, ou tâches non engagées). Ce n'est pas une dérive Dxx ; c'est une
+**absence de progrès** (>24 h sans commit, au-delà du seuil « 90 min sans push »).
+
+## Robustesse surveillance
+
+Watcher **durci** : les réponses `gh` vides (réseau) ne déclenchent plus de faux
+positif (2 occurrences observées : 22:07Z, 22:37Z). Détection de merge garantie par
+l'empreinte **git** seule (un merge fait avancer `origin/main`), indépendante de `gh`.
+
+## Recommandation
+
+🟢 Côté intégrité : RAS, tout est gelé proprement. 🟠 Côté avancement : **vérifier
+que les 3 agents conso tournent réellement** — ils n'ont produit aucun commit depuis
+le redémarrage. Je continue la veille ; je signalerai le **premier** push.
+
 ## Sur le redémarrage des agents
 
 **Hors de mon mandat** : je suis l'auditeur **read-only**, je n'instancie ni ne
