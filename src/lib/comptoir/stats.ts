@@ -27,6 +27,38 @@ export interface CountClient {
 
 const dayMs = 86_400_000;
 const safeCount = (r: CountResult): number => (r.error ? 0 : r.count ?? 0);
+const noReward: PromiseLike<CountResult> = Promise.resolve({ count: 0, error: null });
+
+// Compte les cartes « prêtes à offrir » selon le type de programme. Le seuil et
+// la colonne diffèrent (stamp_card → stamps_count/goal ; amount_points →
+// points_balance/rewardThreshold). Tenancy posée dans chaque branche.
+function rewardReadyQuery(
+  admin: CountClient,
+  merchantId: string,
+  program: LoyaltyProgram,
+): PromiseLike<CountResult> {
+  if (program.type === "stamp_card") {
+    return admin
+      .from("loyalty_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("merchant_id", merchantId)
+      .gte("stamps_count", program.config.goal);
+  }
+  // amount_points : type pas encore dans l'union (livré par M-Points). On lit le
+  // seuil de façon défensive sans casser le typage actuel.
+  const p = program as { type: string; config: Record<string, unknown> };
+  if (p.type === "amount_points") {
+    const threshold = p.config.rewardThreshold;
+    if (typeof threshold !== "number") return noReward;
+    return admin
+      .from("loyalty_cards")
+      .select("id", { count: "exact", head: true })
+      .eq("merchant_id", merchantId)
+      .gte("points_balance", threshold);
+  }
+  // visit_based / tiered : pas de notion de carte « pleine » à offrir au comptoir.
+  return noReward;
+}
 
 export async function queryComptoirStats(
   admin: CountClient,
@@ -40,11 +72,6 @@ export async function queryComptoirStats(
   // Scans « aujourd'hui » : fenêtre glissante de 24 h (approxime le jour Genève,
   // tolérance acceptée par le cahier des charges U3).
   const dayCutoff = new Date(now.getTime() - dayMs).toISOString();
-  // « Récompense due » = carte pleine non encore offerte. Seul le stamp_card a
-  // une notion de seuil (stamps_count >= goal) ; un encaissement remet à 0, donc
-  // ce comptage exclut naturellement les cartes déjà offertes.
-  const goal = program.type === "stamp_card" ? program.config.goal : null;
-
   const activeP = admin
     .from("loyalty_cards")
     .select("id", { count: "exact", head: true })
@@ -57,14 +84,15 @@ export async function queryComptoirStats(
     .eq("merchant_id", merchantId)
     .gte("scanned_at", dayCutoff);
 
-  const rewardsP: PromiseLike<CountResult> =
-    goal === null
-      ? Promise.resolve({ count: 0, error: null })
-      : admin
-          .from("loyalty_cards")
-          .select("id", { count: "exact", head: true })
-          .eq("merchant_id", merchantId)
-          .gte("stamps_count", goal);
+  // « Récompense due » = carte au seuil de récompense, non encore offerte.
+  // - stamp_card : stamps_count >= goal (un encaissement remet à 0 → exclut les
+  //   cartes déjà offertes).
+  // - amount_points (M-Points, type pas encore dans l'union LoyaltyProgram) :
+  //   points_balance >= rewardThreshold. Accès défensif tant que le type n'est
+  //   pas livré. ATTENTION : la colonne `points_balance` n'existera en prod
+  //   qu'APRÈS la migration M2 (non appliquée) — sans souci pour les tests (faux
+  //   client), mais le compte renverra 0/erreur avalée d'ici là.
+  const rewardsP = rewardReadyQuery(admin, merchantId, program);
 
   const [active, scans, rewards] = await Promise.all([activeP, scansP, rewardsP]);
   return {

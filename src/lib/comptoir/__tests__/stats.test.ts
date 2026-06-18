@@ -73,6 +73,25 @@ describe("queryComptoirStats", () => {
     expect(rewardCall.filters).toContain("gte:stamps_count:8");
   });
 
+  it("amount_points : rewardsDue interroge points_balance >= rewardThreshold (tenancy posée)", async () => {
+    // Type pas encore dans l'union LoyaltyProgram (livré par M-Points) → cast.
+    const amount = { type: "amount_points", config: { rewardThreshold: 100 } } as unknown as LoyaltyProgram;
+    const { client, calls } = fakeClient({ loyalty_cards: 12, scan_history: 4 });
+    const stats = await queryComptoirStats(client, "tenant-Y", amount, NOW);
+    expect(stats.rewardsDue).toBe(12);
+    const rewardCall = calls.filter((c) => c.table === "loyalty_cards")[1];
+    expect(rewardCall.eqMerchant).toBe("tenant-Y");
+    expect(rewardCall.filters).toContain("gte:points_balance:100");
+  });
+
+  it("amount_points sans rewardThreshold numérique → rewardsDue 0, pas de 2e requête", async () => {
+    const amount = { type: "amount_points", config: {} } as unknown as LoyaltyProgram;
+    const { client, calls } = fakeClient({ loyalty_cards: 9, scan_history: 0 });
+    const stats = await queryComptoirStats(client, "m-1", amount, NOW);
+    expect(stats.rewardsDue).toBe(0);
+    expect(calls.filter((c) => c.table === "loyalty_cards").length).toBe(1);
+  });
+
   it("count null ou error → 0 (jamais de crash au comptoir)", async () => {
     const calls: Call[] = [];
     const client: CountClient = {
