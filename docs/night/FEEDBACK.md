@@ -65,3 +65,41 @@
 - **Démarre sur worktree dédié**, branche `agent/mecanique-points` basée sur `origin/integration/overnight-2026-06-18` (PAS sur `main` — pour avoir CSP + Studio).
 - **Coordination Templates** : dès que M1 est poussé (extension `LoyaltyType` + validate), notifier dans STATUS.md → ça débloque T4 côté Templates.
 
+---
+
+## 2026-06-18T13:00:00Z [CHEF] [402bff6] VERDICT TEMPLATES T2+T3
+- Verdict : **PASS**. Code propre, 854/854 tests verts (base 779 + 38 T1 + ~37 T2/T3). T1 rebasé proprement sur le verdict CHEF précédent (renommage SHA 56ba1a5).
+- Étape onboarding `secteur` non destructive ajoutée : `actions.ts` (Server Action `selectSector`), `SectorPicker.tsx`, `page.tsx`, `OnboardingClient.tsx` mis à jour, plus la logique pure `src/lib/onboarding/sectorSelection.ts` et ses tests.
+- Pas de modif `auditLog.ts` (invariant 1 OK).
+- Pas de UPDATE/PUT Google Wallet (invariant 2 OK).
+- **GO T4** : M-POINTS M1 est poussé (@ed8144f) → `amount_points` est désormais accepté par `validate.ts`. Templates peut maintenant réintégrer `amount_points` dans `restaurant` (1 pt/CHF, seuil 200, "CHF 20 offerts") et `retail` (1 pt/CHF, seuil 500, "CHF 50 offerts").
+
+---
+
+## 2026-06-18T13:02:00Z [CHEF] [712dd08] VERDICT UX-COMPTOIR U1+U2+U3+U4
+- Verdict : **PASS**. Les 4 tâches livrées (réveil réussi malgré le démarrage chaotique). 21 fichiers ajoutés/modifiés, package-lock +757 lignes (jsdom + testing-library pour les tests JSX).
+- **Tenancy nickel** : `getComptoirStats()` résout `currentMerchantId()` (gère l'impersonation), filtre `.eq("id", merchantId)` sur `merchants`, puis `queryComptoirStats` repose `.eq("merchant_id", merchantId)` sur `loyalty_cards` (active + reward-ready) et `scan_history`. Logique pure isolée derrière une façade `CountClient` pour tester sans réseau — **excellent design**.
+- **Vérif prod (Supabase MCP)** : toutes les colonnes utilisées existent réellement (`loyalty_cards.last_scan/created_at/stamps_count/merchant_id`, `scan_history.scanned_at/merchant_id`, `merchants.loyalty_type/loyalty_config/stamp_goal`).
+- Pas de modif `auditLog.ts` (invariant 1 OK).
+- Pas de UPDATE/PUT Google Wallet (invariant 2 OK).
+- **Petit point** : `rewardsDue` ne compte que les `stamp_card` (cf. `goal === null`). Une fois `amount_points` branché (M3/M4), il faudra étendre la requête pour compter aussi `points_balance >= rewardThreshold`. C'est mineur, à inclure dans U5 (intégration finale).
+
+---
+
+## 2026-06-18T13:05:00Z [CHEF] [f68ec9a] VERDICT MECANIQUE-POINTS M1+M2
+- Verdict : **PASS — qualité remarquable**. 805/805 tests verts (base 779 + 26 amount_points). Type, validate, engine, resolveProgram étendus proprement.
+- **Diagnostic SQL validé en prod via Supabase MCP :**
+  1. La contrainte s'appelle bien `merchants_loyalty_type_chk` (vérifié : `CHECK ((loyalty_type = ANY (ARRAY['stamp_card','visit_based','tiered'])))`). Le brouillon du cahier (`merchants_loyalty_type_check`) aurait laissé l'ancienne contrainte active → inserts `amount_points` rejetés. **Correction de M-Points sauvée**.
+  2. La table des cartes est bien `loyalty_cards`, aucune table `cards` n'existe. **Correction validée**.
+  - Drop défensif des deux noms + re-add canonique = robuste et idempotent. La migration peut être appliquée en prod sans risque (avec le « go » du fondateur).
+- **Écart sur `ScanEvent`** : décision défendue (ScanResult.newCount porte déjà le solde — éviter de casser les `toEqual` du baseline). Accepté.
+- **Migration M2 NON appliquée à la prod** ✅ (`points_balance` et `last_scan_amount_chf` absents en prod, comme attendu).
+- Pas de nouvelle `AuditAction` ✅.
+- **GO M3+M4+M5+M6** : continuer la séquence. La RPC `scan_increment_amount`, le branchement `/api/scan`, le feature flag `NEXT_PUBLIC_POINTS_BETA` et les tests d'intégration restent à livrer. Ne pas appliquer la migration à la prod sans accord explicite du fondateur.
+
+---
+
+## 2026-06-18T13:08:00Z [CHEF] [—] U5 ASSIGNÉ À UX-COMPTOIR
+- Mission supplémentaire : intégration finale comptoir (U5). Brancher le bouton "OFFRIR" du `<RedeemFullScreen>` sur la vraie route `/api/scan/redeem` si elle existe (sinon créer/étendre), étendre `rewardsDue` dans `queryComptoirStats` pour compter aussi `points_balance >= threshold` (amount_points), et préparer le câblage du `<AmountPad>` (attendre que M4 ait branché `/api/scan` pour amount_points avant le câblage final).
+- Garde-fous habituels : tenancy, pas de main, pas de prod.
+
