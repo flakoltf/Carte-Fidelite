@@ -61,5 +61,9 @@
 - **M6 DONE @f139716** — `route.amountPoints.test.ts` (+15 tests) : 400 (montant absent/≤0/>10000/>2 déc./non-numérique), 200 + câblage RPC + réponse, mappage cooldown→429/card_not_found→404/err→500, gardes 401/403 tenant/403 suspendu. **Gate final : tsc clean · eslint clean · vitest 820/820 (112 fichiers).**
 - **amount_points COMPLET (M1→M6).** Reste optionnel hors-périmètre : branchement final de l'`<AmountPad>` UX-COMPTOIR sur `POST /api/scan` (l'endpoint est prêt) + application prod de 2 migrations (`20260618_amount_points.sql`, `20260618_scan_increment_amount.sql`) — repo seulement, à appliquer via Supabase MCP avec accord CHEF.
 
+## UX-POLISH
+- Mission : éliminer les frictions du parcours marchand au comptoir (login → scan crédité < 5 s). Branche `agent/ux-polish` (base `integration/overnight-2026-06-18`).
+- **UXP-1 DONE** — `DashboardShell` : 12 items à plat → **5 zones titrées** (Comptoir / Ma carte / Clients / Marketing / Réglages), sections compactes ouvertes (pas d'accordéon), items plus petits (`py-2`, icônes 18px), Scanner mis en avant (gras + fond halo). Desktop + menu mobile regroupés. A11y : `<nav aria-label>`, `<section aria-label>` par zone, `aria-current="page"`. Tests : `DashboardShell.test.tsx` (6 tests : nav accessible, 5 zones, Scanner gras/route, routes des 11 items, aria-current, déconnexion). Gate : tsc clean.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
