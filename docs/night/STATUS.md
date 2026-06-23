@@ -71,5 +71,7 @@
 
 - **OE-4 DONE** — Studio en mode express : `studio/page.tsx` (async) lit `?express=1` -> `<StudioClient express />`. Vue ultra-simplifiee : banniere « Votre carte de {secteur} est pre-remplie. Verifiez et validez », 3 essentiels (couleur principale = `design.colors.background`, nom du programme, recompense), reste replie sous bouton « Personnaliser plus » (editeur complet monte seulement a l'ouverture). Gros bouton fixe « Valider et continuer » : PATCH `/api/merchant/me` (`reward_label` + `primary_color`) puis PUT `/api/merchant/card-design` (brouillon) puis `router.push('/dashboard/card')`. Bouton verrouille tant que la recompense est vide (=> etape 2 onboarding garantie). **Studio normal 100% intact** (rendu identique sans `express`). Single-source : les 3 champs editent le meme state que l'editeur avance. Tests `StudioExpress.test.tsx` **4/4** (banniere+champs, verrou recompense, flot validation, mode normal sans banniere). Gate : tsc clean, vitest **976**.
 
+- **OE-5 DONE** — Couverture complete : `firstRun.test.ts` (14, exhaustif), `ExpressOnboarding.test.tsx` (8, rendu+etats+dismiss), `OnboardingGate.test.tsx` (8, aiguillage+regle CHEF+bandeau), `StudioExpress.test.tsx` (4), **e2e `onboardingFlow.test.tsx` (2)** : parcours 3 etapes a travers le gate (guide -> progression -> Comptoir+bandeau -> bandeau eteint) + skip. **+36 tests** (942 -> **978**), tsc clean. `localStorage` en memoire injecte dans les tests jsdom (Node 25 n'expose pas `clear`). **ONBOARDING-EXPRESS : OE-1+2+3+4+5 DONE.**
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
