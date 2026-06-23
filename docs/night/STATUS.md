@@ -1,5 +1,16 @@
 # STATUS — Build de nuit HaloCard (temps réel)
 
+## INTEGRATION-FINALE — DONE @c1c6717
+- **Gate qualité strict VERT** : `npm ci` OK · `npx tsc --noEmit` clean · `npx vitest run` **942/942** (123 fichiers). Seuil ≥ 880 atteint.
+- **3 branches mergées dans l'ordre prescrit** (`--no-ff`, sur `integration/overnight-2026-06-18`) :
+  1. `agent/mecanique-points` @58748e0 → merge `cd43d69` (moteur amount_points M1→M6 : engine/validate/resolveProgram, RPC `scan_increment_amount`, route `/api/scan`, flag `NEXT_PUBLIC_POINTS_BETA`). Gate post-merge **820/820**.
+  2. `agent/ux-comptoir` @abeef05 → merge `f6d77ae` (comptoir U1→U5 : `<ComptoirHome>`/`<StatTrio>`/`<RedeemFullScreen>`/`<AmountPad>`, `/api/scan/redeem` factorisé, `rewardsDue` amount_points). Gate post-merge **866/866**.
+  3. `agent/templates-secteur` @119b2ca → merge `c1c6717` (8 templates secteur + onboarding `secteur` ; `restaurant`+`retail` en amount_points). Gate final **942/942**.
+- **Conflits résolus** : uniquement `docs/night/STATUS.md` + `docs/night/FEEDBACK.md` (logs append-only → **union** ; tableau de statut réconcilié par ligne sur l'état le plus à jour). **Aucun conflit de code.**
+- **Invariants vérifiés (tous OK)** : (1) `auditLog.ts` identique à `origin/main` → aucune nouvelle `AuditAction` (test `auditActionsSync` vert) ; (2) Google Wallet = `get`/`patch`/`insert` seulement, **aucun `.put(`/`.update(`** ; (3) tenancy `.eq("merchant_id"|"id", merchantId)` sur chaque nouvel accès `supabaseAdmin` (redeem double-scopé + ownership 403 cross-tenant) ; (4) aucun secret en clair ; (5) **0 commit sur `main`**.
+- **Migrations amount_points** (`20260618_amount_points.sql`, `20260618_scan_increment_amount.sql`) présentes dans le repo, **NON appliquées en prod** (à appliquer via Supabase MCP avec accord du fondateur).
+- **SHA final intégration** : `c1c6717` (tip code) — branche `integration/overnight-2026-06-18`. Signal écrit par l'INTEGRATEUR-FINAL ; `main` intouché.
+
 - **Base** : `origin/main@b2613e2`
 - **Branche d'intégration** : `integration/overnight-2026-06-18`
 - **Orchestrateur démarré** : 2026-06-18T11:47:50Z

@@ -188,3 +188,73 @@
 - Gate : `tsc --noEmit` clean · `vitest run` vert (881 au total ; sous-ensemble loyalty/onboarding 194/194 après l'ajustement de wording).
 - **Backlog TEMPLATES-SECTEUR (T1→T4) terminé.** Rien sur `main`/`integration`.
 
+
+---
+
+## 2026-06-18T12:17:19Z [UX-COMPTOIR] [712dd08] TASKS-DONE
+- Verdict côté worker : U1→U4 livrés, gate vert (`tsc --noEmit` clean · `eslint` clean · `vitest run` **786/786**, 113 fichiers, +30 tests comptoir). Branche `agent/ux-comptoir` poussée @712dd08, base `origin/main@b2613e2`.
+- **U1 @a1168d0** — `/dashboard` = `<ComptoirHome>` plein écran (en-tête mini + engrenage → `/dashboard/full` qui préserve l'ancienne home · `<StatTrio>` · bouton Scanner géant 60% / 96px → `/dashboard/scan` · footer statut connexion + version). Aucune nav latérale, aucun tableau, aucun graphe.
+- **U2 @cd900d4** — `<RedeemFullScreen>` plein écran doré 1-tap (`role=dialog`, `aria-live`), POST `/api/redeem`, confettis framer-motion ~1,2 s, retour home. Page `/dashboard/scan` (`<ComptoirScan>`, caméra html5-qrcode) qui le branche.
+- **U3 @9d8b456** — `<StatTrio>` + Server Action `getComptoirStats()` ; tenancy `.eq("merchant_id")` sur CHAQUE requête (vérifié par test) ; logique pure `src/lib/comptoir/stats.ts` ; skeleton loader.
+- **U4 @712dd08** — `<AmountPad>` clavier CHF plein écran ; logique pure `src/lib/comptoir/amountPad.ts` (max 9999.95, 2 déc., format suisse `.—`/`.50`) ; prop `onConfirm(amountChf)`. Composant prêt, branché côté UI quand Mécanique-Points livrera `amount_points` (back-end requis : RPC crédit par montant — pas encore là).
+- **Écarts assumés vs cahier** (à valider par l'orchestrateur) :
+  1. Endpoint d'encaissement réel = `POST /api/redeem` (body `{cardId}` → `{success, card}`). Le cahier citait `/api/scan/redeem` (inexistant).
+  2. Token `--color-gold*` + `--color-gold-grad` ajoutés dans `globals.css` (cahier citait `--color-gold-grad`, absent ; famille de l'amber `--color-warning`). La marque reste le teal `--color-halo`.
+  3. devDeps de test ajoutés : `jsdom` + `@testing-library/*` (pur JS, **aucun binaire natif** → n'aggrave pas le piège lock mac→Linux). Tests composants en `// @vitest-environment jsdom`.
+  4. Bouton Scanner = `<Link role="button">` (navigation + affordance bouton demandée par le cahier « rôle button »).
+- **Coordination** : suite à l'incident relevé par l'INTEGRATEUR (WIP happé dans la copie partagée), je travaille désormais dans un **worktree dédié** `.claude/worktrees/ux-comptoir` ; seules les màj `docs/night/*` touchent la copie partagée. Invariants respectés : tenancy `.eq` partout · aucune nouvelle `AuditAction` / migration · `enrollment_token` jamais côté client · vouvoiement FR suisse / marque HALO · 0 commit sur `main` ou `integration` (push uniquement sur `agent/ux-comptoir`).
+- Attente : retour ORCHESTRATEUR via FEEDBACK pour la suite.
+
+---
+
+## 2026-06-18T12:18:00Z [UX-COMPTOIR] RÉPONSE AU RÉVEIL
+- Le réveil « tu n'as encore RIEN poussé » est basé sur un état périmé : la branche `agent/ux-comptoir` est **déjà matérialisée et poussée** (@712dd08), U1→U4 **tous livrés** (voir l'entrée TASKS-DONE ci-dessus). Le WIP stashé par l'INTEGRATEUR a été récupéré (`stash pop`) dans un worktree dédié.
+- Worktree réel = `.claude/worktrees/ux-comptoir` (et non `../halocard-ux-comptoir` ; même branche → un seul checkout possible). La validation se fait sur la branche poussée, pas sur le chemin local.
+- Endpoint d'encaissement = `POST /api/redeem` (réel) ; `/api/scan/redeem` cité au réveil n'existe pas dans le repo.
+
+## 2026-06-18T12:18:00Z [UX-COMPTOIR] U1 DONE @a1168d0
+## 2026-06-18T12:18:00Z [UX-COMPTOIR] U2 DONE @cd900d4
+## 2026-06-18T12:18:00Z [UX-COMPTOIR] U3 DONE @9d8b456
+## 2026-06-18T12:18:00Z [UX-COMPTOIR] U4 DONE @712dd08
+
+---
+
+## 2026-06-18T12:52:09Z [UX-COMPTOIR] U5.a DONE @a3fe074
+- Route `/api/scan/redeem` créée. La logique d'encaissement existait DÉJÀ à `/api/redeem` (atomique conditionnel anti double-encaissement SEC-01, audit `REWARD_REDEEMED` — AuditAction **existante**, tenancy `.eq("merchant_id")`, garde `suspended_at`). Plutôt que dupliquer (la RPC `scan_revert` n'est PAS le use case « offrir » ; pas de nouvelle RPC ni d'AuditAction nécessaire), je l'ai **factorisée** dans `src/lib/loyalty/redeem.ts`. Les DEUX routes y délèguent : `/api/redeem` (fiche Clients, appelants inchangés) et `/api/scan/redeem` (comptoir). `<RedeemFullScreen>` poste désormais sur `/api/scan/redeem`.
+- Tests `redeemRoute.test.ts` : 401 / 400 / 403 tenancy / 200 (carte→0 + audit REWARD_REDEEMED) / 409 déjà-offert.
+- **Touché un test d'audit** : `suspensionGuards.test.ts` mis à jour pour suivre la factorisation (vérifie que la lib partagée porte `suspended_at` + que les 2 routes délèguent à `redeemReward`) — garantie préservée et ÉTENDUE à la nouvelle route.
+- amount_points : décrément `points_balance` non implémenté côté redeem (attend colonne M2 + contrat M-Points) → reste 409 « programme sans encaissement » pour l'instant.
+
+## 2026-06-18T12:52:09Z [UX-COMPTOIR] U5.b DONE @dee68e8
+- `queryComptoirStats` : `rewardsDue` gère `amount_points` (`points_balance >= rewardThreshold`) en plus de `stamp_card` (`stamps_count >= goal`). Le type `amount_points` n'étant pas dans l'union LoyaltyProgram de MA base (`origin/main`, M1 non intégré), accès **défensif** documenté. Tenancy `.eq("merchant_id")` dans chaque branche. +2 tests. NB colonne `points_balance` = post-migration M2 (non appliquée prod) — sans incidence sur les tests.
+
+## 2026-06-18T12:52:09Z [UX-COMPTOIR] U5.c BLOQUÉ — attente M-POINTS M4
+- État M-Points (branche `agent/mecanique-points`) : M1 @ed8144f · M2 @343e18d · M3 @4c37aa5 (RPC `scan_increment_amount`) faits. **M4 (route `/api/scan` acceptant `amountChf`) PAS encore livré** → je ne câble pas `<AmountPad>` dans le flux live sur un contrat deviné (risque de rework + test E2E impossible sans la vraie route).
+- Dès `M4 DONE @<sha>` dans STATUS : je passerai `programType` au `<ComptoirScan>` (déjà serveur), afficherai `<AmountPad>` avant `/api/scan` si `amount_points`, et posterai `body.amountChf`. Puis test E2E flow complet (scan → amountpad → crédit → reward → redeem).
+- En attente d'un signal orchestrateur/M-Points pour reprendre. Tout le reste (U1→U4, U5.a, U5.b) est poussé et vert (`tsc`/`eslint` clean, `vitest` **795/795**).
+
+---
+
+## 2026-06-18T13:22:14Z [UX-COMPTOIR] U5.c DONE @abeef05
+- Signal **M4 DONE @72275d1** détecté (watcher 5 min). `/api/scan` accepte `{ cardId, amountChf }` pour amount_points → réponse `{ success, currentValue, pointsEarned, rewardReady, rewardLabel }`.
+- **Merge `origin/agent/mecanique-points` dans `agent/ux-comptoir`** : auto-résolu, **0 conflit** (mes fichiers comptoir vs moteur M-Points/route scan = disjoints ; `package.json` non touché). Merge @7130374, gate post-merge vert **862/862**.
+- Câblage : `<ComptoirScan>` reçoit `programType` (résolu serveur). amount_points → `<AmountPad>` AVANT crédit ; `onConfirm(amountChf)` → POST `/api/scan { cardId, amountChf }` ; `rewardReady` → `<RedeemFullScreen>`, sinon « +X points crédités » + scan suivant. stamp_card/visit/tiered : **flux strictement inchangé** (pas de pavé, scan direct — couvert par un test de non-régression).
+- Le type `amount_points` étant désormais dans l'union (merge M1), le cast défensif de U5.b est devenu inutile mais reste inoffensif (laissé tel quel).
+- Test E2E `comptoirScan.amountPoints.test.tsx` (4 cas : pavé après scan · body `amountChf` · rewardReady→RedeemFullScreen · crédit sans reward · non-régression stamp_card).
+- Gate final : `tsc` clean · `eslint` clean · `vitest run` **866/866** (120 fichiers). Branche `agent/ux-comptoir` @abeef05.
+- **U5 complet (U5.a/b/c). Tout le périmètre UX-COMPTOIR (U1→U5) livré, poussé, vert.** Garde-fous tenus : tenancy `.eq("merchant_id")` partout · aucune nouvelle AuditAction/migration de mon fait · 0 push sur main/integration.
+- NB intégration : le merge a amené le contenu de l'intégration (security-headers, studio, M-Points + `docs/night/*`, migrations amount_points repo-only) dans la branche — normal puisque M-Points partait de `integration`. Migrations NON appliquées en prod.
+
+---
+
+## 2026-06-23T15:28:47Z [INTEGRATEUR-FINAL] DONE @c1c6717
+- **Mission** : consolidation des 3 branches agents dans `integration/overnight-2026-06-18`, gate strict, push. `main` intouché, aucune migration prod, aucune nouvelle feature.
+- **Branches mergées (ordre strict, `--no-ff`)** :
+  1. `agent/mecanique-points` @58748e0 → merge `cd43d69` — gate **820/820**, tsc clean.
+  2. `agent/ux-comptoir` @abeef05 → merge `f6d77ae` (contenait déjà M-Points) — gate **866/866**, tsc clean.
+  3. `agent/templates-secteur` @119b2ca → merge `c1c6717` — gate final **942/942**, tsc clean.
+- **Conflits résolus** : seulement `docs/night/STATUS.md` + `docs/night/FEEDBACK.md` (append-only → **union** ; tableau de statut réconcilié ligne par ligne sur l'état le plus récent). **Aucun conflit de code** (les 3 branches partagent la merge-base `62933f1` ; HEAD n'avait qu'un commit docs d'avance). Avant le pull `--ff-only`, des rapports worker UX-COMPTOIR non-commités traînaient dans la copie partagée → stashés puis **restitués en union** dans ce FEEDBACK (entrées 12:17→13:22).
+- **Gate qualité (à chaque merge)** : `npm ci` · `npx tsc --noEmit` clean · `npx vitest run`. Final : **942/942 tests verts, 123 fichiers** (seuil ≥ 880 atteint).
+- **Invariants (tous OK, refus si violé — aucun violé)** : (1) `auditLog.ts` == `origin/main` → aucune nouvelle `AuditAction`, test `auditActionsSync` vert ; (2) Google Wallet `get`/`patch`/`insert` seulement, **aucun `.put(`/`.update(`** ; (3) tenancy `.eq("merchant_id"|"id")` sur chaque nouvel `supabaseAdmin` (redeem double-scopé + ownership 403 cross-tenant, secteur/actions scopé `.eq("id", merchantId)`) ; (4) aucun secret en clair (`BEGIN CERTIFICATE`/`sk_live`/`whsec_`) ; (5) **0 commit sur `main`**.
+- **Migrations** `20260618_amount_points.sql` + `20260618_scan_increment_amount.sql` : repo seulement, **NON appliquées en prod** (Supabase MCP + accord fondateur requis).
+- **Poussé sur `integration/overnight-2026-06-18`**. SHA code final = `c1c6717`.
