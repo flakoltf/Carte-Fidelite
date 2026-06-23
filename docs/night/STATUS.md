@@ -67,5 +67,7 @@
 
 - **UXP-2 DONE** — `RedeemFullScreen` plus snappy : `REDIRECT_MS` 1200 → **600**, confettis 14 → **8**, durée d'anim 1,2 s → **0,5 s**. **Mode silencieux** (`localStorage halo_silent_mode === "1"`, lecture try/catch) : ni vibration ni confettis, juste un check vert — réglage local, 0 écriture serveur. Test ajouté (mode silencieux : vibrate non appelé + 0 confetti). Gate : tsc clean, 7 tests RedeemFullScreen.
 
+- **UXP-3 DONE** — `ComptoirScan` mode **scan continu** : un crédit simple (`mode "added"`) relance la caméra tout seul après **1,5 s** (zéro tap entre 2 clients), le toast de confirmation (`role="status"`, slide-in 200 ms, en haut) restant affiché. Bouton « scan suivant » obligatoire supprimé → remplacé par un « Scanner maintenant » facultatif (raccourci). `reward` (tap OFFRIR) et `error` (tap Réessayer) **inchangés**. Test `comptoirScan.scanContinu.test.tsx` (toast + absence de bouton obligatoire + auto-restart à 1,5 s). Gate : tsc clean.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
