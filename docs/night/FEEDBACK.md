@@ -258,3 +258,5 @@
 - **Invariants (tous OK, refus si violé — aucun violé)** : (1) `auditLog.ts` == `origin/main` → aucune nouvelle `AuditAction`, test `auditActionsSync` vert ; (2) Google Wallet `get`/`patch`/`insert` seulement, **aucun `.put(`/`.update(`** ; (3) tenancy `.eq("merchant_id"|"id")` sur chaque nouvel `supabaseAdmin` (redeem double-scopé + ownership 403 cross-tenant, secteur/actions scopé `.eq("id", merchantId)`) ; (4) aucun secret en clair (`BEGIN CERTIFICATE`/`sk_live`/`whsec_`) ; (5) **0 commit sur `main`**.
 - **Migrations** `20260618_amount_points.sql` + `20260618_scan_increment_amount.sql` : repo seulement, **NON appliquées en prod** (Supabase MCP + accord fondateur requis).
 - **Poussé sur `integration/overnight-2026-06-18`**. SHA code final = `c1c6717`.
+
+## 2026-06-23T15:50:26Z [UX-POLISH] UXP-1+2+3+4+5 DONE @e1235cc
