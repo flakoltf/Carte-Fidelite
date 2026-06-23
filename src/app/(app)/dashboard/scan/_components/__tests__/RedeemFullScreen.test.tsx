@@ -35,6 +35,7 @@ describe("<RedeemFullScreen>", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("affiche la récompense en grand, le bouton OFFRIR et le lien Annuler", () => {
@@ -89,6 +90,33 @@ describe("<RedeemFullScreen>", () => {
     expect(screen.getByText("Récompense offerte")).toBeTruthy();
     expect(onRedeemed).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
+  });
+
+  it("mode silencieux : ni vibration ni confettis, juste le check vert", async () => {
+    vi.useFakeTimers();
+    // jsdom de ce projet n'expose pas de localStorage fonctionnel → stub mémoire.
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => (k === "halo_silent_mode" ? "1" : null),
+      setItem: () => {},
+      removeItem: () => {},
+      clear: () => {},
+    });
+    const vibrate = vi.fn();
+    Object.defineProperty(window.navigator, "vibrate", { value: vibrate, configurable: true });
+    vi.stubGlobal("fetch", okFetch());
+
+    const { container } = render(
+      <RedeemFullScreen cardId="QR" rewardLabel="☕ Café offert" onCancel={() => {}} onRedeemed={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /offrir · valider/i }));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(screen.getByText("Récompense offerte")).toBeTruthy();
+    expect(vibrate).not.toHaveBeenCalled();
+    // Aucun confetti (token de classe `bg-white` exact) en mode silencieux.
+    expect(container.querySelectorAll(".bg-white").length).toBe(0);
   });
 
   it("affiche une erreur si l'encaissement échoue (pas de redirection)", async () => {

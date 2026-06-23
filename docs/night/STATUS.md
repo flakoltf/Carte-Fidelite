@@ -65,5 +65,7 @@
 - Mission : éliminer les frictions du parcours marchand au comptoir (login → scan crédité < 5 s). Branche `agent/ux-polish` (base `integration/overnight-2026-06-18`).
 - **UXP-1 DONE** — `DashboardShell` : 12 items à plat → **5 zones titrées** (Comptoir / Ma carte / Clients / Marketing / Réglages), sections compactes ouvertes (pas d'accordéon), items plus petits (`py-2`, icônes 18px), Scanner mis en avant (gras + fond halo). Desktop + menu mobile regroupés. A11y : `<nav aria-label>`, `<section aria-label>` par zone, `aria-current="page"`. Tests : `DashboardShell.test.tsx` (6 tests : nav accessible, 5 zones, Scanner gras/route, routes des 11 items, aria-current, déconnexion). Gate : tsc clean.
 
+- **UXP-2 DONE** — `RedeemFullScreen` plus snappy : `REDIRECT_MS` 1200 → **600**, confettis 14 → **8**, durée d'anim 1,2 s → **0,5 s**. **Mode silencieux** (`localStorage halo_silent_mode === "1"`, lecture try/catch) : ni vibration ni confettis, juste un check vert — réglage local, 0 écriture serveur. Test ajouté (mode silencieux : vibrate non appelé + 0 confetti). Gate : tsc clean, 7 tests RedeemFullScreen.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
