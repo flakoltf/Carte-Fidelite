@@ -61,5 +61,9 @@
 - **M6 DONE @f139716** — `route.amountPoints.test.ts` (+15 tests) : 400 (montant absent/≤0/>10000/>2 déc./non-numérique), 200 + câblage RPC + réponse, mappage cooldown→429/card_not_found→404/err→500, gardes 401/403 tenant/403 suspendu. **Gate final : tsc clean · eslint clean · vitest 820/820 (112 fichiers).**
 - **amount_points COMPLET (M1→M6).** Reste optionnel hors-périmètre : branchement final de l'`<AmountPad>` UX-COMPTOIR sur `POST /api/scan` (l'endpoint est prêt) + application prod de 2 migrations (`20260618_amount_points.sql`, `20260618_scan_increment_amount.sql`) — repo seulement, à appliquer via Supabase MCP avec accord CHEF.
 
+## ONBOARDING-EXPRESS
+- **But** : un marchand fraîchement loggué obtient une carte **distribuable en < 60 s** — 3 étapes claires, skip permis, zéro formulaire fleuve. Branche `agent/onboarding-express` (base `integration/overnight-2026-06-18@cefa51d`).
+- **OE-1 DONE** — `src/lib/onboarding/firstRun.ts` : `isFirstRunMerchant(merchant)` (logique pure, aucune BDD). Premier passage si UN critere vrai : cree < 24 h (borne stricte `Date.now() - created_at < 86 400 000`), OU `loyalty_type` absent/vide, OU `reward_label` vide. `created_at` illisible != recente. `logo_url` hors decision. Tests `firstRun.test.ts` : **14/14 verts** (bornes 24 h via `vi.setSystemTime`, futur, date illisible, null/undefined/espaces). Gate : `tsc --noEmit` clean.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
