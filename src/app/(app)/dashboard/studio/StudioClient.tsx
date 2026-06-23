@@ -6,6 +6,7 @@
 // impersonation concierge comprise).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   AlertTriangle,
@@ -85,9 +86,27 @@ function timeLabel(iso: string | null): string | null {
   return d.toLocaleString('fr-CH', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+// Libellés FR des métiers connus, pour la bannière du mode express.
+const BUSINESS_TYPE_LABEL: Record<string, string> = {
+  cafe: 'café',
+  restaurant: 'restaurant',
+  boulangerie: 'boulangerie',
+  boutique: 'boutique',
+  salon: 'salon',
+  sport: 'club de sport',
+  autre: 'commerce',
+};
+function sectorLabelFromType(type: string | null | undefined): string {
+  return (type && BUSINESS_TYPE_LABEL[type]) || 'commerce';
+}
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 
-export default function StudioClient() {
+// `express` (déclenché par /dashboard/studio?express=1) : vue ultra-simplifiée
+// d'onboarding — bannière + 3 essentiels (couleur, nom, récompense) + éditeur
+// complet replié sous « Personnaliser plus ». Le studio normal est intact.
+export default function StudioClient({ express = false }: { express?: boolean }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [design, setDesign] = useState<CardDesign>(DEFAULT_CARD_DESIGN);
@@ -103,6 +122,11 @@ export default function StudioClient() {
   const [sampleStamps, setSampleStamps] = useState(7);
   // Référence du dernier état persisté (brouillon ou publication) pour le dirty-tracking.
   const lastPersisted = useRef<string>(JSON.stringify(DEFAULT_CARD_DESIGN));
+  // Mode express : récompense (merchants.reward_label, hors design), repli de
+  // l'éditeur avancé, et verrou pendant la validation finale.
+  const [reward, setReward] = useState('');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,6 +160,23 @@ export default function StudioClient() {
       cancelled = true;
     };
   }, []);
+
+  // Mode express : pré-remplit la récompense depuis l'identité marchand existante.
+  useEffect(() => {
+    if (!express) return;
+    let cancelled = false;
+    fetch('/api/merchant/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { merchant?: { reward_label?: string | null } } | null) => {
+        if (!cancelled && j?.merchant?.reward_label) setReward(String(j.merchant.reward_label));
+      })
+      .catch(() => {
+        /* pas de pré-remplissage : le marchand saisit sa récompense */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [express]);
 
   const validation = useMemo(() => validateStudioDesign(design), [design]);
   const dirty = JSON.stringify(design) !== lastPersisted.current;
@@ -257,6 +298,44 @@ export default function StudioClient() {
     setFeedback({ kind: 'ok', messages: ['Retour à la version publiée. Enregistrez le brouillon pour confirmer.'] });
   };
 
+  // Mode express : « Valider et continuer ». Persiste la récompense (+ couleur
+  // principale) via /api/merchant/me, enregistre le brouillon de design, puis
+  // emmène le marchand distribuer son QR (/dashboard/card). Tenancy côté serveur.
+  const validateAndContinue = async () => {
+    setValidating(true);
+    setFeedback(null);
+    try {
+      const meRes = await fetch('/api/merchant/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reward_label: reward.trim() === '' ? null : reward.trim(),
+          primary_color: design.colors.background,
+        }),
+      });
+      if (!meRes.ok) {
+        const j = (await meRes.json().catch(() => ({}))) as { error?: string };
+        setFeedback({ kind: 'error', messages: [j.error ?? "Impossible d'enregistrer la récompense."] });
+        return;
+      }
+      const draftRes = await fetch('/api/merchant/card-design', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draft: design }),
+      });
+      if (!draftRes.ok) {
+        setFeedback({ kind: 'error', messages: ['Récompense enregistrée, mais le design n\'a pas pu être sauvegardé — réessayez.'] });
+        return;
+      }
+      lastPersisted.current = JSON.stringify(design);
+      router.push('/dashboard/card');
+    } catch {
+      setFeedback({ kind: 'error', messages: ['Erreur de connexion.'] });
+    } finally {
+      setValidating(false);
+    }
+  };
+
   // ── États globaux ───────────────────────────────────────────────────────────
 
   if (loading) {
@@ -285,6 +364,87 @@ export default function StudioClient() {
 
   return (
     <div className="space-y-6 pb-28">
+      {express && (
+        <div className="space-y-4">
+          {/* Bannière : la carte est déjà pré-remplie pour le métier. */}
+          <div className="flex items-start gap-3 rounded-3xl border border-halo/30 bg-halo/[0.06] p-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-halo text-white">
+              <Palette className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h1 className="font-display text-xl font-semibold tracking-tight text-onyx">
+                Votre carte de {sectorLabelFromType(merchant?.businessType)} est pré-remplie
+              </h1>
+              <p className="mt-0.5 text-sm text-galet-ink">
+                Vérifiez et validez les 3 essentiels — c&apos;est tout.
+              </p>
+            </div>
+          </div>
+
+          {/* 3 essentiels : couleur, nom du programme, récompense. */}
+          <div className="space-y-4 rounded-3xl border border-line-warm bg-surface p-5 shadow-sm">
+            <div>
+              <label htmlFor="oe-color" className="mb-1.5 block text-xs font-medium text-galet-ink">
+                Couleur principale
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="oe-color"
+                  type="color"
+                  value={design.colors.background}
+                  onChange={(e) => update({ colors: { ...design.colors, background: e.target.value } })}
+                  className="h-11 w-16 cursor-pointer rounded-xl border border-line-warm bg-calcaire"
+                />
+                <span className="font-mono text-sm tabular-nums text-galet-ink">{design.colors.background}</span>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="oe-program" className="mb-1.5 block text-xs font-medium text-galet-ink">
+                Nom du programme
+              </label>
+              <input
+                id="oe-program"
+                value={design.programName}
+                onChange={(e) => update({ programName: e.target.value })}
+                maxLength={60}
+                placeholder="Carte de fidélité"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet"
+              />
+            </div>
+            <div>
+              <label htmlFor="oe-reward" className="mb-1.5 block text-xs font-medium text-galet-ink">
+                Récompense
+              </label>
+              <input
+                id="oe-reward"
+                value={reward}
+                onChange={(e) => setReward(e.target.value)}
+                maxLength={80}
+                placeholder="Ex. Le 10e café offert"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet"
+              />
+              <p className="mt-1 text-[11px] text-galet">Ce que le client gagne — affiché sur sa carte.</p>
+            </div>
+          </div>
+
+          {/* Tout le reste replié : l'éditeur complet ne se monte qu'à l'ouverture. */}
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            aria-expanded={advancedOpen}
+            className="flex w-full items-center justify-between rounded-2xl border border-line-warm bg-surface px-4 py-3 text-sm font-medium text-galet-ink transition-colors hover:bg-calcaire"
+          >
+            <span className="flex items-center gap-2">
+              <LayoutTemplate className="h-4 w-4 text-halo" aria-hidden />
+              Personnaliser plus
+            </span>
+            {advancedOpen ? <Minus className="h-4 w-4" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
+          </button>
+        </div>
+      )}
+
+      {!express && (
+      <>
       {/* ── En-tête ──────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -310,7 +470,10 @@ export default function StudioClient() {
           ) : null}
         </div>
       </div>
+      </>
+      )}
 
+      {(!express || advancedOpen) && (
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)] items-start">
         {/* ── Colonne édition ──────────────────────────────────────────────── */}
         <div className="space-y-6 min-w-0">
@@ -570,8 +733,10 @@ export default function StudioClient() {
           )}
         </div>
       </div>
+      )}
 
-      {/* ── Barre d'action fixe ─────────────────────────────────────────────── */}
+      {/* ── Barre d'action fixe (studio normal) ─────────────────────────────── */}
+      {!express && (
       <div className="fixed bottom-0 left-0 right-0 lg:left-72 z-40 border-t border-line-warm bg-surface/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <div className="text-xs text-galet-ink">
@@ -619,6 +784,38 @@ export default function StudioClient() {
           </div>
         </div>
       </div>
+      )}
+
+      {/* ── Barre d'action express : un seul geste, « Valider et continuer ». ── */}
+      {express && (
+        <div className="fixed bottom-0 left-0 right-0 lg:left-72 z-40 border-t border-line-warm bg-surface/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-3xl flex-col gap-2 px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center">
+            <p
+              className={`flex-1 text-xs ${feedback?.kind === 'error' ? 'text-red-700' : 'text-galet-ink'}`}
+              role="status"
+            >
+              {feedback?.kind === 'error'
+                ? feedback.messages[0]
+                : reward.trim() === ''
+                  ? 'Indiquez la récompense pour continuer.'
+                  : 'Carte prête à distribuer.'}
+            </p>
+            <button
+              type="button"
+              onClick={validateAndContinue}
+              disabled={validating || reward.trim() === ''}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-halo px-6 py-3.5 text-base font-semibold text-white transition-all hover:bg-halo-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {validating ? (
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+              ) : (
+                <CheckCircle2 className="h-5 w-5" aria-hidden />
+              )}
+              Valider et continuer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

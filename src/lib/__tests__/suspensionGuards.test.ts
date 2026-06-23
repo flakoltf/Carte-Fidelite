@@ -10,9 +10,9 @@ import { join } from "node:path";
 
 const SRC = join(__dirname, "../..");
 
+// Points d'entrée qui consultent suspended_at DIRECTEMENT dans leur fichier.
 const SUSPENSION_AWARE_ENTRYPOINTS = [
   "app/api/scan/route.ts",
-  "app/api/redeem/route.ts",
   "app/api/enroll/route.ts",
   "app/api/enroll/[cardId]/route.ts",
   "app/api/generate-apple-pass/route.ts",
@@ -20,11 +20,31 @@ const SUSPENSION_AWARE_ENTRYPOINTS = [
   "app/c/[slug]/page.tsx",
 ];
 
+// L'encaissement « récompense » est factorisé : /api/redeem (fiche Clients) et
+// /api/scan/redeem (comptoir) délèguent au MÊME chemin partagé
+// `lib/loyalty/redeem.ts`, qui porte le garde suspended_at. On vérifie donc la
+// logique partagée + la délégation, plutôt qu'une copie du garde par route.
+const REDEEM_ROUTES = ["app/api/redeem/route.ts", "app/api/scan/redeem/route.ts"];
+
 describe("suspension administrative — étanchéité des points d'entrée", () => {
   for (const rel of SUSPENSION_AWARE_ENTRYPOINTS) {
     it(`${rel} consulte suspended_at`, () => {
       const content = readFileSync(join(SRC, rel), "utf8");
       expect(content, `${rel} ne consulte pas merchants.suspended_at`).toContain("suspended_at");
+    });
+  }
+
+  it("la logique d'encaissement partagée (lib/loyalty/redeem.ts) consulte suspended_at", () => {
+    const content = readFileSync(join(SRC, "lib/loyalty/redeem.ts"), "utf8");
+    expect(content, "lib/loyalty/redeem.ts ne consulte pas merchants.suspended_at").toContain(
+      "suspended_at",
+    );
+  });
+
+  for (const rel of REDEEM_ROUTES) {
+    it(`${rel} délègue au chemin d'encaissement gardé (redeemReward)`, () => {
+      const content = readFileSync(join(SRC, rel), "utf8");
+      expect(content, `${rel} ne délègue pas à redeemReward`).toContain("redeemReward");
     });
   }
 

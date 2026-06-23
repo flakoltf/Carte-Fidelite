@@ -8,6 +8,12 @@ export const metadata: Metadata = {
 // Studio de design de carte du marchand (Agent A). La garde d'accès est posée
 // par le layout dashboard (session + redirection admin sans impersonation) ;
 // les données passent par /api/merchant/card-design (tenant résolu serveur).
-export default function StudioPage() {
-  return <StudioClient />;
+// `?express=1` (depuis le guidage Express) bascule en vue ultra-simplifiée.
+export default async function StudioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ express?: string }>;
+}) {
+  const { express } = await searchParams;
+  return <StudioClient express={express === '1'} />;
 }

@@ -30,6 +30,7 @@ import { HaloSymbol } from "@/components/halo/HaloMark";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
 import QrPosterButton from "@/components/halo/QrPosterButton";
 import type { OnboardingState } from "@/lib/signup/state";
+import type { SectorDraft } from "@/lib/onboarding/sectorSelection";
 import {
   SECTOR_CHOICES,
   PLAN_CHOICES,
@@ -102,9 +103,12 @@ function ErrorBox({ message }: { message: string }) {
 export default function OnboardingClient({
   initialState,
   welcome,
+  sectorDraft = null,
 }: {
   initialState: OnboardingState;
   welcome: boolean;
+  /** Pré-remplissage issu de l'étape 0 « Quel commerce ? » (récompense + couleurs). */
+  sectorDraft?: SectorDraft | null;
 }) {
   const [step, setStep] = useState<OnboardingStep>(initialState.step);
   const [error, setError] = useState("");
@@ -122,6 +126,11 @@ export default function OnboardingClient({
 
   // Étape programme
   const preset = useMemo(() => sectorPreset(businessType), [businessType]);
+  // « Points par montant » : programme déjà configuré par l'étape 0 (secteur
+  // restaurant/boutique). Le wizard ne propose ici que tampons/visites — on
+  // affiche donc un récapitulatif en lecture seule et on NE ré-enregistre PAS
+  // (sinon on écraserait la config amount_points par un stamp_card).
+  const isAmountPoints = initialState.loyaltyType === "amount_points";
   const [programType, setProgramType] = useState<"stamp_card" | "visit_based">(
     initialState.loyaltyType === "visit_based" ? "visit_based" : "stamp_card"
   );
@@ -198,6 +207,11 @@ export default function OnboardingClient({
 
   async function saveProgram(e: React.FormEvent) {
     e.preventDefault();
+    // amount_points : déjà persisté à l'étape 0, le wizard ne le ré-enregistre pas.
+    if (isAmountPoints) {
+      goTo("design");
+      return;
+    }
     setSaving(true);
     setError("");
     const body =
@@ -478,6 +492,30 @@ export default function OnboardingClient({
                 </p>
               </div>
 
+              {/* Étape 0 « Quel commerce ? » — raccourci de pré-remplissage (additif). */}
+              {sectorDraft ? (
+                <p className="flex items-center gap-2 rounded-2xl border border-halo/30 bg-halo/[0.05] p-3.5 text-sm text-galet-ink">
+                  <Sparkles className="h-4 w-4 shrink-0 text-halo" aria-hidden />
+                  <span>
+                    Programme et couleurs pré-remplis pour votre secteur —{" "}
+                    <span className="font-medium text-onyx">{sectorDraft.rewardLabel.toLowerCase()}</span>.
+                    Tout reste modifiable. <Link href="/onboarding/secteur" className="text-halo underline-offset-2 hover:underline">Changer de secteur</Link>
+                  </span>
+                </p>
+              ) : (
+                <Link
+                  href="/onboarding/secteur"
+                  className="flex items-center gap-2 rounded-2xl border border-halo/30 bg-halo/[0.05] p-3.5 text-sm text-galet-ink transition-colors hover:border-halo"
+                >
+                  <Wand2 className="h-4 w-4 shrink-0 text-halo" aria-hidden />
+                  <span className="flex-1">
+                    <span className="font-medium text-onyx">Gagnez du temps :</span> choisissez votre type de
+                    commerce et tout se pré-remplit.
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-halo" aria-hidden />
+                </Link>
+              )}
+
               <div className="space-y-2">
                 <label htmlFor="shopName" className="ml-1 text-sm font-medium text-galet-ink">
                   Nom du commerce
@@ -559,6 +597,34 @@ export default function OnboardingClient({
                 <p className="text-xs text-galet-ink">{preset.programHint}</p>
               </div>
 
+              {sectorDraft && !isAmountPoints && (
+                <p className="rounded-2xl border border-halo/30 bg-halo/[0.05] p-3.5 text-sm text-galet-ink">
+                  <span className="font-medium text-onyx">Récompense suggérée :</span>{" "}
+                  {sectorDraft.rewardLabel}. À ajuster à votre convenance ci-dessous.
+                </p>
+              )}
+
+              {isAmountPoints && (
+                <div className="space-y-2 rounded-2xl border border-halo/30 bg-halo/[0.05] p-4 text-sm leading-relaxed text-galet-ink">
+                  <span className="flex items-center gap-2 font-semibold text-onyx">
+                    <Sparkles className="h-4 w-4 text-halo" aria-hidden /> Programme « points par montant »
+                  </span>
+                  <p>
+                    Vos clients cumulent <span className="font-medium text-onyx">1 point par franc dépensé</span>
+                    {sectorDraft ? (
+                      <>
+                        {" "}et reçoivent{" "}
+                        <span className="font-medium text-onyx">{sectorDraft.rewardLabel.toLowerCase()}</span>
+                      </>
+                    ) : null}
+                    . Le réglage fin (points par franc, seuil, récompense) se peaufine dans le studio — c&apos;est déjà
+                    prêt pour votre secteur.
+                  </p>
+                </div>
+              )}
+
+              {!isAmountPoints && (
+                <>
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -642,6 +708,8 @@ export default function OnboardingClient({
                   </p>
                 </div>
               )}
+                </>
+              )}
 
               <ErrorBox message={error} />
 
@@ -668,6 +736,34 @@ export default function OnboardingClient({
                   avec aperçu Apple Wallet et Google Wallet en direct. Couleurs, logo, tampons : tout se règle en quelques clics.
                 </p>
               </div>
+
+              {sectorDraft && (
+                <div className="flex items-center gap-3 rounded-2xl border border-line-warm bg-calcaire p-3.5">
+                  <span
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl shadow-sm"
+                    style={{ backgroundColor: sectorDraft.palette.background, color: sectorDraft.palette.foreground }}
+                    aria-hidden
+                  >
+                    {sectorDraft.stampIcon ?? "★"}
+                  </span>
+                  <div className="flex-1 text-xs text-galet-ink">
+                    <span className="font-medium text-onyx">Couleurs suggérées pour votre secteur</span> — un
+                    point de départ que vous pouvez garder ou changer dans le studio.
+                    <span className="mt-1.5 flex items-center gap-1.5">
+                      {[sectorDraft.palette.background, sectorDraft.palette.label, sectorDraft.palette.foreground].map(
+                        (c) => (
+                          <span
+                            key={c}
+                            className="h-4 w-4 rounded-full border border-line-warm"
+                            style={{ backgroundColor: c }}
+                            aria-hidden
+                          />
+                        ),
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-2xl border border-halo/30 bg-halo/[0.05] p-4 text-sm text-galet-ink">
                 {designPublished ? (
@@ -822,8 +918,17 @@ export default function OnboardingClient({
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-halo" aria-hidden /> {shopName || initialState.shopName} — {preset.label.toLowerCase()}</li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-halo" aria-hidden />
-                  {programType === "stamp_card" ? `Carte à tampons — récompense au ${goal}e passage` : `Paliers de visites — ${milestonesText}`}
+                  {isAmountPoints
+                    ? "Carte à points — 1 point par franc dépensé"
+                    : programType === "stamp_card"
+                      ? `Carte à tampons — récompense au ${goal}e passage`
+                      : `Paliers de visites — ${milestonesText}`}
                 </li>
+                {sectorDraft && (
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-halo" aria-hidden /> Récompense : {sectorDraft.rewardLabel}
+                  </li>
+                )}
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-halo" aria-hidden /> Palier {PLAN_CHOICES.find((p) => p.key === plan)?.label} ({cycle === "annual" ? "annuel, 2 mois offerts" : "mensuel"})</li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-halo" aria-hidden />

@@ -29,6 +29,19 @@
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
   --color-galet-ink: #6E7073;
+  /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
+     --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
+     Scanner, plein écran « Offrir la récompense ». Ce n'est PAS la couleur
+     de marque (qui reste le teal --color-halo). */
+  --color-gold: #E8B964;
+  --color-gold-deep: #C9952F;
+  --color-gold-soft: #F4D9A0;
+}
+
+/* Dégradé doré plein écran de l'encaissement récompense (U2). Exposé en :root
+   pour un usage direct `background: var(--color-gold-grad)`. */
+:root {
+  --color-gold-grad: linear-gradient(160deg, #F4D9A0 0%, #E8B964 45%, #C9952F 100%);
 }
 
 @media (prefers-color-scheme: dark) {

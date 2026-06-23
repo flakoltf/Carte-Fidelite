@@ -68,6 +68,7 @@ export default async function MerchantCommandCenter({ params }: { params: Promis
   });
   const milestones = program.type === "visit_based" ? program.config.milestones : [];
   const tiers = program.type === "tiered" ? program.config.tiers : [];
+  const amountPoints = program.type === "amount_points" ? program.config : null;
 
   const h = await headers();
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
@@ -318,6 +319,7 @@ export default async function MerchantCommandCenter({ params }: { params: Promis
             loyaltyType: program.type,
             milestones,
             tiers,
+            amountPoints,
           }}
         />
 

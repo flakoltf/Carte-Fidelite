@@ -13,7 +13,7 @@ export function resolveLoyaltyProgram(row: MerchantProgramRow | null): LoyaltyPr
   const fallback: LoyaltyProgram = { type: "stamp_card", config: { goal } };
 
   const type = row?.loyalty_type;
-  if (type === "visit_based" || type === "tiered") {
+  if (type === "visit_based" || type === "tiered" || type === "amount_points") {
     const v = validateLoyaltyProgram(type, row?.loyalty_config);
     return v.ok ? v.program : fallback;
   }
