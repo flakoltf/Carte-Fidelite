@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { logAuditEvent } from "@/lib/auditLog";
 import { ensureMerchantProvisioned } from "@/lib/signup/provision";
 import { fetchOnboardingState } from "@/lib/signup/state";
+import { SECTOR_DRAFT_COOKIE, parseSectorDraft } from "@/lib/onboarding/sectorSelection";
 import OnboardingClient from "./OnboardingClient";
 
 export const metadata: Metadata = {
@@ -75,5 +77,15 @@ export default async function OnboardingPage({
   if (state.completedAt) redirect("/dashboard");
 
   const params = await searchParams;
-  return <OnboardingClient initialState={state} welcome={params.bienvenue === "1"} />;
+  // Brouillon posé par l'étape 0 « Quel commerce ? » (cookie HTTP-only) — sert à
+  // suggérer récompense + couleurs ; la mécanique, elle, est déjà dans `state`.
+  const store = await cookies();
+  const sectorDraft = parseSectorDraft(store.get(SECTOR_DRAFT_COOKIE)?.value);
+  return (
+    <OnboardingClient
+      initialState={state}
+      welcome={params.bienvenue === "1"}
+      sectorDraft={sectorDraft}
+    />
+  );
 }

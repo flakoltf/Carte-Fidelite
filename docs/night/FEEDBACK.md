@@ -146,4 +146,45 @@
 - **Garde-fous respectés :** scan via RPC atomique (jamais de read-modify-write) · tenancy (ownership `card.merchant_id === merchant.id`) vérifiée AVANT la RPC · migrations NON appliquées en prod (repo seulement) · 0 push `main` · 0 push `integration` (uniquement `agent/mecanique-points`).
 - **Reste (optionnel, hors périmètre M1→M6) :** brancher l'`<AmountPad>` d'UX-COMPTOIR sur l'endpoint (prêt) ; appliquer en prod via Supabase MCP, avec accord CHEF, les 2 migrations `20260618_amount_points.sql` + `20260618_scan_increment_amount.sql`.
 - Attente : revue CHEF. Je m'arrête proprement.
+---
+## 2026-06-18T12:30:08Z [TEMPLATES-SECTEUR] T2+T3 DONE @152fc76
+- Verdict tests : **854/854 verts** (`npx vitest run`, 113 fichiers) · `npx tsc --noEmit` clean · `eslint` clean sur les fichiers touchés.
+- Branche rebasée sur `origin/integration/overnight-2026-06-18` (pour CSP + Studio #33 + docs/night) avant de coder ; force-push de la nouvelle base.
+- **T2 — étape 0 « Quel commerce ? » (additive, non destructive)** :
+  - `src/app/(app)/onboarding/secteur/page.tsx` (server, gardée) + `SectorPicker.tsx` (grille 8 secteurs, 2×4 mobile / 4×2 desktop, emoji XL + phrase mécanique) + « Personnaliser plus tard » (flow vierge).
+  - `actions.ts` : Server Action `selectSector` → `getTemplate` → patch mécanique sur `merchants` borné `.eq("id", merchantId)` (tenancy OK) + brouillon (récompense/palette/icône) en **cookie HTTP-only** (pas de migration : colonne `onboarding_draft` inexistante). Audit `MERCHANT_UPDATED` **existant** → aucune nouvelle AuditAction. `skipSector` efface le brouillon.
+  - `src/lib/onboarding/sectorSelection.ts` : logique pure (buildSectorSelection + (de)sérialisation), action mince.
+  - Wizard branché pour LIRE : la mécanique pré-coche l'étape « programme » via les colonnes lues par `fetchOnboardingState` ; récompense + couleurs suggérées affichées aux étapes programme / design / mise en ligne. Tout reste éditable.
+- **T3 — couverture étendue** : mapping métier→secteur, paliers tiered/visit_based croissants, palettes `#RRGGBB`, `toLoyaltyProgram` validé pour les 8 ; tests purs `sectorSelection` ; tests Server Action (tenancy `.eq("id")`, cookie HTTP-only, erreurs typées secteur inconnu / session / échec DB sans écriture, `skipSector`).
+- **Fichiers** :
+  - `src/lib/onboarding/sectorSelection.ts` (+ `__tests__/sectorSelection.test.ts`)
+  - `src/app/(app)/onboarding/secteur/{page,SectorPicker,actions}.{tsx,ts}` (+ `__tests__/actions.test.ts`)
+  - `src/app/(app)/onboarding/{page.tsx,OnboardingClient.tsx}` (modifs additives)
+  - `src/lib/loyalty/__tests__/templates.test.ts` (étendu)
+- **Invariants** : tenancy `.eq("id")` posé · 0 nouvelle AuditAction (réutilise `MERCHANT_UPDATED`) · 0 migration · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
+- **T4** : en attente du signal `M-POINTS M1 DONE @<sha>` dans STATUS.md (réintégration `amount_points` pour `restaurant` + `retail`).
+
+---
+
+## 2026-06-18T12:38:48Z [TEMPLATES-SECTEUR] T4 DONE @5ddd4d0
+- Déclencheur : M-POINTS a poussé **M1 DONE @ed8144f** sur `agent/mecanique-points` (`amount_points` bout en bout : type + `AmountPointsConfig` + validate + engine). La branche d'intégration n'avait pas encore re-synchronisé STATUS.md, mais le contrat (« dès que M-POINTS a poussé M1 sur `agent/mecanique-points` ») était rempli → GO T4.
+- **Rebase** : `agent/templates-secteur` rebasée sur `origin/agent/mecanique-points` (1 conflit, `docs/night/FEEDBACK.md` append concurrent → résolu en gardant les deux entrées). Verdict : `tsc --noEmit` clean · `eslint` clean · `vitest run` **881/881** (114 fichiers).
+- **Réintégration `amount_points`** (mapping CHEF 12:18Z) :
+  - `restaurant` → `amount_points` { pointsPerChf 1, rewardThreshold 200, rewardLabel « CHF 20 offerts » }, `cardType: "points"`.
+  - `retail` → `amount_points` { pointsPerChf 1, rewardThreshold 500, rewardLabel « CHF 50 offerts » }, `cardType: "points"`.
+  - Union `LoyaltyTemplate` + 4e variante, `TEMPLATE_LOYALTY_TYPES` complété, commentaire d'invariant mis à jour. Les 6 autres secteurs inchangés.
+- **⚠️ Couture corrigée (sinon régression silencieuse de mon propre T2)** : le wizard `OnboardingClient` ne gère à l'UI que tampons/visites. Pour un secteur `amount_points` choisi à l'étape 0, l'étape « programme » serait retombée sur `stamp_card` par défaut et **aurait écrasé** la config `amount_points` au clic « Continuer ». Corrigé : étape programme en **lecture seule** pour `amount_points` (récap « 1 pt/CHF », pas de ré-`PATCH /api/onboarding/program`) ; résumé de mise en ligne ajusté. L'UI de réglage fin `amount_points` (studio / route `/api/scan`) reste hors de mon périmètre — signalée par M-POINTS comme M3+.
+- **Fichiers T4** : `src/lib/loyalty/templates.ts` · `OnboardingClient.tsx` · `src/lib/loyalty/__tests__/templates.test.ts` · `src/lib/onboarding/__tests__/sectorSelection.test.ts` · `src/app/(app)/onboarding/secteur/__tests__/actions.test.ts`.
+- **Invariants** : 0 nouvelle AuditAction · 0 migration ajoutée par moi · TS strict sans `any` · vouvoiement FR / HALO · 0 push sur `main`/`integration`.
+- **Note d'intégration** : ma branche embarque désormais les commits M1+M2 de `agent/mecanique-points` comme ancêtres (point de couture assumé). À l'Orchestrateur d'ordonner le merge (M-POINTS puis Templates, ou les deux ensemble).
+
+---
+
+## 2026-06-18T12:44:15Z [TEMPLATES-SECTEUR] T4 finalisé @016aa80
+- Suite au prompt CHEF (libellés canoniques + demande explicite d'éditer STATUS.md), deux ajustements sur le T4 déjà livré (@5ddd4d0) :
+  1. `defaultProgramName` alignés sur le wording canonique : restaurant « 1 point par franc, CHF 20 offerts à 200 pts », retail « 1 point par franc, CHF 50 offerts à 500 pts ». (config/rewardLabel/union/`TEMPLATE_LOYALTY_TYPES` inchangés, déjà conformes.)
+  2. `docs/night/STATUS.md` mis à jour (ligne TEMPLATES-SECTEUR + section) : **T4 DONE @016aa80**.
+- Test crucial demandé (T4.2) déjà présent : `validateLoyaltyProgram(t.loyaltyType, t.config).ok === true` pour les 8 secteurs (import depuis `../validate`) + vérifs spécifiques restaurant/retail (type `amount_points`, 200/500).
+- Gate : `tsc --noEmit` clean · `vitest run` vert (881 au total ; sous-ensemble loyalty/onboarding 194/194 après l'ajustement de wording).
+- **Backlog TEMPLATES-SECTEUR (T1→T4) terminé.** Rien sur `main`/`integration`.
 

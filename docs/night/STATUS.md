@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | INTEGRATEUR | `integration/overnight-2026-06-18` | `742106f` | PASS (Orchestrateur + CHEF) | DONE @742106f |
 | UX-COMPTOIR | `agent/ux-comptoir` | `712dd08` | **PASS (CHEF)** U1+U2+U3+U4 | **GO U5** — intégration finale + extension `rewardsDue` amount_points |
-| TEMPLATES-SECTEUR | `agent/templates-secteur` | `402bff6` | **PASS (CHEF)** T1+T2+T3 | **GO T4** — M-POINTS M1 poussé, réintégrer `amount_points` (restaurant + retail) |
+| TEMPLATES-SECTEUR | `agent/templates-secteur` | `016aa80` | **T1–T4 DONE** (T2+T3 PASS CHEF) — amount_points restaurant+retail | T4 DONE @016aa80 |
 | MECANIQUE-POINTS | `agent/mecanique-points` | `f139716` | **M1→M6 DONE — amount_points complet (gate vert 820/820 ; PASS CHEF M1+M2)** | terminé |
 
 ## INTEGRATEUR
@@ -35,6 +35,8 @@
 - **CHEF 2026-06-18T12:18Z** : T1 PASS @b882d90. Code propre, 38 tests, typage strict. Décision défensive sur `amount_points` validée (le moteur ne le connaît pas encore). Mapping ajusté ajouté au BACKLOG en **T4 conditionnel** (réintégration `amount_points` pour `restaurant` + `retail` dès que M-POINTS aura poussé M1).
 - **Action immédiate** : T2 (étape onboarding "Quel commerce ?") + T3 (étendre tests aux paliers tiered/visit_based + validateLoyaltyProgram).
 - **CHEF 2026-06-18T13:00Z** : ✅ **T2+T3 PASS @402bff6**. 854/854 verts. Étape `secteur` non destructive ajoutée. **GO T4** — M-POINTS M1 est poussé (@ed8144f), `amount_points` est désormais accepté par `validate.ts`. Réintégrer `amount_points` : `restaurant` (1 pt/CHF, seuil 200, "CHF 20 offerts"), `retail` (1 pt/CHF, seuil 500, "CHF 50 offerts").
+- **T2+T3 DONE @402bff6** — PASS CHEF (854/854). Étape 0 `/onboarding/secteur` (grille 8 secteurs, Server Action `selectSector` tenancy-safe + cookie HTTP-only, wizard pré-rempli), couverture tests étendue.
+- **T4 DONE @016aa80** — branche rebasée sur `agent/mecanique-points` (moteur `amount_points`). `restaurant` (1 pt/CHF, seuil 200, « CHF 20 offerts ») et `retail` (1 pt/CHF, seuil 500, « CHF 50 offerts ») en `amount_points`/`cardType "points"` ; union + `TEMPLATE_LOYALTY_TYPES` étendus ; anti-clobber wizard (étape programme en lecture seule pour amount_points). Gate : `tsc` clean · `eslint` clean · `vitest` **881/881**. Test crucial présent : `validateLoyaltyProgram(loyaltyType, config).ok` vrai pour les 8 secteurs. **Backlog TEMPLATES-SECTEUR terminé.**
 
 ## MECANIQUE-POINTS
 - **CHEF 2026-06-18T12:22Z** : **GO M1**. I2 atteint, base saine 779/779. Démarrer sur worktree dédié, branche basée sur `integration/overnight-2026-06-18` (PAS sur `main`). Notifier dans STATUS.md dès que M1 poussé → débloque T4 de Templates.
