@@ -1,0 +1,101 @@
+name: E2E
+
+# Filet de sécurité avant la prod : parcours marchand COMPTOIR bout en bout
+# (Playwright, viewport mobile). Le scan/redeem est mocké (aucune écriture en
+# prod) ; le login utilise le compte démo « Café du Rhône » via des secrets.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ["integration/overnight-*"]
+
+# Annule les runs obsolètes d'une même branche/PR.
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Sans les secrets E2E (compte démo + Supabase), le login ne peut pas
+      # aboutir : on ignore alors l'étape proprement (job vert, non bloquant)
+      # plutôt que d'échouer. Configurez les secrets pour activer le filet.
+      - name: Vérifie la présence des secrets E2E
+        id: guard
+        env:
+          E2E_MERCHANT_PASSWORD: ${{ secrets.E2E_MERCHANT_PASSWORD }}
+        run: |
+          if [ -z "$E2E_MERCHANT_PASSWORD" ]; then
+            echo "::warning::Secrets E2E absents (E2E_MERCHANT_PASSWORD) — tests E2E ignorés."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Install déterministe depuis le lock (versions figées → pas de dérive).
+      - name: Install dependencies
+        if: steps.guard.outputs.run == 'true'
+        run: npm ci
+
+      # Bug npm/cli#4828 : un package-lock.json généré sur macOS ne référence pas
+      # les binaires natifs Linux (@next/swc, lightningcss, oxide, @unrs…) → ils
+      # manquent après `npm ci`. On les ajoute aux versions DÉJÀ figées dans le
+      # lock (liste dérivée du lock, donc auto-maintenue). Indispensable pour que
+      # `next dev` démarre sur le runner. cf. ci.yml.
+      - name: Ajoute les binaires natifs Linux manquants (npm/cli#4828)
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          PKGS=$(node -e 'const l=require("./package-lock.json").packages;const out=[];for(const k of Object.keys(l)){if(!k.endsWith("-darwin-arm64"))continue;const base=k.slice("node_modules/".length,-"-darwin-arm64".length);out.push((base.startsWith("@img/sharp")?base+"-linux-x64":base+"-linux-x64-gnu")+"@"+l[k].version);}process.stdout.write(out.join(" "));')
+          echo "Binaires Linux ajoutés : $PKGS"
+          npm install --no-save --no-audit --no-fund $PKGS
+
+      # Cache des navigateurs Playwright (clé liée à la version installée via le
+      # lock) → pas de re-téléchargement à chaque run.
+      - name: Cache navigateurs Playwright
+        if: steps.guard.outputs.run == 'true'
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      # `install` réutilise le binaire en cache s'il est présent ; `--with-deps`
+      # pose les libs système (rapide même au cache hit).
+      - name: Install Playwright (chromium + deps système)
+        if: steps.guard.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Playwright démarre lui-même `npm run dev` (avec NEXT_PUBLIC_E2E=1, posé par
+      # webServer.env). Le dev se connecte à la prod Supabase EN LECTURE (login +
+      # chargement des pages) ; scan/redeem sont mockés → zéro écriture loyalty.
+      - name: Tests E2E (Playwright)
+        if: steps.guard.outputs.run == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          QR_SIGNATURE_SECRET: ${{ secrets.QR_SIGNATURE_SECRET }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          E2E_MERCHANT_EMAIL: ${{ secrets.E2E_MERCHANT_EMAIL }}
+          E2E_MERCHANT_PASSWORD: ${{ secrets.E2E_MERCHANT_PASSWORD }}
+        run: npx playwright test
+
+      # Trace + rapport HTML uniquement en cas d'échec (diagnostic du flake/bug).
+      - name: Upload rapport + traces (échec)
+        if: ${{ failure() && steps.guard.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
