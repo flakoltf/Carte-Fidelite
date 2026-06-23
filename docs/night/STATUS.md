@@ -71,5 +71,8 @@
 
 - **UXP-4 DONE** — `ComptoirHome` : `<Link href="/dashboard/scan" prefetch>` (route **dynamique** → le défaut `auto` ne préfetchait que jusqu'à la 1re frontière `loading` ; `prefetch` force le préfetch complet route+données ; actif en prod uniquement). Nouveau composant client `ScanBundlePreloader` (rend `null`) qui `import("html5-qrcode")` au montage pour préchauffer le bundle caméra (~80 Ko min+gz). Gain attendu documenté : ~150–400 ms de moins entre le tap et l'ouverture caméra. Test ComptoirHome étendu (assertion prefetch + mock html5-qrcode hermétique). Gate : tsc clean.
 
+- **UXP-5 DONE** — `/dashboard/full` épuré quand `cardsCount > 0 && scansCount > 0` (« opérationnel ») : `StartupChecklist` et `DashboardPresetChooser` masqués, `UsageGauge` + `AnalyticsGrid` (forcé pour les comptes opérationnels) + `ActivityFeed` conservés. Compte non opérationnel (nouveau) : checklist + preset intacts. Logique de gating pure, aucun appel réseau ajouté.
+- **UXP-1→5 DONE.** Gate final : `tsc --noEmit` clean · `vitest run` **952/952** (125 fichiers, +10 tests). Aucune nouvelle `AuditAction`, aucune route API touchée, aucun `any`, Server Components préservés. Branche `agent/ux-polish` poussée.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_
