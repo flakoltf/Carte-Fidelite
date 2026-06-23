@@ -69,5 +69,7 @@
 
 - **UXP-3 DONE** — `ComptoirScan` mode **scan continu** : un crédit simple (`mode "added"`) relance la caméra tout seul après **1,5 s** (zéro tap entre 2 clients), le toast de confirmation (`role="status"`, slide-in 200 ms, en haut) restant affiché. Bouton « scan suivant » obligatoire supprimé → remplacé par un « Scanner maintenant » facultatif (raccourci). `reward` (tap OFFRIR) et `error` (tap Réessayer) **inchangés**. Test `comptoirScan.scanContinu.test.tsx` (toast + absence de bouton obligatoire + auto-restart à 1,5 s). Gate : tsc clean.
 
+- **UXP-4 DONE** — `ComptoirHome` : `<Link href="/dashboard/scan" prefetch>` (route **dynamique** → le défaut `auto` ne préfetchait que jusqu'à la 1re frontière `loading` ; `prefetch` force le préfetch complet route+données ; actif en prod uniquement). Nouveau composant client `ScanBundlePreloader` (rend `null`) qui `import("html5-qrcode")` au montage pour préchauffer le bundle caméra (~80 Ko min+gz). Gain attendu documenté : ~150–400 ms de moins entre le tap et l'ouverture caméra. Test ComptoirHome étendu (assertion prefetch + mock html5-qrcode hermétique). Gate : tsc clean.
+
 ## BLOQUEUR-FONDATEUR
 - _(aucun pour l'instant)_

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 import StatTrio from "./StatTrio";
 import ConnectionStatus from "./ConnectionStatus";
+import ScanBundlePreloader from "./ScanBundlePreloader";
 
 export interface ComptoirHomeProps {
   shopName: string;
@@ -18,6 +19,8 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1" }: Comp
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-calcaire text-onyx">
+      {/* UXP-4 : précharge le bundle caméra dès l'arrivée (rend null). */}
+      <ScanBundlePreloader />
       {/* En-tête (~10%) : identité marchand + accès discret au tableau complet. */}
       <header className="flex h-[10%] min-h-14 items-center justify-between px-5">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -58,6 +61,11 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1" }: Comp
       <section className="flex h-[50%] items-center justify-center px-5 pb-2">
         <Link
           href="/dashboard/scan"
+          // UXP-4 : /dashboard/scan est une route dynamique → le défaut `auto`
+          // ne préfetche que jusqu'à la 1re frontière `loading`. `prefetch`
+          // force le préfetch COMPLET (route + données) dès que le bouton entre
+          // dans le viewport. NB : le préfetch Next n'est actif qu'en production.
+          prefetch
           role="button"
           aria-label="Scanner une carte"
           className="group flex h-24 w-3/5 min-w-[260px] items-center justify-center rounded-[28px] bg-halo text-center text-2xl font-extrabold tracking-tight text-white shadow-lg shadow-halo/25 transition-all duration-150 hover:bg-halo-600 active:scale-[0.98] active:shadow-[0_0_0_8px_var(--color-gold-soft),0_18px_40px_-12px_var(--color-gold)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold"

@@ -4,10 +4,19 @@ import { render, screen, cleanup } from "@testing-library/react";
 import type { ReactNode } from "react";
 import ComptoirHome from "../ComptoirHome";
 
-// next/link → simple <a> en test (pas de routeur App nécessaire).
+// next/link → simple <a> ; `prefetch` exposé en data-attr pour l'assertion UXP-4.
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
-    <a href={href} {...rest}>
+  default: ({
+    href,
+    children,
+    prefetch,
+    ...rest
+  }: {
+    href: string;
+    children: ReactNode;
+    prefetch?: boolean;
+  }) => (
+    <a href={href} data-prefetch={prefetch ? "true" : undefined} {...rest}>
       {children}
     </a>
   ),
@@ -15,6 +24,10 @@ vi.mock("next/link", () => ({
 
 // StatTrio est testé séparément ; on l'isole pour ne pas charger la Server Action.
 vi.mock("../StatTrio", () => ({ default: () => <div data-testid="stat-trio" /> }));
+
+// html5-qrcode : le préchargeur (UXP-4) en fait un import() ; on le stub pour
+// garder le test hermétique (pas de chargement réel de la lib caméra).
+vi.mock("html5-qrcode", () => ({ Html5Qrcode: class {} }));
 
 describe("<ComptoirHome>", () => {
   afterEach(cleanup);
@@ -35,6 +48,12 @@ describe("<ComptoirHome>", () => {
     render(<ComptoirHome shopName="Café du Rhône" />);
     const scan = screen.getByRole("button", { name: /scanner une carte/i });
     expect(scan.getAttribute("href")).toBe("/dashboard/scan");
+  });
+
+  it("le bouton Scanner force le prefetch de /dashboard/scan (UXP-4)", () => {
+    render(<ComptoirHome shopName="Café du Rhône" />);
+    const scan = screen.getByRole("button", { name: /scanner une carte/i });
+    expect(scan.getAttribute("data-prefetch")).toBe("true");
   });
 
   it("le libellé du bouton est en français", () => {
