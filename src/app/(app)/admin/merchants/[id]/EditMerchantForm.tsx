@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Store, RefreshCw, Check, AlertCircle, Plus, Trash2 } from "lucide-react";
+import type { LoyaltyType } from "@/lib/loyalty/types";
 
 const BUSINESS_OPTIONS = ["cafe", "restaurant", "boulangerie", "boutique", "salon", "sport", "autre"];
-
-type LoyaltyType = "stamp_card" | "visit_based" | "tiered";
 
 interface Props {
   merchant: {
@@ -22,8 +21,14 @@ interface Props {
     loyaltyType: LoyaltyType;
     milestones: number[];
     tiers: { name: string; at: number }[];
+    // amount_points (BETA) : config existante si le marchand est déjà sur ce type.
+    amountPoints?: { pointsPerChf: number; rewardThreshold: number; rewardLabel: string } | null;
   };
 }
+
+// Option « points par CHF » exposée dans l'UI uniquement en beta (flag) — mais le
+// SERVEUR la gère toujours : un compte déjà configuré ne casse pas si le flag tombe.
+const POINTS_BETA = process.env.NEXT_PUBLIC_POINTS_BETA === "1";
 
 export default function EditMerchantForm({ merchant }: Props) {
   const router = useRouter();
@@ -36,6 +41,10 @@ export default function EditMerchantForm({ merchant }: Props) {
   const [tiers, setTiers] = useState<{ name: string; at: number }[]>(
     merchant.tiers.length ? merchant.tiers : [{ name: "", at: 1 }]
   );
+  // amount_points (BETA) : prérempli depuis la config existante, sinon valeurs par défaut.
+  const [pointsPerChf, setPointsPerChf] = useState(merchant.amountPoints?.pointsPerChf ?? 1);
+  const [rewardThreshold, setRewardThreshold] = useState(merchant.amountPoints?.rewardThreshold ?? 200);
+  const [rewardLabel, setRewardLabel] = useState(merchant.amountPoints?.rewardLabel ?? "CHF 20 offerts");
   const [scanCooldownSeconds, setScanCooldownSeconds] = useState(merchant.scanCooldownSeconds);
   const [businessType, setBusinessType] = useState(merchant.businessType);
   const [activeDays, setActiveDays] = useState(merchant.thresholds.activeDays);
@@ -64,6 +73,13 @@ export default function EditMerchantForm({ merchant }: Props) {
       loyaltyConfig = { milestones };
     } else if (loyaltyType === "tiered") {
       loyaltyConfig = { tiers: tiers.map((t) => ({ name: t.name.trim(), at: Number(t.at) })) };
+    } else if (loyaltyType === "amount_points") {
+      // La validation serveur (validateLoyaltyProgram) fait foi sur les bornes.
+      loyaltyConfig = {
+        pointsPerChf: Number(pointsPerChf),
+        rewardThreshold: Number(rewardThreshold),
+        rewardLabel: rewardLabel.trim(),
+      };
     } else {
       loyaltyConfig = { goal: stampGoal };
     }
@@ -165,13 +181,39 @@ export default function EditMerchantForm({ merchant }: Props) {
           <option value="stamp_card">Carte à tampons (objectif)</option>
           <option value="visit_based">Paliers de visites (récompenses successives)</option>
           <option value="tiered">Niveaux de fidélité (statuts)</option>
+          {/* Beta : visible si flag activé, OU si le compte est déjà sur ce type
+              (pour ne jamais masquer une config existante). */}
+          {(POINTS_BETA || loyaltyType === "amount_points") && (
+            <option value="amount_points">Points par CHF dépensés (BETA)</option>
+          )}
         </select>
         <p className="text-xs text-galet ml-1">
           {loyaltyType === "stamp_card" && "Cyclique : la carte se remplit jusqu'à l'objectif, puis se remet à zéro à l'encaissement."}
           {loyaltyType === "visit_based" && "Cumulatif : une récompense est offerte à chaque palier de visites atteint, sans remise à zéro."}
           {loyaltyType === "tiered" && "Cumulatif : le client gagne des niveaux permanents selon ses visites (pas d'encaissement)."}
+          {loyaltyType === "amount_points" && "Cumulatif : chaque encaissement crédite des points au prorata du montant dépensé ; récompense au seuil de points."}
         </p>
       </div>
+
+      {loyaltyType === "amount_points" && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-galet-ink ml-1">Points par franc dépensé</label>
+            <input type="number" min={0} step="0.1" value={pointsPerChf}
+              onChange={(e) => setPointsPerChf(Number(e.target.value))} className={numInput} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-galet-ink ml-1">Seuil de récompense (points)</label>
+            <input type="number" min={1} value={rewardThreshold}
+              onChange={(e) => setRewardThreshold(Number(e.target.value))} className={numInput} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-galet-ink ml-1">Libellé de la récompense</label>
+            <input value={rewardLabel} maxLength={80} placeholder="Ex : CHF 20 offerts"
+              onChange={(e) => setRewardLabel(e.target.value)} className={numInput} />
+          </div>
+        </div>
+      )}
 
       {loyaltyType === "stamp_card" && (
         <div className="space-y-2">

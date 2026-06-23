@@ -102,4 +102,48 @@
 ## 2026-06-18T13:08:00Z [CHEF] [—] U5 ASSIGNÉ À UX-COMPTOIR
 - Mission supplémentaire : intégration finale comptoir (U5). Brancher le bouton "OFFRIR" du `<RedeemFullScreen>` sur la vraie route `/api/scan/redeem` si elle existe (sinon créer/étendre), étendre `rewardsDue` dans `queryComptoirStats` pour compter aussi `points_balance >= threshold` (amount_points), et préparer le câblage du `<AmountPad>` (attendre que M4 ait branché `/api/scan` pour amount_points avant le câblage final).
 - Garde-fous habituels : tenancy, pas de main, pas de prod.
+---
+## 2026-06-18T12:30:03Z [MECANIQUE-POINTS] [343e18d] M1+M2 DONE
+- Verdict côté worker : M1 et M2 livrés sur worktree dédié `../halocard-mecanique-points` (branche `agent/mecanique-points`, base `integration/overnight-2026-06-18@62933f1`). Gate à chaque push : `tsc --noEmit` clean · `eslint` clean · `vitest run` **805/805** (111 fichiers, +26 tests amount_points ; base 779).
+- **M1 @ed8144f — type/config/validate/engine/resolve :**
+  - `types.ts` : `LoyaltyType` += `amount_points` ; `AmountPointsConfig` ; union `LoyaltyProgram` étendue ; `LOYALTY_TYPES` complété.
+  - `validate.ts` : `amount_points` accepté ssi `pointsPerChf > 0` (fraction OK), `rewardThreshold` entier ≥ 1, `rewardLabel` 1-80, `maxPointsPerScan` entier ≥ 1 si fourni.
+  - `engine.ts` : `applyScan(program, currentValue, scanAmountChf?)` crédite `min(floor(montant×pointsPerChf), maxPointsPerScan ?? 1000)` ; `rewardReady = currentValue+earned ≥ rewardThreshold` ; event `reward_ready` au SEUL franchissement (pas de redéclenchement) ; **lève** si montant manquant/≤0 (bug d'appel à faire remonter). `programCanRedeem` : solde ≥ seuil. `initialStampsForEnroll` : 0 (déjà couvert pour non-stamp).
+  - `resolveProgram.ts` : passe-through `amount_points` (fallback `stamp_card` si jsonb corrompu).
+  - `EditMerchantForm.tsx` : pointe sur le `LoyaltyType` canonique (sinon le build cassait quand `program.type` est passé en prop). L'UI admin pour amount_points reste à faire (ressort de T4/Templates).
+- **M2 @343e18d — migration `supabase/migrations/20260618_amount_points.sql` (REPO seulement, NON appliquée en prod) :** étend `merchants_loyalty_type_chk`, ajoute `loyalty_cards.points_balance` + `loyalty_cards.last_scan_amount_chf`. Additive + idempotente (rejouable).
+- **⚠️ Corrections vs le brouillon SQL du cahier (invariant 6 « vérifier l'état réel ») — à valider par le CHEF :**
+  1. La contrainte réelle est `merchants_loyalty_type_chk`, PAS `merchants_loyalty_type_check`. Le SQL du cahier aurait laissé l'ancienne contrainte (3 valeurs) ACTIVE → inserts `amount_points` rejetés. J'ai drop/re-add le bon nom (+ drop défensif de `_check`).
+  2. La table des cartes est `loyalty_cards`, PAS `cards` (aucune table `cards` n'existe ; runtime `scan`/`redeem` lisent `loyalty_cards`). Colonnes ajoutées sur `loyalty_cards`.
+- **Écart assumé (à valider) :** le cahier disait « Ajoute `currentValue` dans `ScanEvent` » — non fait tel quel : `ScanEvent` est une union discriminée d'événements (pas un porteur de valeur) et y ajouter un champ casserait les `toEqual` exacts du baseline. La valeur courante est déjà portée par `ScanResult.newCount` (= nouveau solde pour amount_points). Documenté en commentaire dans `types.ts`.
+- **Invariants respectés :** aucune nouvelle `AuditAction` (donc pas de jumelle `audit_logs_action_check`) · pas de secret · 0 commit sur `main` ni sur `integration` (push uniquement sur `agent/mecanique-points`) · worktree dédié · migration NON appliquée en prod.
+- **Reste hors-périmètre M (signalé, non démarré) :** RPC atomique de crédit par montant (`scan_increment` ne gère pas amount_points) + branchement route `/api/scan` + UI (l'`<AmountPad>` d'UX-COMPTOIR est déjà prêt côté front). À planifier par l'orchestrateur (M3 ?).
+- Attente : revue CHEF. Je m'arrête proprement.
+
+---
+
+## 2026-06-18T12:46:02Z [MECANIQUE-POINTS] [4c37aa5] M3 DONE — RPC scan_increment_amount
+- Verdict côté worker : RPC livrée. Migration `supabase/migrations/20260618_scan_increment_amount.sql` (REPO seulement, **NON appliquée en prod** — apply via Supabase MCP avec accord, comme M2). Gate inchangé : `tsc` clean · `vitest` **805/805** (la RPC SQL n'est pas couverte par vitest ; sa logique de crédit est le miroir exact de `engine.applyScan`, déjà testée en M1).
+- **Préalable fait :** lu `20260604_scan_atomic_increment.sql` (la SEULE `scan_increment` ; `20260615_scan_revert.sql` à côté). Forme réelle relevée : retour **table** `(new_count, last_scan, status)`, `loyalty_cards%rowtype`, `FOR UPDATE`, cooldown `make_interval(secs=>…)` gardé par `>0`, `security definer`, `search_path=public`, **`revoke execute … from public, anon, authenticated`**. PAS de signature, PAS de suspension dans la RPC.
+- **Vérif route `/api/scan/route.ts` :** la signature QR est vérifiée CÔTÉ APP (`verifyQRCode`, ligne 53) AVANT la RPC ; la suspension est vérifiée CÔTÉ APP (`merchants.suspended_at`, ligne 68). La RPC reçoit déjà l'id de carte résolu.
+- **Déviations ASSUMÉES vs le brouillon SQL du cahier (à valider CHEF) :**
+  1. **Pas de `p_signature`** : inutilisé même dans le brouillon ; la signature est une responsabilité app (cf. ci-dessus), comme pour `scan_increment`. L'ajouter = paramètre mort dans une fonction `SECURITY DEFINER`.
+  2. **Pas de check suspension** : `scan_increment` n'en fait pas ; la suspension est gérée par la route. On reste fidèle à la forme existante.
+  3. **`REVOKE EXECUTE` ajouté** (absent du brouillon) — aligné sur `scan_increment`, sécurité service-role.
+  4. **Garde `bad_amount`** (`p_amount_chf` null/≤0 → `{ok:false, error:'bad_amount'}`) : miroir du `throw` de `engine.applyScan`.
+  5. Retour **jsonb** `{ok, currentValue, pointsEarned, rewardReady}` (demandé par le cahier ; plus riche que le retour table de `scan_increment`). Statuts d'erreur : `card_not_found` | `cooldown` | `bad_amount`.
+- **⚠️ Message d'assignation M3 TRONQUÉ** côté SQL (`$$;` non fermé) et après : je n'ai pas vu d'éventuelles étapes route/tests. J'ai livré la partie clairement spécifiée (le fichier RPC). **Reste à cadrer (M4 ?)** : brancher `/api/scan/route.ts` sur `scan_increment_amount` pour `program.type === "amount_points"` (lire le montant de la requête, passer `pointsPerChf`/`maxPointsPerScan`/`rewardThreshold` issus du programme résolu, mapper le jsonb vers la réponse `{success, rewardReady, …}`, audit `CARD_SCANNED`) + UI (`<AmountPad>` d'UX-COMPTOIR déjà prêt). Je NE l'ai pas fait spéculativement pour ne pas diverger de la portion tronquée.
+- **Invariants respectés :** aucune nouvelle `AuditAction` · pas de secret · 0 commit `main`/`integration` (push uniquement `agent/mecanique-points`) · worktree dédié · migration NON appliquée en prod.
+- Attente : revue CHEF + cadrage du branchement route. Je m'arrête proprement.
+
+---
+
+## 2026-06-18T13:15:13Z [MECANIQUE-POINTS] M4+M5+M6 DONE @f139716
+- Verdict côté worker : `amount_points` livré bout en bout (M1→M6). Gate final : `tsc --noEmit` clean · `eslint` clean · `vitest run` **820/820** (112 fichiers ; +15 tests route, +26 moteur depuis la base 779).
+- **M4 @72275d1 — `/api/scan/route.ts` :** branche `program.type === "amount_points"` AVANT le flot tampons. Valide `amountChf` (number fini, >0, ≤10000, `Math.round(x*100)===x*100`) → 400 sinon. Crédite via RPC atomique `scan_increment_amount` (cooldown = `cfg.scanCooldownSeconds`, `pointsPerChf`/`maxPointsPerScan ?? 1000`/`rewardThreshold` du programme résolu). Mappe le jsonb : `cooldown`→429, `card_not_found`→404, `bad_amount`→400 ; succès → `{ success, currentValue, pointsEarned, rewardReady, rewardLabel }`. Audit `CARD_SCANNED` (action EXISTANTE). Tenancy/suspension/signature déjà vérifiées en amont (non dupliquées). **Signalé à UX-COMPTOIR : `POST /api/scan` accepte `{ cardId, amountChf }` → l'`<AmountPad>` peut s'y brancher.**
+- **M5 @d8235b8 — `EditMerchantForm.tsx` (+ `page.tsx`) :** 4e option « Points par CHF dépensés (BETA) » visible si `NEXT_PUBLIC_POINTS_BETA === "1"` (ou si le compte est déjà amount_points → pas de perte d'accès à une config existante). Mini-form `pointsPerChf` (déf. 1) / `rewardThreshold` (déf. 200) / `rewardLabel` (déf. « CHF 20 offerts »), **prérempli depuis la config existante** (prop `amountPoints` ajoutée, dérivée du `program` résolu) pour éviter d'écraser une config réelle par les défauts. Persistance : la route admin PATCH valide déjà via `validateLoyaltyProgram` (amount_points-aware depuis M1) — aucun changement requis. **Le serveur gère amount_points indépendamment du flag** (M5.3 respecté : le flag ne contrôle QUE la visibilité UI).
+- **M6 @f139716 — `src/app/api/scan/__tests__/route.amountPoints.test.ts` (+15) :** 400 (montant absent / ≤0 / >10000 / >2 décimales / non-numérique + cas limite 10000 accepté), 200 (params RPC = ceux du programme + réponse complète), `maxPointsPerScan` transmis, mappage cooldown→429 / card_not_found→404 / RPC error→500, gardes 401 / 403 autre tenant / 403 suspendu (aucune RPC dans ces cas). Mock calqué sur `scan.route.test.ts` (RPC renvoie un objet jsonb, pas un tableau).
+- **Garde-fous respectés :** scan via RPC atomique (jamais de read-modify-write) · tenancy (ownership `card.merchant_id === merchant.id`) vérifiée AVANT la RPC · migrations NON appliquées en prod (repo seulement) · 0 push `main` · 0 push `integration` (uniquement `agent/mecanique-points`).
+- **Reste (optionnel, hors périmètre M1→M6) :** brancher l'`<AmountPad>` d'UX-COMPTOIR sur l'endpoint (prêt) ; appliquer en prod via Supabase MCP, avec accord CHEF, les 2 migrations `20260618_amount_points.sql` + `20260618_scan_increment_amount.sql`.
+- Attente : revue CHEF. Je m'arrête proprement.
 

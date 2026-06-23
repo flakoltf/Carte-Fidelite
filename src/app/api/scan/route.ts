@@ -44,7 +44,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Trop de scans. Réessayez dans 1 minute." }, { status: 429 });
     }
 
-    const { cardId } = await req.json();
+    const body = await req.json();
+    const { cardId } = body;
     if (!cardId || typeof cardId !== 'string' || cardId.length > 200) {
       return NextResponse.json({ error: "ID de carte invalide" }, { status: 400 });
     }
@@ -87,6 +88,100 @@ export async function POST(req: Request) {
     // 2. Config marchand + incrément ATOMIQUE (cooldown + plafond appliqués sous verrou DB).
     const cfg = await fetchMerchantConfig(merchant.id);
     const program = resolveLoyaltyProgram(merchant);
+
+    // 2-bis. amount_points : crédit par MONTANT via la RPC atomique dédiée
+    // (scan_increment_amount). Tenancy/suspension/signature déjà vérifiées plus
+    // haut — on ne les duplique pas. La carte appartient bien à ce marchand.
+    if (program.type === "amount_points") {
+      const amountChf = body?.amountChf;
+      // Montant : number fini, > 0, ≤ 10000, au plus 2 décimales.
+      if (
+        typeof amountChf !== "number" ||
+        !Number.isFinite(amountChf) ||
+        amountChf <= 0 ||
+        amountChf > 10000 ||
+        Math.round(amountChf * 100) !== amountChf * 100
+      ) {
+        return NextResponse.json(
+          { ok: false, error: "Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales)." },
+          { status: 400 }
+        );
+      }
+
+      // Crédit ATOMIQUE sous verrou DB (jamais de read-modify-write — invariant n°4).
+      const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc("scan_increment_amount", {
+        p_card_id: actualCardId,
+        p_amount_chf: amountChf,
+        p_cooldown_seconds: cfg.scanCooldownSeconds,
+        p_points_per_chf: program.config.pointsPerChf,
+        p_max_points: program.config.maxPointsPerScan ?? 1000,
+        p_reward_threshold: program.config.rewardThreshold,
+      });
+      if (rpcError) {
+        console.error("[scan] RPC scan_increment_amount échec:", rpcError.message);
+        throw new Error("Crédit atomique indisponible");
+      }
+      const result = rpcData as {
+        ok: boolean; error?: string; currentValue?: number; pointsEarned?: number; rewardReady?: boolean;
+      } | null;
+      if (!result || typeof result.ok !== "boolean") {
+        throw new Error("scan_increment_amount: réponse vide");
+      }
+      if (!result.ok) {
+        // Mappage des erreurs RPC vers les MÊMES codes HTTP que scan_increment.
+        if (result.error === "cooldown") {
+          return NextResponse.json(
+            { error: "Carte déjà scannée à l'instant. Patientez quelques secondes.", cooldown: true },
+            { status: 429 }
+          );
+        }
+        if (result.error === "card_not_found") {
+          return NextResponse.json({ error: "Carte invalide ou introuvable" }, { status: 404 });
+        }
+        // bad_amount (garde-fou RPC, déjà filtré en amont) → 400.
+        return NextResponse.json(
+          { ok: false, error: "Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales)." },
+          { status: 400 }
+        );
+      }
+
+      // Carte vivante : push best-effort.
+      try {
+        const { getChannels } = await import("@/lib/wallet/channel");
+        for (const ch of getChannels()) await ch.notify([actualCardId]);
+      } catch (e) {
+        console.error("[scan] push notify failed:", e);
+      }
+
+      // Historique du scan (points_added = points crédités ce scan).
+      await supabaseAdmin.from("scan_history")
+        .insert({ card_id: actualCardId, merchant_id: card.merchant_id, points_added: result.pointsEarned ?? 0 });
+
+      // Audit : AuditAction EXISTANTE CARD_SCANNED (aucune nouvelle action).
+      const meta = extractRequestMeta(req);
+      await logAuditEvent({
+        action: "CARD_SCANNED",
+        merchant_id: merchant.id, user_id: user.id, card_id: actualCardId,
+        details: {
+          amount_chf: amountChf,
+          points_earned: result.pointsEarned,
+          current_value: result.currentValue,
+          reward_ready: result.rewardReady,
+          loyalty_type: program.type,
+        }, ...meta,
+      });
+
+      const response = {
+        success: true,
+        currentValue: result.currentValue,
+        pointsEarned: result.pointsEarned,
+        rewardReady: result.rewardReady,
+        rewardLabel: program.config.rewardLabel,
+      };
+      await setIdempotency(idempotencyKey, response);
+      return NextResponse.json(response);
+    }
+
     const cap = program.type === "stamp_card" ? program.config.goal : 0; // 0 = illimité (visit/tiered)
 
     const atomic = await atomicScan(actualCardId, cap, cfg.scanCooldownSeconds);

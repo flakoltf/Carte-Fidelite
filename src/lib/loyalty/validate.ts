@@ -1,4 +1,4 @@
-import type { LoyaltyProgram, StampCardConfig } from "./types";
+import type { AmountPointsConfig, LoyaltyProgram, StampCardConfig } from "./types";
 
 export type ValidateResult = { ok: true; program: LoyaltyProgram } | { ok: false; error: string };
 
@@ -50,6 +50,36 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
     }
     if (!strictAsc(cleaned.map((t) => t.at))) return { ok: false, error: "Seuils de niveaux strictement croissants et distincts." };
     return { ok: true, program: { type: "tiered", config: { tiers: cleaned } } };
+  }
+
+  if (type === "amount_points") {
+    // pointsPerChf : nombre strictement positif (fraction autorisée, ex. 0,5 ou 2 points/CHF).
+    const ppc = cfg.pointsPerChf;
+    if (typeof ppc !== "number" || !Number.isFinite(ppc) || ppc <= 0) return { ok: false, error: "Points par franc : un nombre strictement positif." };
+
+    // rewardThreshold : solde de points requis → entier ≥ 1.
+    const threshold = cfg.rewardThreshold;
+    if (!isInt(threshold) || threshold < 1) return { ok: false, error: "Seuil de récompense : un entier strictement positif." };
+
+    // rewardLabel : libellé non vide (1 à 80 caractères, même borne que reward_label Studio).
+    const label = cfg.rewardLabel;
+    if (typeof label !== "string" || label.trim().length < 1 || label.trim().length > 80) return { ok: false, error: "Libellé de récompense : 1 à 80 caractères." };
+
+    const config: AmountPointsConfig = {
+      type: "amount_points",
+      pointsPerChf: ppc,
+      rewardThreshold: threshold,
+      rewardLabel: label.trim(),
+    };
+
+    // maxPointsPerScan : plafond anti-fraude optionnel → entier ≥ 1 si fourni.
+    const mpps = cfg.maxPointsPerScan;
+    if (mpps !== undefined && mpps !== null) {
+      if (!isInt(mpps) || mpps < 1) return { ok: false, error: "Plafond de points par scan : un entier supérieur ou égal à 1." };
+      config.maxPointsPerScan = mpps;
+    }
+
+    return { ok: true, program: { type: "amount_points", config } };
   }
 
   return { ok: false, error: "Type de programme inconnu." };
