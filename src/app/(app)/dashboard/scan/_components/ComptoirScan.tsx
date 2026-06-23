@@ -84,6 +84,21 @@ export default function ComptoirScan({
     [programType, handleScan],
   );
 
+  // ── SEAM E2E (inerte en prod) ────────────────────────────────────────────
+  // `NEXT_PUBLIC_E2E` est un flag NEXT_PUBLIC_ inliné au build : il n'est JAMAIS
+  // posé sur le Vercel de prod (cf. la leçon Sentry DSN) → en prod ce bloc est
+  // du CODE MORT et `window.__e2eDecode` reste `undefined`. En E2E il permet à
+  // Playwright de déclencher le décodage QR sans caméra (headless). Le crédit
+  // réel passe toujours par /api/scan (mocké en test). cf. e2e/README.md.
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_E2E !== "1") return;
+    const w = window as unknown as { __e2eDecode?: (cardId: string) => void };
+    w.__e2eDecode = onDecoded;
+    return () => {
+      delete w.__e2eDecode;
+    };
+  }, [onDecoded]);
+
   useEffect(() => {
     if (mode !== "scanning") return;
     const scanner = new Html5Qrcode("comptoir-reader");
