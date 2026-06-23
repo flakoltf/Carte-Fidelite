@@ -3,12 +3,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode } from "html5-qrcode";
+import { motion } from "framer-motion";
 import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import type { LoyaltyType } from "@/lib/loyalty/types";
 import RedeemFullScreen from "./RedeemFullScreen";
 import AmountPad from "./AmountPad";
 
 type Mode = "idle" | "scanning" | "amount" | "processing" | "added" | "reward" | "error";
+
+// UXP-3 « scan continu » : après un crédit simple (mode "added"), on relance la
+// caméra tout seul après ce délai — zéro tap entre deux clients. Le toast de
+// confirmation reste affiché pendant ce laps. (reward/error gardent leur tap.)
+const SCAN_CONTINU_MS = 1500;
 
 // Scan comptoir : caméra plein cadre, puis selon le programme du marchand :
 // - amount_points : on demande le montant CHF (<AmountPad>) AVANT de créditer ;
@@ -117,6 +123,17 @@ export default function ComptoirScan({
     };
   }, [mode, onDecoded]);
 
+  // Scan continu : un crédit simple relance la caméra seule après SCAN_CONTINU_MS.
+  // Le marchand n'a rien à toucher ; il peut couper court via « Scanner maintenant ».
+  useEffect(() => {
+    if (mode !== "added") return;
+    const id = setTimeout(() => {
+      setScanned(null);
+      setMode("scanning");
+    }, SCAN_CONTINU_MS);
+    return () => clearTimeout(id);
+  }, [mode]);
+
   // amount_points : saisie du montant CHF avant le crédit.
   if (mode === "amount" && scanned) {
     return (
@@ -149,6 +166,24 @@ export default function ComptoirScan({
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-calcaire text-onyx">
+      {/* Toast de confirmation « scan continu » : bandeau compact en haut,
+          slide-in 200 ms, visible pendant que la caméra se relance seule. */}
+      {mode === "added" && (
+        <motion.div
+          role="status"
+          aria-live="polite"
+          initial={{ y: -72, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]"
+        >
+          <span className="flex items-center gap-2 rounded-full bg-halo px-5 py-2.5 text-base font-bold text-white shadow-lg shadow-halo/30">
+            <CheckCircle className="h-5 w-5" aria-hidden="true" />
+            {message}
+          </span>
+        </motion.div>
+      )}
+
       <header className="flex h-14 items-center gap-2 px-4">
         <button
           type="button"
@@ -190,16 +225,18 @@ export default function ComptoirScan({
               <span className="flex h-20 w-20 items-center justify-center rounded-full bg-halo shadow-lg shadow-halo/20">
                 <CheckCircle className="h-12 w-12 text-white" />
               </span>
-              <p className="text-xl font-bold">{message}</p>
+              <p className="text-xl font-bold">C&apos;est validé</p>
+              {/* Pas de tap obligatoire : la caméra revient seule. Ce bouton ne
+                  fait qu'écourter l'attente pour les comptoirs pressés. */}
               <button
                 type="button"
                 onClick={() => {
                   setScanned(null);
                   setMode("scanning");
                 }}
-                className="h-14 w-full max-w-xs rounded-2xl bg-halo text-lg font-bold text-white active:scale-[0.98]"
+                className="min-h-11 text-sm font-medium text-galet-ink underline-offset-4 hover:underline"
               >
-                Scan suivant
+                Scanner maintenant
               </button>
             </div>
           )}

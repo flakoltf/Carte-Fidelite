@@ -18,9 +18,22 @@ export interface RedeemFullScreenProps {
   onRedeemed?: () => void;
 }
 
-const CONFETTI = Array.from({ length: 14 }, (_, i) => i);
-// Petite pluie de confettis (framer-motion), ~1,2 s, avant la redirection.
-const REDIRECT_MS = 1200;
+// UXP-2 : célébration plus courte (8 confettis, ~0,5 s) et redirection à 600 ms
+// pour enchaîner le client suivant sans attente. Le bruit du comptoir ? Le
+// marchand active `halo_silent_mode` (localStorage = "1") : ni vibration ni
+// confettis, juste un check vert — réglage local, aucune écriture serveur.
+const CONFETTI = Array.from({ length: 8 }, (_, i) => i);
+const CONFETTI_MS = 0.5;
+const REDIRECT_MS = 600;
+
+function isSilentMode(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage?.getItem("halo_silent_mode") === "1";
+  } catch {
+    // localStorage indisponible (mode privé strict) → célébration normale.
+    return false;
+  }
+}
 
 // Plein écran « Offrir la récompense » — 1 tap. Affiché dès qu'un scan renvoie
 // rewardReady. Fond doré, récompense en énorme, un seul bouton plein-largeur.
@@ -33,6 +46,7 @@ export default function RedeemFullScreen({
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("ready");
   const [error, setError] = useState("");
+  const [silent, setSilent] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -55,7 +69,9 @@ export default function RedeemFullScreen({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.success) throw new Error(data?.error || "Échec de l'encaissement.");
-      if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(200);
+      const quiet = isSilentMode();
+      setSilent(quiet);
+      if (!quiet && typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(200);
       setPhase("done");
       timer.current = setTimeout(finish, REDIRECT_MS);
     } catch (e) {
@@ -80,14 +96,14 @@ export default function RedeemFullScreen({
         {done ? "Récompense offerte." : phase === "error" ? error : ""}
       </p>
 
-      {/* Confettis + halo au succès. */}
-      {done && (
+      {/* Confettis + halo au succès — sautés en mode silencieux. */}
+      {done && !silent && (
         <>
           <motion.div
             aria-hidden="true"
             initial={{ scale: 0.6, opacity: 0.7 }}
             animate={{ scale: 2.4, opacity: 0 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
+            transition={{ duration: CONFETTI_MS, ease: "easeOut" }}
             className="pointer-events-none absolute h-40 w-40 rounded-full bg-white/60"
           />
           {CONFETTI.map((i) => (
@@ -96,7 +112,7 @@ export default function RedeemFullScreen({
               aria-hidden="true"
               initial={{ y: 0, x: 0, opacity: 1 }}
               animate={{ y: 320, x: (i % 2 ? 1 : -1) * (40 + i * 12), opacity: 0, rotate: 360 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
+              transition={{ duration: CONFETTI_MS, ease: "easeOut" }}
               className="pointer-events-none absolute top-1/3 h-3 w-3 rounded-[2px] bg-white"
             />
           ))}
@@ -108,7 +124,7 @@ export default function RedeemFullScreen({
           className="flex h-20 w-20 items-center justify-center rounded-full bg-white/35 backdrop-blur"
           aria-hidden="true"
         >
-          {done ? <Check className="h-11 w-11" /> : <Gift className="h-11 w-11" />}
+          {done ? <Check className={`h-11 w-11 ${silent ? "text-emerald-600" : ""}`} /> : <Gift className="h-11 w-11" />}
         </span>
 
         <h1 className="font-display text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl">

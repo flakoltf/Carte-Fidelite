@@ -81,6 +81,12 @@ export default async function DashboardHome() {
   // Jamais personnalisé → on propose le choix « L'essentiel / Tout voir ».
   const hasChosenLayout = Boolean(merchant?.dashboard_config);
 
+  // UXP-5 : compte « opérationnel » = au moins une carte ET au moins un scan.
+  // Le guidage de démarrage (checklist + choix de preset) a alors fait son
+  // office : on l'efface pour ne garder que le pilotage (jauge, analytics,
+  // activité). Les nouveaux comptes gardent la checklist intacte.
+  const operational = cardsCount > 0 && scansCount > 0;
+
   return (
     <div className="space-y-8">
       <div>
@@ -88,20 +94,24 @@ export default async function DashboardHome() {
         <p className="text-galet-ink">Voici l&apos;activité de votre programme de fidélité.</p>
       </div>
 
-      <StartupChecklist
-        cardsCount={cardsCount}
-        scansCount={scansCount}
-        photoDone={photoDone}
-        rewardLabelDone={rewardLabelDone}
-        googleReviewsDone={googleReviewsDone}
-        dormantsCount={dormantsCount}
-        wakeCampaignSent={wakeCampaignSent}
-      />
+      {!operational && (
+        <StartupChecklist
+          cardsCount={cardsCount}
+          scansCount={scansCount}
+          photoDone={photoDone}
+          rewardLabelDone={rewardLabelDone}
+          googleReviewsDone={googleReviewsDone}
+          dormantsCount={dormantsCount}
+          wakeCampaignSent={wakeCampaignSent}
+        />
+      )}
 
-      {!hasChosenLayout && <DashboardPresetChooser businessType={merchant?.business_type ?? "autre"} />}
+      {!operational && !hasChosenLayout && (
+        <DashboardPresetChooser businessType={merchant?.business_type ?? "autre"} />
+      )}
 
       {usage && <UsageGauge usage={usage} />}
-      {hasChosenLayout && <AnalyticsGrid config={config} />}
+      {(operational || hasChosenLayout) && <AnalyticsGrid config={config} />}
       {merchant && !isFirstRun && <ActivityFeed merchantId={merchant.id} />}
     </div>
   );
