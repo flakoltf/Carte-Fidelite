@@ -1,5 +1,11 @@
 import { test as setup, expect } from "@playwright/test";
+import fs from "node:fs";
 import { STORAGE_STATE } from "./paths";
+
+// Réutilise un storageState récent (< 30 min) en local : évite de re-login à
+// chaque run et donc le rate-limit de /api/auth/login. En CI, aucun state
+// préexistant → login frais à chaque fois (un seul par run, sans souci).
+const REUSE_MAX_AGE_MS = 30 * 60 * 1000;
 
 // Authentification UNE fois pour toutes : on se connecte au compte démo stable
 // « Café du Rhône » (stamp_card, configuré) et on sauvegarde l'état (cookies
@@ -12,6 +18,11 @@ import { STORAGE_STATE } from "./paths";
 // Le scan reste mocké dans les specs : ce login ne lit que des données (zéro
 // écriture loyalty en prod).
 setup("authenticate merchant (Café du Rhône)", async ({ page }) => {
+  if (!process.env.CI && fs.existsSync(STORAGE_STATE)) {
+    const ageMs = Date.now() - fs.statSync(STORAGE_STATE).mtimeMs;
+    setup.skip(ageMs < REUSE_MAX_AGE_MS, "storageState récent réutilisé (pas de re-login)");
+  }
+
   const email = process.env.E2E_MERCHANT_EMAIL ?? "demo@example.com";
   const password = process.env.E2E_MERCHANT_PASSWORD;
   if (!password) {
