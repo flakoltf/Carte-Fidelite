@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import StatTrio from "./StatTrio";
@@ -8,19 +9,25 @@ export interface ComptoirHomeProps {
   shopName: string;
   logoUrl?: string | null;
   version?: string;
+  /** Bandeau non bloquant optionnel, rendu au-dessus de l'écran (ex. « Distribuez votre QR »). */
+  banner?: ReactNode;
 }
 
 // Écran d'accueil COMPTOIR — pensé pour être utilisable à une main, en 0,5 s,
 // par quelqu'un qui n'a jamais vu l'app. Couvre le shell (fixed inset-0) : pas
 // de nav latérale, pas de tableau, pas de graphique. Trois zones empilées sur
 // 100vh : en-tête discret · 3 chiffres · bouton Scanner géant · footer statut.
-export default function ComptoirHome({ shopName, logoUrl, version = "v1" }: ComptoirHomeProps) {
+// Un bandeau optionnel peut coiffer l'écran sans déformer ces proportions
+// (les zones % se calculent sur l'espace restant).
+export default function ComptoirHome({ shopName, logoUrl, version = "v1", banner }: ComptoirHomeProps) {
   const initial = shopName.trim().charAt(0).toUpperCase() || "H";
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-calcaire text-onyx">
       {/* UXP-4 : précharge le bundle caméra dès l'arrivée (rend null). */}
       <ScanBundlePreloader />
+      {banner ? <div className="shrink-0">{banner}</div> : null}
+      <div className="flex min-h-0 flex-1 flex-col">
       {/* En-tête (~10%) : identité marchand + accès discret au tableau complet. */}
       <header className="flex h-[10%] min-h-14 items-center justify-between px-5">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -78,6 +85,7 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1" }: Comp
       <footer className="flex h-[5%] min-h-9 items-center justify-center pb-[env(safe-area-inset-bottom)]">
         <ConnectionStatus version={version} />
       </footer>
+      </div>
     </div>
   );
 }

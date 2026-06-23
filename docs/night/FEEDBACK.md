@@ -260,3 +260,5 @@
 - **Poussé sur `integration/overnight-2026-06-18`**. SHA code final = `c1c6717`.
 
 ## 2026-06-23T15:50:26Z [UX-POLISH] UXP-1+2+3+4+5 DONE @e1235cc
+
+## 2026-06-23T16:11:11Z [ONBOARDING-EXPRESS] OE-1+2+3+4+5 DONE @ac3fbab
