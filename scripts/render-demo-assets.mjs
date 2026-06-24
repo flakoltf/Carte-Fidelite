@@ -69,7 +69,7 @@ async function main() {
       await mkdir(srcDir, { recursive: true });
 
       const palette = { ...entry.design.colors, accent: entry.design.accent };
-      const set = buildArtSet(entry.motif, palette);
+      const set = buildArtSet({ motif: entry.motif, palette, text: entry.artText });
 
       for (const [slot, svg] of Object.entries(set)) {
         // SVG source versionné.

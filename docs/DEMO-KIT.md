@@ -78,6 +78,18 @@ node scripts/render-demo-contact-sheet.mjs  # cartes d'aperçu + QR
 
 Sources SVG versionnées : `assets/demo-kit/<slug>/src/`. PNG : `assets/demo-kit/<slug>/`.
 
+## Design des cartes (v2 — éditorial)
+
+Chaque strip porte le **nom du commerce dessiné** (serif italique + sous-titre
+tracké + signature) et une **métaphore éditoriale** au trait (grain de café +
+vapeur, pizza vue de dessus + part détachée, mèche en S + étincelle, croissant
+feuilleté, vagues + pierre, épi de blé), avec profondeur (halo + ombre) et grain
+« papier ». La typographie dépend des **polices système** : les PNG sont donc
+**rendus localement** (`scripts/render-demo-assets.mjs`, polices présentes) puis
+**versionnés**, et le seed les **upload tels quels** — jamais de rendu de texte
+côté serveur (la route admin les inclut au bundle via `outputFileTracingIncludes`).
+Pour modifier un visuel : éditer `src/lib/demo/art.ts` / `kit.ts`, re-render, commit.
+
 ## Notes / caveats
 
 - **CODE128 (Boulangerie Démo)** : le jeton de carte signé fait ~101 caractères.

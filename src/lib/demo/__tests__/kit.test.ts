@@ -68,6 +68,14 @@ describe("DEMO_KIT — design premium cohérent", () => {
     expect(DEMO_KIT.some((e) => typeof e.googlePlaceId === "string" && e.googlePlaceId.length > 0)).toBe(true);
   });
 
+  it("chaque marchand a une typographie dessinée (dominant + sous-titre + signature)", () => {
+    for (const e of DEMO_KIT) {
+      expect(e.artText.dominant.length, e.shopName).toBeGreaterThan(0);
+      expect(e.artText.subtitle.length, e.shopName).toBeGreaterThan(0);
+      expect(e.artText.signature.length, e.shopName).toBeGreaterThan(0);
+    }
+  });
+
   it("diversifie les codes-barres : les 4 formats supportés sont tous représentés", () => {
     const used = new Set(DEMO_KIT.map((e) => e.design.barcode.type));
     expect(used.size).toBe(4);

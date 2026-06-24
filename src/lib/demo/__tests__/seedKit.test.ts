@@ -166,7 +166,7 @@ function stubDeps(db: KitDb): { deps: KitSeedDeps; uploads: string[] } {
   const uploads: string[] = [];
   const deps: KitSeedDeps = {
     db,
-    render: async () => Buffer.from("png"),
+    readAsset: async () => Buffer.from("png"),
     upload: async (path: string) => { uploads.push(path); },
     actorUserId: "admin-1",
     now: new Date("2026-06-24T09:00:00Z"),

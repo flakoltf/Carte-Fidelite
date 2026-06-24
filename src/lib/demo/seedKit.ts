@@ -18,33 +18,34 @@ import { designToPublishRow, stampGoalForMerchant } from "@/lib/merchant/cardStu
 import { purgeDemoCustomerData } from "./purge";
 import type { DemoDb } from "./db";
 import { assertDemoKitMerchant } from "./allowlist";
-import { buildArtSet, type ArtPalette } from "./art";
 import { DEMO_KIT, type DemoKitEntry } from "./kit";
 
 const DAY = 86400000;
 
-// ─── Plan de rasterisation : slot SVG → fichiers Storage (nom + dims + champ) ──
-// Les noms de fichiers + le mapping vers logo_assets reproduisent EXACTEMENT la
-// convention attendue par applePass / la route assets (cf. cardDesign/storage.ts).
+// ─── Plan d'upload : PNG committé (rendu localement avec polices) → Storage ───
+// `src` = fichier versionné dans assets/demo-kit/<slug>/ (rendu par
+// scripts/render-demo-assets.mjs) ; `file` = nom dans le bucket ; `field` = clé
+// logo_assets. On UPLOAD les PNG committés tels quels (la typographie dessinée
+// dépend des polices système → rendue LOCALEMENT, jamais côté serveur).
 
 type AppleField = "x1" | "x2" | "x3" | "icon1" | "icon2" | "icon3" | "strip1" | "strip2" | "strip3";
 type GoogleField = "logo" | "hero";
 
-export const APPLE_ASSETS: readonly { slot: string; file: string; w: number; h: number; field: AppleField }[] = [
-  { slot: "strip", file: "strip.png", w: 375, h: 123, field: "strip1" },
-  { slot: "strip", file: "strip@2x.png", w: 750, h: 246, field: "strip2" },
-  { slot: "strip", file: "strip@3x.png", w: 1125, h: 369, field: "strip3" },
-  { slot: "logo", file: "logo.png", w: 160, h: 50, field: "x1" },
-  { slot: "logo", file: "logo@2x.png", w: 320, h: 100, field: "x2" },
-  { slot: "logo", file: "logo@3x.png", w: 480, h: 150, field: "x3" },
-  { slot: "icon", file: "icon.png", w: 29, h: 29, field: "icon1" },
-  { slot: "icon", file: "icon@2x.png", w: 58, h: 58, field: "icon2" },
-  { slot: "icon", file: "icon@3x.png", w: 87, h: 87, field: "icon3" },
+export const APPLE_ASSETS: readonly { src: string; file: string; field: AppleField }[] = [
+  { src: "apple-strip@1x.png", file: "strip.png", field: "strip1" },
+  { src: "apple-strip@2x.png", file: "strip@2x.png", field: "strip2" },
+  { src: "apple-strip@3x.png", file: "strip@3x.png", field: "strip3" },
+  { src: "apple-logo@1x.png", file: "logo.png", field: "x1" },
+  { src: "apple-logo@2x.png", file: "logo@2x.png", field: "x2" },
+  { src: "apple-logo@3x.png", file: "logo@3x.png", field: "x3" },
+  { src: "apple-icon@1x.png", file: "icon.png", field: "icon1" },
+  { src: "apple-icon@2x.png", file: "icon@2x.png", field: "icon2" },
+  { src: "apple-icon@3x.png", file: "icon@3x.png", field: "icon3" },
 ];
 
-export const GOOGLE_ASSETS: readonly { slot: string; file: string; w: number; h: number; field: GoogleField }[] = [
-  { slot: "google-logo", file: "logo.png", w: 660, h: 660, field: "logo" },
-  { slot: "hero", file: "hero.png", w: 1032, h: 336, field: "hero" },
+export const GOOGLE_ASSETS: readonly { src: string; file: string; field: GoogleField }[] = [
+  { src: "google-logo.png", file: "logo.png", field: "logo" },
+  { src: "google-hero.png", file: "hero.png", field: "hero" },
 ];
 
 export function applePath(merchantId: string, file: string): string {
@@ -61,10 +62,6 @@ export function buildKitLogoAssets(merchantId: string): LogoAssets {
   const google: Record<string, string> = {};
   for (const g of GOOGLE_ASSETS) google[g.field] = googlePath(merchantId, g.file);
   return { apple: apple as LogoAssets["apple"], google: google as LogoAssets["google"] };
-}
-
-export function paletteOf(entry: DemoKitEntry): ArtPalette {
-  return { ...entry.design.colors, accent: entry.design.accent };
 }
 
 // ─── Design publié (CardDesign complet) ───────────────────────────────────────
@@ -227,8 +224,8 @@ export interface KitDb {
 
 export interface KitSeedDeps {
   db: KitDb;
-  /** Rasterise un SVG en PNG (sharp en prod, stub en test). */
-  render(svg: string, w: number, h: number): Promise<Buffer>;
+  /** Lit un PNG committé d'un marchand (assets/demo-kit/<slug>/<file>). */
+  readAsset(slug: string, file: string): Promise<Buffer>;
   /** Upload un PNG au bucket card-assets (chemin déjà scoped au tenant). */
   upload(path: string, body: Buffer): Promise<void>;
   /** Auteur de la publication (merchants/card_designs.updated_by). */
@@ -302,15 +299,15 @@ export async function applyKitEntry(deps: KitSeedDeps, entry: DemoKitEntry): Pro
     throw new Error(`Garde kit : email résolu ≠ email du kit pour ${entry.slug}`);
   }
 
-  // 2. Rendu + upload des assets (préfixe Storage scoped au tenant).
-  const set = buildArtSet(entry.motif, paletteOf(entry));
+  // 2. Upload des PNG committés (rendus localement avec polices) sous le préfixe
+  //    Storage scoped au tenant. Aucun rendu côté serveur (typographie fiable).
   let assets = 0;
   for (const a of APPLE_ASSETS) {
-    await deps.upload(applePath(merchantId, a.file), await deps.render(set[a.slot], a.w, a.h));
+    await deps.upload(applePath(merchantId, a.file), await deps.readAsset(entry.slug, a.src));
     assets++;
   }
   for (const g of GOOGLE_ASSETS) {
-    await deps.upload(googlePath(merchantId, g.file), await deps.render(set[g.slot], g.w, g.h));
+    await deps.upload(googlePath(merchantId, g.file), await deps.readAsset(entry.slug, g.src));
     assets++;
   }
 

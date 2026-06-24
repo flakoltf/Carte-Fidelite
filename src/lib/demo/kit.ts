@@ -27,8 +27,18 @@ import type {
 import type { CardBarcode, CardTypeKey, StampsConfig } from "@/lib/cardDesign/types";
 import { DEMO_KIT_ALLOWLIST, type DemoIdentity } from "./allowlist";
 
-// Motif vectoriel du métier, dessiné par le module d'art (src/lib/demo/art.ts).
-export type DemoArtMotif = "coffee" | "croissant" | "pizza" | "scissors" | "bloom";
+// Métaphore éditoriale du métier, dessinée par le module d'art (src/lib/demo/art.ts).
+export type DemoArtMotif = "bean" | "croissant" | "pizza" | "hairlock" | "waves" | "wheat";
+
+// Typographie dessinée dans le strip (nom du commerce).
+export type DemoArtText = {
+  /** Mot dominant, serif italique. Ex. « du Rhône ». */
+  dominant: string;
+  /** Sous-titre en capitales trackées. Ex. « CAFÉ · GENÈVE ». */
+  subtitle: string;
+  /** Signature discrète (fondation / quartier / spécialité). */
+  signature: string;
+};
 
 // Sous-ensemble de CardDesign porté par le kit. Le seed complète `fields` +
 // `logo.assets` (chemins Storage) au moment d'appliquer.
@@ -56,6 +66,7 @@ export type DemoKitEntry = {
   email: string;
   shopName: string;
   motif: DemoArtMotif;
+  artText: DemoArtText;
   /** Adresse + géoloc Genève (carte « identité commerce » + proximité Wallet). */
   address: string;
   latitude: number;
@@ -122,7 +133,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     slug: "demo",
     email: "demo@example.com",
     shopName: "Café du Rhône",
-    motif: "coffee",
+    motif: "bean",
+    artText: { dominant: "du Rhône", subtitle: "CAFÉ · GENÈVE", signature: "depuis 1894" },
     address: "Quai du Général-Guisan 14, 1204 Genève",
     latitude: 46.2035,
     longitude: 6.1469,
@@ -149,6 +161,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-boulangerie@example.com",
     shopName: "Boulangerie des Pâquis",
     motif: "croissant",
+    artText: { dominant: "des Pâquis", subtitle: "BOULANGERIE · GENÈVE", signature: "pain au levain" },
     address: "Rue de Berne 51, 1201 Genève",
     latitude: 46.2103,
     longitude: 6.1462,
@@ -175,6 +188,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-pizzeria@example.com",
     shopName: "Pizzeria Molino",
     motif: "pizza",
+    artText: { dominant: "Molino", subtitle: "PIZZERIA · GENÈVE", signature: "feu de bois" },
     address: "Place du Molard 7, 1204 Genève",
     latitude: 46.2042,
     longitude: 6.1457,
@@ -203,7 +217,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     slug: "salon-lumi-re",
     email: "demo-salon@example.com",
     shopName: "Salon Lumière",
-    motif: "scissors",
+    motif: "hairlock",
+    artText: { dominant: "Lumière", subtitle: "SALON · GENÈVE", signature: "coupe & couleur" },
     address: "Rue du Rhône 65, 1207 Genève",
     latitude: 46.2041,
     longitude: 6.1532,
@@ -228,7 +243,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     slug: "institut-belle-rive",
     email: "demo-institut@example.com",
     shopName: "Institut Belle Rive",
-    motif: "bloom",
+    motif: "waves",
+    artText: { dominant: "Belle Rive", subtitle: "INSTITUT · GENÈVE", signature: "soins & spa" },
     address: "Quai Gustave-Ador 30, 1207 Genève",
     latitude: 46.2068,
     longitude: 6.1611,
@@ -258,7 +274,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     slug: "boulangerie-demo",
     email: "boulangerie-demo@example.com",
     shopName: "Boulangerie Démo",
-    motif: "coffee",
+    motif: "wheat",
+    artText: { dominant: "Démo", subtitle: "BOULANGERIE · GENÈVE", signature: "maison de pain" },
     address: "Rue du Marché 12, 1204 Genève",
     latitude: 46.2044,
     longitude: 6.1432,

@@ -17,7 +17,6 @@
 //   node scripts/seed-demo-kit.mjs demo       # un seul marchand (slug)
 
 import { createServer } from "vite";
-import sharp from "sharp";
 import { createClient } from "@supabase/supabase-js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -75,7 +74,8 @@ async function main() {
 
     const deps = {
       db: supabase,
-      render: (svg, w, h) => sharp(Buffer.from(svg)).resize(w, h, { fit: "fill" }).png().toBuffer(),
+      // PNG committés (rendus localement par render-demo-assets.mjs avec polices).
+      readAsset: (slug, file) => readFile(path.join(ROOT, "assets", "demo-kit", slug, file)),
       upload: async (p, body) => {
         const { error } = await supabase.storage.from(BUCKET).upload(p, body, { contentType: "image/png", upsert: true });
         if (error) throw new Error(`upload ${p}: ${error.message}`);

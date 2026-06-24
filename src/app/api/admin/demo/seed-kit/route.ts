@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
@@ -10,7 +11,7 @@ import { DEMO_KIT, getKitEntry } from "@/lib/demo/kit";
 import { DemoGuardError } from "@/lib/demo/identity";
 
 export const runtime = "nodejs";
-// Rendu de 11 PNG × N marchands : on laisse de la marge (Fluid/Pro).
+// Upload de 11 PNG × N marchands : marge confortable (Fluid/Pro).
 export const maxDuration = 60;
 
 // POST /api/admin/demo/seed-kit — (ré)applique le KIT DE DÉMONSTRATION à la
@@ -41,9 +42,11 @@ export async function POST(req: Request) {
 
     const deps: KitSeedDeps = {
       db: supabaseAdmin as unknown as KitDb,
-      render: (svg, w, h) => sharp(Buffer.from(svg)).resize(w, h, { fit: "fill" }).png().toBuffer(),
-      upload: async (path, body) => {
-        await uploadAsset(path, body);
+      // PNG committés (rendus localement avec polices) — inclus au bundle via
+      // outputFileTracingIncludes (next.config.ts).
+      readAsset: (slug, file) => readFile(path.join(process.cwd(), "assets", "demo-kit", slug, file)),
+      upload: async (storagePath, body) => {
+        await uploadAsset(storagePath, body);
       },
       actorUserId: userId ?? "",
     };
