@@ -8,6 +8,7 @@ import {
 } from "../allowlist";
 import { validateLoyaltyProgram } from "@/lib/loyalty/validate";
 import { LOYALTY_TYPES } from "@/lib/loyalty/types";
+import { BARCODE_FORMATS } from "@/lib/cardDesign/types";
 import { contrastRatio } from "@/lib/cardDesign/color";
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -55,13 +56,30 @@ describe("DEMO_KIT — design premium cohérent", () => {
       }
     });
 
-    it(`${entry.shopName} : code-barres QR sur le jeton de carte`, () => {
-      expect(entry.design.barcode).toEqual({ type: "QR", source: "card_token" });
+    it(`${entry.shopName} : code-barres sur le jeton de carte + altText`, () => {
+      expect(entry.design.barcode.source).toBe("card_token");
+      expect(BARCODE_FORMATS).toContain(entry.design.barcode.type);
+      expect(typeof entry.design.barcode.altText).toBe("string");
+      expect((entry.design.barcode.altText ?? "").length).toBeGreaterThan(0);
     });
   }
 
   it("au moins un marchand porte un Place ID Google (lien avis)", () => {
     expect(DEMO_KIT.some((e) => typeof e.googlePlaceId === "string" && e.googlePlaceId.length > 0)).toBe(true);
+  });
+
+  it("diversifie les codes-barres : les 4 formats supportés sont tous représentés", () => {
+    const used = new Set(DEMO_KIT.map((e) => e.design.barcode.type));
+    expect(used.size).toBe(4);
+    for (const fmt of BARCODE_FORMATS) {
+      expect(used.has(fmt), `format manquant : ${fmt}`).toBe(true);
+    }
+    // Répartition voulue par le CHEF : QR×3, AZTEC×1, PDF417×1, CODE128×1.
+    const count = (t: string) => DEMO_KIT.filter((e) => e.design.barcode.type === t).length;
+    expect(count("QR")).toBe(3);
+    expect(count("AZTEC")).toBe(1);
+    expect(count("PDF417")).toBe(1);
+    expect(count("CODE128")).toBe(1);
   });
 });
 

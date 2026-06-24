@@ -112,8 +112,6 @@ const HOURS_SALON: BusinessHours = {
   sun: null,
 };
 
-const QR: CardBarcode = { type: "QR", source: "card_token" };
-
 // Place ID Google d'EXEMPLE (format ChIJ valide — cf. isValidPlaceId). Démontre
 // le bouton « Laisser un avis » sans pointer un vrai lieu.
 const DEMO_PLACE_ID = "ChIJ51bQ7E5kjEcReXAMPLEcafe00";
@@ -141,7 +139,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       programName: "Votre 10ᵉ café offert",
       cardType: "stamps",
       stamps: { goal: 10, icon: "☕", shape: "circle" },
-      barcode: QR,
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Café du Rhône" },
     },
   },
 
@@ -166,7 +164,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       programName: "Votre 8ᵉ viennoiserie offerte",
       cardType: "stamps",
       stamps: { goal: 8, icon: "🥐", shape: "circle" },
-      barcode: QR,
+      // AZTEC (2D) : compact, lecture fiable même à l'écran (diversité kit, demande CHEF).
+      barcode: { type: "AZTEC", source: "card_token", altText: "Présentez cette carte — Boulangerie des Pâquis" },
     },
   },
 
@@ -195,7 +194,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#E8B04B",
       programName: "1 point par franc · CHF 20 offerts",
       cardType: "points",
-      barcode: QR,
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Pizzeria Molino" },
     },
   },
 
@@ -219,7 +218,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#D9B3E6",
       programName: "Récompenses à 5, 10 et 15 visites",
       cardType: "points",
-      barcode: QR,
+      // PDF417 (2D empilé) : supporte ~101 car. du jeton signé sans souci d'affichage.
+      barcode: { type: "PDF417", source: "card_token", altText: "Présentez cette carte — Salon Lumière" },
     },
   },
 
@@ -249,7 +249,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#D8B36A",
       programName: "Bronze · Argent · Or",
       cardType: "points",
-      barcode: QR,
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Institut Belle Rive" },
     },
   },
 
@@ -274,7 +274,9 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       programName: "Votre 10ᵉ café offert",
       cardType: "stamps",
       stamps: { goal: 10, icon: "☕", shape: "circle" },
-      barcode: QR,
+      // CODE128 (1D) : démontre le 4ᵉ format. ⚠ le jeton signé (~101 car.) produit un
+      // code large/dense — voir caveat PR (préférer 2D pour un usage réel).
+      barcode: { type: "CODE128", source: "card_token", altText: "Présentez cette carte — Boulangerie Démo" },
     },
   },
 ];
