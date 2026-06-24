@@ -67,21 +67,15 @@ export function buildKitLogoAssets(merchantId: string): LogoAssets {
 // ─── Design publié (CardDesign complet) ───────────────────────────────────────
 
 function defaultFields(entry: DemoKitEntry): CardField[] {
-  const fields: CardField[] = [];
-  // Champ principal : compteur (tampons OU points selon la mécanique).
-  const isStamps = entry.loyaltyType === "stamp_card";
-  fields.push({
-    id: "points",
-    zone: "primary",
-    label: isStamps ? "TAMPONS" : "POINTS",
-    value: "{points}",
-    order: 0,
-  });
-  // Carte à niveaux : afficher le palier courant dans l'en-tête.
+  // Champ PRIMARY = le gros nombre/statut affiché par Apple PAR-DESSUS le strip
+  // (sur la zone gauche propre). Le label suit la mécanique.
   if (entry.loyaltyType === "tiered") {
-    fields.push({ id: "palier", zone: "header", label: "NIVEAU", value: "{palier}", order: 1 });
+    // Niveaux : le statut courant (Bronze/Argent/Or) plutôt qu'un nombre.
+    return [{ id: "statut", zone: "primary", label: "STATUT", value: "{palier}", order: 0 }];
   }
-  return fields;
+  const label =
+    entry.loyaltyType === "amount_points" ? "POINTS" : entry.loyaltyType === "visit_based" ? "VISITES" : "TAMPONS";
+  return [{ id: "points", zone: "primary", label, value: "{points}", order: 0 }];
 }
 
 export function buildKitDesign(entry: DemoKitEntry, merchantId: string): CardDesign {

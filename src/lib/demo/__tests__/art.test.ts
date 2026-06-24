@@ -3,7 +3,7 @@ import { buildArtSet, stripSvg, heroSvg, logoSvg, iconSvg, googleLogoSvg, type A
 import { DEMO_KIT, type DemoArtMotif } from "../kit";
 
 const PALETTE: ArtPalette = { background: "#2A1A11", foreground: "#F7EFE4", label: "#C9A86A", accent: "#C9A86A" };
-const TEXT = { dominant: "du Rhône", subtitle: "CAFÉ · GENÈVE", signature: "depuis 1894" };
+const TEXT = { wordmark: ["Café du Rhône"] };
 const MOTIFS: DemoArtMotif[] = ["bean", "croissant", "pizza", "hairlock", "waves", "wheat"];
 const spec = (motif: DemoArtMotif): ArtSpec => ({ motif, palette: PALETTE, text: TEXT });
 
@@ -16,7 +16,7 @@ function assertCleanSvg(s: string, w: number, h: number) {
   expect(s.endsWith("</svg>")).toBe(true);
 }
 
-describe("art SVG v2 — dimensions exactes par slot", () => {
+describe("art SVG v3 — dimensions exactes par slot", () => {
   for (const m of MOTIFS) {
     it(`${m} : strip 1125×369, hero 1032×336, logo 480×150, icon 348, google 660`, () => {
       assertCleanSvg(stripSvg(spec(m)), 1125, 369);
@@ -28,36 +28,46 @@ describe("art SVG v2 — dimensions exactes par slot", () => {
   }
 });
 
-describe("art SVG v2 — typographie dessinée + profondeur", () => {
-  it("le strip porte le nom dessiné (dominant + sous-titre + signature)", () => {
-    const s = stripSvg(spec("bean"));
-    expect(s).toContain("du Rhône");
-    expect(s).toContain("CAFÉ · GENÈVE");
-    expect(s).toContain("depuis 1894");
-    expect(s).toContain("font-style=\"italic\"");
+describe("art SVG v3 — RÈGLE D'OR : le strip ne porte AUCUN texte", () => {
+  for (const m of MOTIFS) {
+    it(`${m} : strip + hero sans élément <text> ni nom`, () => {
+      const strip = stripSvg(spec(m));
+      const hero = heroSvg(spec(m));
+      expect(strip).not.toContain("<text");
+      expect(strip).not.toContain("Café du Rhône");
+      expect(hero).not.toContain("<text");
+      expect(hero).not.toContain("Café du Rhône");
+    });
+  }
+});
+
+describe("art SVG v3 — le NOM vit dans le LOGO (wordmark)", () => {
+  it("le logo porte le wordmark en serif italique", () => {
+    const s = logoSvg(spec("bean"));
+    expect(s).toContain("Café du Rhône");
+    expect(s).toContain('font-style="italic"');
   });
 
-  it("le hero porte aussi le nom dessiné", () => {
-    expect(heroSvg(spec("pizza"))).toContain("du Rhône");
+  it("le logo supporte 2 lignes", () => {
+    const s = logoSvg({ motif: "wheat", palette: PALETTE, text: { wordmark: ["Boulangerie", "des Pâquis"] } });
+    expect(s).toContain("Boulangerie");
+    expect(s).toContain("des Pâquis");
+    expect((s.match(/<text/g) ?? []).length).toBe(2);
   });
 
-  it("profondeur + texture : halo radial, ombre portée, grain", () => {
-    const s = stripSvg(spec("waves"));
-    expect(s).toContain("radialGradient id=\"halo\"");
-    expect(s).toContain("feDropShadow");
-    expect(s).toContain("feTurbulence");
-  });
-
-  it("échappe le texte (pas d'injection d'angle)", () => {
-    const s = stripSvg({ motif: "bean", palette: PALETTE, text: { dominant: "A<b>", subtitle: "X", signature: "Y" } });
+  it("le logo échappe le texte (pas d'injection)", () => {
+    const s = logoSvg({ motif: "bean", palette: PALETTE, text: { wordmark: ["A<b>"] } });
     expect(s).toContain("A&lt;b&gt;");
     expect(s).not.toContain("<b>");
   });
+});
 
-  it("buildArtSet expose les 5 slots", () => {
-    const set = buildArtSet(spec("croissant"));
-    expect(Object.keys(set).sort()).toEqual(["google-logo", "hero", "icon", "logo", "strip"]);
-    for (const v of Object.values(set)) expect(v.startsWith("<svg")).toBe(true);
+describe("art SVG v3 — profondeur + métaphore confinée à droite", () => {
+  it("profondeur/texture : halo radial, ombre portée, grain", () => {
+    const s = stripSvg(spec("pizza"));
+    expect(s).toContain('radialGradient id="halo"');
+    expect(s).toContain("feDropShadow");
+    expect(s).toContain("feTurbulence");
   });
 
   it("les métaphores produisent des strips distincts", () => {
@@ -66,17 +76,26 @@ describe("art SVG v2 — typographie dessinée + profondeur", () => {
   });
 
   it("déterministe : même entrée → même sortie", () => {
-    expect(stripSvg(spec("wheat"))).toBe(stripSvg(spec("wheat")));
+    expect(stripSvg(spec("waves"))).toBe(stripSvg(spec("waves")));
+  });
+
+  it("buildArtSet expose les 5 slots", () => {
+    const set = buildArtSet(spec("croissant"));
+    expect(Object.keys(set).sort()).toEqual(["google-logo", "hero", "icon", "logo", "strip"]);
+    for (const v of Object.values(set)) expect(v.startsWith("<svg")).toBe(true);
   });
 });
 
-describe("art SVG v2 — couvre les motifs + textes réels du kit", () => {
-  it("chaque entrée du DEMO_KIT est rendable avec sa typographie", () => {
+describe("art SVG v3 — couvre le kit réel", () => {
+  it("chaque entrée : strip pur (sans nom) + logo portant le wordmark", () => {
     for (const entry of DEMO_KIT) {
       const p: ArtPalette = { ...entry.design.colors, accent: entry.design.accent };
-      const s = stripSvg({ motif: entry.motif, palette: p, text: entry.artText });
-      expect(s).toContain(entry.artText.dominant);
-      expect(s).not.toMatch(/NaN|undefined/);
+      const sp: ArtSpec = { motif: entry.motif, palette: p, text: entry.artText };
+      const strip = stripSvg(sp);
+      const logo = logoSvg(sp);
+      expect(strip).not.toContain("<text");
+      expect(logo).toContain(entry.artText.wordmark[0]);
+      expect(strip).not.toMatch(/NaN|undefined/);
     }
   });
 });

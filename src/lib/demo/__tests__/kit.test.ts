@@ -68,11 +68,13 @@ describe("DEMO_KIT — design premium cohérent", () => {
     expect(DEMO_KIT.some((e) => typeof e.googlePlaceId === "string" && e.googlePlaceId.length > 0)).toBe(true);
   });
 
-  it("chaque marchand a une typographie dessinée (dominant + sous-titre + signature)", () => {
+  it("chaque marchand a un wordmark (1-2 lignes) pour le logo + un logoText court", () => {
     for (const e of DEMO_KIT) {
-      expect(e.artText.dominant.length, e.shopName).toBeGreaterThan(0);
-      expect(e.artText.subtitle.length, e.shopName).toBeGreaterThan(0);
-      expect(e.artText.signature.length, e.shopName).toBeGreaterThan(0);
+      expect(e.artText.wordmark.length, e.shopName).toBeGreaterThanOrEqual(1);
+      expect(e.artText.wordmark.length, e.shopName).toBeLessThanOrEqual(2);
+      expect(e.artText.wordmark.every((l) => l.trim().length > 0), e.shopName).toBe(true);
+      // logoText (programName) court : pas un roman (cf. règle champs natifs).
+      expect(e.design.programName.length, e.shopName).toBeLessThanOrEqual(24);
     }
   });
 

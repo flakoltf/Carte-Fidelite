@@ -30,14 +30,11 @@ import { DEMO_KIT_ALLOWLIST, type DemoIdentity } from "./allowlist";
 // Métaphore éditoriale du métier, dessinée par le module d'art (src/lib/demo/art.ts).
 export type DemoArtMotif = "bean" | "croissant" | "pizza" | "hairlock" | "waves" | "wheat";
 
-// Typographie dessinée dans le strip (nom du commerce).
+// Wordmark du nom porté par le LOGO (1 à 2 lignes, serif italique). Le strip ne
+// porte AUCUN texte (v3) : le nom vit dans le logo, jamais sur la bande.
 export type DemoArtText = {
-  /** Mot dominant, serif italique. Ex. « du Rhône ». */
-  dominant: string;
-  /** Sous-titre en capitales trackées. Ex. « CAFÉ · GENÈVE ». */
-  subtitle: string;
-  /** Signature discrète (fondation / quartier / spécialité). */
-  signature: string;
+  /** Nom du commerce, 1 ou 2 lignes (logo Apple). Ex. ["Café du Rhône"]. */
+  wordmark: string[];
 };
 
 // Sous-ensemble de CardDesign porté par le kit. Le seed complète `fields` +
@@ -134,7 +131,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo@example.com",
     shopName: "Café du Rhône",
     motif: "bean",
-    artText: { dominant: "du Rhône", subtitle: "CAFÉ · GENÈVE", signature: "depuis 1894" },
+    artText: { wordmark: ["Café du Rhône"] },
     address: "Quai du Général-Guisan 14, 1204 Genève",
     latitude: 46.2035,
     longitude: 6.1469,
@@ -148,7 +145,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#2A1A11", foreground: "#F7EFE4", label: "#C9A86A" },
       accent: "#C9A86A",
-      programName: "Votre 10ᵉ café offert",
+      programName: "depuis 1894",
       cardType: "stamps",
       stamps: { goal: 10, icon: "☕", shape: "circle" },
       barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Café du Rhône" },
@@ -161,7 +158,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-boulangerie@example.com",
     shopName: "Boulangerie des Pâquis",
     motif: "croissant",
-    artText: { dominant: "des Pâquis", subtitle: "BOULANGERIE · GENÈVE", signature: "pain au levain" },
+    artText: { wordmark: ["Boulangerie", "des Pâquis"] },
     address: "Rue de Berne 51, 1201 Genève",
     latitude: 46.2103,
     longitude: 6.1462,
@@ -174,7 +171,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#5A3217", foreground: "#FFF6EA", label: "#F2C28B" },
       accent: "#E8B873",
-      programName: "Votre 8ᵉ viennoiserie offerte",
+      programName: "pain au levain",
       cardType: "stamps",
       stamps: { goal: 8, icon: "🥐", shape: "circle" },
       // AZTEC (2D) : compact, lecture fiable même à l'écran (diversité kit, demande CHEF).
@@ -188,7 +185,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-pizzeria@example.com",
     shopName: "Pizzeria Molino",
     motif: "pizza",
-    artText: { dominant: "Molino", subtitle: "PIZZERIA · GENÈVE", signature: "feu de bois" },
+    artText: { wordmark: ["Molino"] },
     address: "Place du Molard 7, 1204 Genève",
     latitude: 46.2042,
     longitude: 6.1457,
@@ -206,7 +203,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#5C1A17", foreground: "#FBE7D2", label: "#E8B04B" },
       accent: "#E8B04B",
-      programName: "1 point par franc · CHF 20 offerts",
+      programName: "feu de bois",
       cardType: "points",
       barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Pizzeria Molino" },
     },
@@ -218,7 +215,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-salon@example.com",
     shopName: "Salon Lumière",
     motif: "hairlock",
-    artText: { dominant: "Lumière", subtitle: "SALON · GENÈVE", signature: "coupe & couleur" },
+    artText: { wordmark: ["Salon Lumière"] },
     address: "Rue du Rhône 65, 1207 Genève",
     latitude: 46.2041,
     longitude: 6.1532,
@@ -231,7 +228,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#2E2238", foreground: "#F7F1F8", label: "#C9A8D6" },
       accent: "#D9B3E6",
-      programName: "Récompenses à 5, 10 et 15 visites",
+      programName: "coupe & couleur",
       cardType: "points",
       // PDF417 (2D empilé) : supporte ~101 car. du jeton signé sans souci d'affichage.
       barcode: { type: "PDF417", source: "card_token", altText: "Présentez cette carte — Salon Lumière" },
@@ -244,7 +241,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "demo-institut@example.com",
     shopName: "Institut Belle Rive",
     motif: "waves",
-    artText: { dominant: "Belle Rive", subtitle: "INSTITUT · GENÈVE", signature: "soins & spa" },
+    artText: { wordmark: ["Institut", "Belle Rive"] },
     address: "Quai Gustave-Ador 30, 1207 Genève",
     latitude: 46.2068,
     longitude: 6.1611,
@@ -263,7 +260,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#3A2630", foreground: "#F8F0F2", label: "#D8B36A" },
       accent: "#D8B36A",
-      programName: "Bronze · Argent · Or",
+      programName: "soins & spa",
       cardType: "points",
       barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Institut Belle Rive" },
     },
@@ -275,7 +272,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     email: "boulangerie-demo@example.com",
     shopName: "Boulangerie Démo",
     motif: "wheat",
-    artText: { dominant: "Démo", subtitle: "BOULANGERIE · GENÈVE", signature: "maison de pain" },
+    artText: { wordmark: ["Boulangerie", "Démo"] },
     address: "Rue du Marché 12, 1204 Genève",
     latitude: 46.2044,
     longitude: 6.1432,
@@ -288,7 +285,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     design: {
       colors: { background: "#3B2A21", foreground: "#F6EFE6", label: "#C9A86A" },
       accent: "#C9A86A",
-      programName: "Votre 10ᵉ café offert",
+      programName: "maison de pain",
       cardType: "stamps",
       stamps: { goal: 10, icon: "☕", shape: "circle" },
       // CODE128 (1D) : démontre le 4ᵉ format. ⚠ le jeton signé (~101 car.) produit un

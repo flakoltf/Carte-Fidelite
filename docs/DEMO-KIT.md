@@ -78,17 +78,35 @@ node scripts/render-demo-contact-sheet.mjs  # cartes d'aperçu + QR
 
 Sources SVG versionnées : `assets/demo-kit/<slug>/src/`. PNG : `assets/demo-kit/<slug>/`.
 
-## Design des cartes (v2 — éditorial)
+## Design des cartes (v3 — architecture pro Apple Wallet)
 
-Chaque strip porte le **nom du commerce dessiné** (serif italique + sous-titre
-tracké + signature) et une **métaphore éditoriale** au trait (grain de café +
-vapeur, pizza vue de dessus + part détachée, mèche en S + étincelle, croissant
-feuilleté, vagues + pierre, épi de blé), avec profondeur (halo + ombre) et grain
-« papier ». La typographie dépend des **polices système** : les PNG sont donc
-**rendus localement** (`scripts/render-demo-assets.mjs`, polices présentes) puis
-**versionnés**, et le seed les **upload tels quels** — jamais de rendu de texte
-côté serveur (la route admin les inclut au bundle via `outputFileTracingIncludes`).
-Pour modifier un visuel : éditer `src/lib/demo/art.ts` / `kit.ts`, re-render, commit.
+**Règle d'or : un strip ne porte JAMAIS de texte** (Apple superpose ses champs
+natifs par-dessus — logoText en haut, gros nombre du champ *primary* centré-gauche
+SUR le strip). L'architecture :
+
+- **Le nom → dans le LOGO** (wordmark serif italique, 1-2 lignes), pas dans le strip.
+- **Le strip = fond pur** : zone gauche/centre (~65%) propre et sombre (le nombre
+  natif blanc d'Apple y est parfaitement lisible) ; **métaphore éditoriale confinée
+  au tiers droit** (~35%) — grain de café + vapeur, pizza vue de dessus + part,
+  mèche en S + étincelle, croissant feuilleté, vagues + pierre, épi de blé.
+  Profondeur : halo radial sur la métaphore, ombre portée, grain papier (feTurbulence).
+- **Le texte = champs natifs** (configurés dans `kit.ts` / `seedKit.ts`) :
+  `programName` (logoText, court) ; champ *primary* = valeur + libellé par mécanique
+  (`TAMPONS`/`POINTS`/`VISITES` valeur `{points}`, `tiered` → `STATUT` `{palier}`) ;
+  la **récompense** arrive en *secondary* automatiquement (via `applyIdentity` /
+  `merchants.reward_label`).
+- **Harmonie** : le fond du strip à gauche reprend le `background` de la carte
+  → pas de rupture entre le strip et le reste.
+
+Le wordmark dépend des **polices système** → assets **rendus localement**
+(`scripts/render-demo-assets.mjs`) puis **versionnés**, et le seed les **upload
+tels quels** (jamais de rendu de texte serveur ; la route admin les inclut au
+bundle via `outputFileTracingIncludes`).
+
+**Auto-contrôle** : `scripts/render-demo-contact-sheet.mjs` génère, par carte, une
+**maquette ASSEMBLÉE** (logo + logoText + gros nombre natif SUR le strip +
+récompense + QR) dans `assets/demo-kit/preview/<slug>.png` — vérifiée à l'œil :
+aucun chevauchement, le nombre et la métaphore ne se touchent jamais.
 
 ## Notes / caveats
 

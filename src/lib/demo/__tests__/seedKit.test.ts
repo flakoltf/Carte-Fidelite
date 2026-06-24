@@ -42,11 +42,13 @@ describe("buildKitDesign — design publié cohérent", () => {
     expect(d.logo.assets?.apple?.strip3).toBe("m-cafe/apple/strip@3x.png");
   });
 
-  it("carte à niveaux : cardType points + champ {palier} en en-tête, pas de stamps", () => {
+  it("carte à niveaux : cardType points + champ primary {palier} STATUT, pas de stamps", () => {
     const d = buildKitDesign(institut, "m-inst");
     expect(d.cardType).toBe("points");
     expect(d.stamps).toBeUndefined();
-    expect(d.fields.find((f) => f.value === "{palier}")?.zone).toBe("header");
+    const palier = d.fields.find((f) => f.value === "{palier}");
+    expect(palier?.zone).toBe("primary");
+    expect(palier?.label).toBe("STATUT");
   });
 });
 
