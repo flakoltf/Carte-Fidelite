@@ -64,6 +64,8 @@ export type DemoKitEntry = {
   businessHours: BusinessHours;
   /** Place ID Google (lien « Laisser un avis ») — au moins un marchand du kit. */
   googlePlaceId?: string;
+  /** Récompense affichée (colonne merchants.reward_label, 1–80 car.). */
+  rewardLabel: string;
   /** Résumé 1 ligne : ce que cette carte démontre sur le terrain. */
   demonstrates: string;
   design: DemoCardDesignSpec;
@@ -129,6 +131,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 311 22 33",
     businessHours: HOURS_DAILY,
     googlePlaceId: DEMO_PLACE_ID,
+    rewardLabel: "Un café offert",
     demonstrates: "Carte à tampons complète : tampon de bienvenue, palier intermédiaire à 5, avis Google.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5 },
@@ -153,6 +156,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     longitude: 6.1462,
     phone: "+41 22 731 44 55",
     businessHours: HOURS_BAKERY,
+    rewardLabel: "Une viennoiserie offerte",
     demonstrates: "Carte à tampons artisanale (8 achats → 1 viennoiserie), palette chaude.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 8 },
@@ -177,6 +181,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     longitude: 6.1457,
     phone: "+41 22 310 99 88",
     businessHours: HOURS_RESTO,
+    rewardLabel: "CHF 20 offerts",
     demonstrates: "Carte à POINTS par franc dépensé : 1 pt/CHF, CHF 20 offerts à 200 pts (saisie du montant au comptoir).",
     loyaltyType: "amount_points",
     loyaltyConfig: {
@@ -205,6 +210,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     longitude: 6.1532,
     phone: "+41 22 736 12 00",
     businessHours: HOURS_SALON,
+    rewardLabel: "Un soin offert",
     demonstrates: "Carte à VISITES : récompenses aux paliers 5, 10 et 15 passages.",
     loyaltyType: "visit_based",
     loyaltyConfig: { milestones: [5, 10, 15] },
@@ -228,6 +234,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     longitude: 6.1611,
     phone: "+41 22 740 55 66",
     businessHours: HOURS_SALON,
+    rewardLabel: "Avantages niveau Or",
     demonstrates: "Carte à NIVEAUX : statut Bronze (3), Argent (6) puis Or (10) — le palier s'affiche sur la carte.",
     loyaltyType: "tiered",
     loyaltyConfig: {
@@ -257,6 +264,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     longitude: 6.1432,
     phone: "+41 22 311 00 00",
     businessHours: HOURS_DAILY,
+    rewardLabel: "Un café offert",
     demonstrates: "Compte de secours du fondateur : carte à tampons 10 + tampon de bienvenue.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 10, welcome_stamps: 1 },

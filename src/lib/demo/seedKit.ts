@@ -1,0 +1,342 @@
+// SEED DU KIT DÉMO (Phase 3) — applique DEMO_KIT à la flotte de prospection.
+//
+// Pour CHAQUE marchand de l'allowlist : (1) garde stricte assertDemoKitMerchant
+// AVANT toute écriture, (2) upload des PNG (rendus par sharp) au bucket
+// card-assets sous le préfixe `{merchantId}/…`, (3) publication du design,
+// (4) mise à jour identité + programme, (5) clientèle d'exemple à états VARIÉS
+// (vide / mi-parcours / reward-ready / juste offerte).
+//
+// Découpage : fonctions PURES (design, payload marchand, plan de cartes,
+// chemins d'assets) testées sans réseau ; orchestrateur à dépendances injectées
+// (db / render / upload) — la route admin et le script CLI les câblent.
+//
+// INVARIANTS : jamais un marchand hors allowlist (throw) · tenancy .eq partout ·
+// chemins d'assets scoped au tenant · aucune nouvelle AuditAction.
+
+import type { CardDesign, CardField, LogoAssets } from "@/lib/cardDesign/types";
+import { designToPublishRow, stampGoalForMerchant } from "@/lib/merchant/cardStudio";
+import { purgeDemoCustomerData } from "./purge";
+import type { DemoDb } from "./db";
+import { assertDemoKitMerchant } from "./allowlist";
+import { buildArtSet, type ArtPalette } from "./art";
+import { DEMO_KIT, type DemoKitEntry } from "./kit";
+
+const DAY = 86400000;
+
+// ─── Plan de rasterisation : slot SVG → fichiers Storage (nom + dims + champ) ──
+// Les noms de fichiers + le mapping vers logo_assets reproduisent EXACTEMENT la
+// convention attendue par applePass / la route assets (cf. cardDesign/storage.ts).
+
+type AppleField = "x1" | "x2" | "x3" | "icon1" | "icon2" | "icon3" | "strip1" | "strip2" | "strip3";
+type GoogleField = "logo" | "hero";
+
+export const APPLE_ASSETS: readonly { slot: string; file: string; w: number; h: number; field: AppleField }[] = [
+  { slot: "strip", file: "strip.png", w: 375, h: 123, field: "strip1" },
+  { slot: "strip", file: "strip@2x.png", w: 750, h: 246, field: "strip2" },
+  { slot: "strip", file: "strip@3x.png", w: 1125, h: 369, field: "strip3" },
+  { slot: "logo", file: "logo.png", w: 160, h: 50, field: "x1" },
+  { slot: "logo", file: "logo@2x.png", w: 320, h: 100, field: "x2" },
+  { slot: "logo", file: "logo@3x.png", w: 480, h: 150, field: "x3" },
+  { slot: "icon", file: "icon.png", w: 29, h: 29, field: "icon1" },
+  { slot: "icon", file: "icon@2x.png", w: 58, h: 58, field: "icon2" },
+  { slot: "icon", file: "icon@3x.png", w: 87, h: 87, field: "icon3" },
+];
+
+export const GOOGLE_ASSETS: readonly { slot: string; file: string; w: number; h: number; field: GoogleField }[] = [
+  { slot: "google-logo", file: "logo.png", w: 660, h: 660, field: "logo" },
+  { slot: "hero", file: "hero.png", w: 1032, h: 336, field: "hero" },
+];
+
+export function applePath(merchantId: string, file: string): string {
+  return `${merchantId}/apple/${file}`;
+}
+export function googlePath(merchantId: string, file: string): string {
+  return `${merchantId}/google/${file}`;
+}
+
+// logo_assets complet (chemins Storage déterministes scoped au tenant).
+export function buildKitLogoAssets(merchantId: string): LogoAssets {
+  const apple: Record<string, string> = {};
+  for (const a of APPLE_ASSETS) apple[a.field] = applePath(merchantId, a.file);
+  const google: Record<string, string> = {};
+  for (const g of GOOGLE_ASSETS) google[g.field] = googlePath(merchantId, g.file);
+  return { apple: apple as LogoAssets["apple"], google: google as LogoAssets["google"] };
+}
+
+export function paletteOf(entry: DemoKitEntry): ArtPalette {
+  return { ...entry.design.colors, accent: entry.design.accent };
+}
+
+// ─── Design publié (CardDesign complet) ───────────────────────────────────────
+
+function defaultFields(entry: DemoKitEntry): CardField[] {
+  const fields: CardField[] = [];
+  // Champ principal : compteur (tampons OU points selon la mécanique).
+  const isStamps = entry.loyaltyType === "stamp_card";
+  fields.push({
+    id: "points",
+    zone: "primary",
+    label: isStamps ? "TAMPONS" : "POINTS",
+    value: "{points}",
+    order: 0,
+  });
+  // Carte à niveaux : afficher le palier courant dans l'en-tête.
+  if (entry.loyaltyType === "tiered") {
+    fields.push({ id: "palier", zone: "header", label: "NIVEAU", value: "{palier}", order: 1 });
+  }
+  return fields;
+}
+
+export function buildKitDesign(entry: DemoKitEntry, merchantId: string): CardDesign {
+  return {
+    colors: { ...entry.design.colors },
+    programName: entry.design.programName,
+    logo: { assets: buildKitLogoAssets(merchantId) },
+    fields: defaultFields(entry),
+    barcode: { ...entry.design.barcode },
+    cardType: entry.design.cardType,
+    ...(entry.design.stamps ? { stamps: { ...entry.design.stamps } } : {}),
+  };
+}
+
+// ─── Mise à jour identité + programme du marchand ─────────────────────────────
+
+export function buildKitMerchantUpdate(entry: DemoKitEntry, now: Date): Record<string, unknown> {
+  const design = buildKitDesign(entry, "x"); // merchantId factice : on ne lit ici que stamps/cardType
+  const goal = stampGoalForMerchant(design);
+  return {
+    shop_name: entry.shopName,
+    address: entry.address,
+    latitude: entry.latitude,
+    longitude: entry.longitude,
+    phone: entry.phone,
+    business_hours: entry.businessHours,
+    loyalty_type: entry.loyaltyType,
+    loyalty_config: entry.loyaltyConfig,
+    reward_label: entry.rewardLabel,
+    primary_color: entry.design.colors.background,
+    ...(entry.googlePlaceId ? { google_place_id: entry.googlePlaceId } : {}),
+    ...(goal != null ? { stamp_goal: goal } : {}),
+    // Marqueurs concierge cohérents (jamais d'état mi-rempli → wizard).
+    setup_mode: "concierge",
+    managed_by_concierge: true,
+    signup_source: "concierge",
+    onboarding_completed_at: now.toISOString(),
+  };
+}
+
+// ─── Clientèle d'exemple à états variés ───────────────────────────────────────
+
+export type DemoKitCardSpec = {
+  fullName: string;
+  /** Compteur de tampons/visites/paliers (0 pour amount_points). */
+  stampsCount: number;
+  /** Solde de points (amount_points uniquement ; 0 sinon). */
+  pointsBalance: number;
+  /** Jours depuis le dernier scan ; null = carte neuve jamais scannée. */
+  lastScanDaysAgo: number | null;
+  state: "empty" | "mid" | "reward-ready" | "just-offered";
+};
+
+// Valeur du compteur qui rend la carte « reward-ready » selon la mécanique.
+export function rewardReadyValue(entry: DemoKitEntry): number {
+  switch (entry.loyaltyType) {
+    case "stamp_card": return entry.loyaltyConfig.goal;
+    case "visit_based": return Math.max(...entry.loyaltyConfig.milestones);
+    case "tiered": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at));
+    case "amount_points": return entry.loyaltyConfig.rewardThreshold;
+  }
+}
+
+function midValue(entry: DemoKitEntry): number {
+  switch (entry.loyaltyType) {
+    case "stamp_card": return Math.max(1, Math.ceil(entry.loyaltyConfig.goal * 0.6));
+    case "visit_based": return entry.loyaltyConfig.milestones[0] + 1;
+    case "tiered": {
+      const ats = entry.loyaltyConfig.tiers.map((t) => t.at).sort((a, b) => a - b);
+      return ats[Math.floor(ats.length / 2)] ?? ats[0];
+    }
+    case "amount_points": return Math.floor(entry.loyaltyConfig.rewardThreshold * 0.55);
+  }
+}
+
+// Compteur d'une carte « neuve » (tampon de bienvenue éventuel pour stamp_card).
+function emptyValue(entry: DemoKitEntry): number {
+  if (entry.loyaltyType === "stamp_card") return entry.loyaltyConfig.welcome_stamps ?? 0;
+  return 0;
+}
+
+const DEMO_NAMES = [
+  "Sophie Meier", "Luca Bianchi", "Anne Dubois", "Marc Rochat",
+  "Claire Favre", "Tom Schneider", "Léa Girard", "Paul Hofer",
+] as const;
+
+// Place une valeur de compteur dans la bonne colonne selon la mécanique.
+function counterToCard(entry: DemoKitEntry, value: number): { stampsCount: number; pointsBalance: number } {
+  return entry.loyaltyType === "amount_points"
+    ? { stampsCount: 0, pointsBalance: value }
+    : { stampsCount: value, pointsBalance: 0 };
+}
+
+// 6 cartes déterministes : 1 reward-ready, 1 juste offerte (compteur 0), 2 en
+// cours, 1 neuve (bienvenue), 1 basse. Couvre tous les écrans de démo.
+export function planKitCards(entry: DemoKitEntry): DemoKitCardSpec[] {
+  const reward = rewardReadyValue(entry);
+  const mid = midValue(entry);
+  const low = entry.loyaltyType === "amount_points" ? Math.max(1, Math.round(reward * 0.15)) : 1;
+  const empty = emptyValue(entry);
+
+  const specs: { name: string; value: number; days: number | null; state: DemoKitCardSpec["state"] }[] = [
+    { name: DEMO_NAMES[0], value: reward, days: 0, state: "reward-ready" },
+    { name: DEMO_NAMES[1], value: 0, days: 0, state: "just-offered" },
+    { name: DEMO_NAMES[2], value: mid, days: 1, state: "mid" },
+    { name: DEMO_NAMES[3], value: Math.max(low, Math.round(mid * 0.5)), days: 3, state: "mid" },
+    { name: DEMO_NAMES[4], value: empty, days: null, state: "empty" },
+    { name: DEMO_NAMES[5], value: low, days: 7, state: "mid" },
+  ];
+
+  return specs.map((s) => ({
+    fullName: s.name,
+    ...counterToCard(entry, s.value),
+    lastScanDaysAgo: s.days,
+    state: s.state,
+  }));
+}
+
+export function demoKitCustomerEmail(slug: string, index: number): string {
+  return `demo-${slug}-client-${index + 1}@example.com`;
+}
+
+// ─── Orchestrateur (I/O injecté) ──────────────────────────────────────────────
+
+type DbResult<T = unknown> = { data: T; error: unknown };
+interface KitSelectBuilder {
+  eq(col: string, val: unknown): KitSelectBuilder;
+  maybeSingle(): Promise<DbResult<Record<string, unknown> | null>>;
+  single(): Promise<DbResult<{ id: string } | null>>;
+}
+interface KitTable {
+  select(cols?: string): KitSelectBuilder;
+  insert(payload: unknown): { select(cols?: string): { single(): Promise<DbResult<{ id: string } | null>> } } & PromiseLike<DbResult>;
+  update(payload: unknown): { eq(col: string, val: unknown): Promise<DbResult> };
+  upsert(payload: unknown, opts?: { onConflict?: string }): Promise<DbResult>;
+}
+export interface KitDb {
+  from(table: string): KitTable;
+}
+
+export interface KitSeedDeps {
+  db: KitDb;
+  /** Rasterise un SVG en PNG (sharp en prod, stub en test). */
+  render(svg: string, w: number, h: number): Promise<Buffer>;
+  /** Upload un PNG au bucket card-assets (chemin déjà scoped au tenant). */
+  upload(path: string, body: Buffer): Promise<void>;
+  /** Auteur de la publication (merchants/card_designs.updated_by). */
+  actorUserId: string;
+  now?: Date;
+}
+
+export interface KitEntryResult {
+  slug: string;
+  merchantId: string;
+  cards: number;
+  assets: number;
+}
+
+async function seedKitCustomers(db: KitDb, entry: DemoKitEntry, merchantId: string, now: Date): Promise<number> {
+  const specs = planKitCards(entry);
+  let made = 0;
+  for (let i = 0; i < specs.length; i++) {
+    const spec = specs[i];
+    const { data: customer } = await db
+      .from("customers")
+      .insert({ merchant_id: merchantId, full_name: spec.fullName, email: demoKitCustomerEmail(entry.slug, i) })
+      .select("id")
+      .single();
+    if (!customer) continue;
+
+    const lastScan = spec.lastScanDaysAgo == null ? null : new Date(now.getTime() - spec.lastScanDaysAgo * DAY).toISOString();
+    const { data: card } = await db
+      .from("loyalty_cards")
+      .insert({
+        merchant_id: merchantId,
+        customer_id: customer.id,
+        stamps_count: spec.stampsCount,
+        points_balance: spec.pointsBalance,
+        last_scan: lastScan,
+      })
+      .select("id")
+      .single();
+    if (!card) continue;
+    made++;
+
+    // Historique de scan seulement si la carte a réellement été scannée.
+    const counted = spec.stampsCount + spec.pointsBalance;
+    if (lastScan && counted > 0) {
+      await db.from("scan_history").insert({
+        merchant_id: merchantId,
+        card_id: card.id,
+        points_added: entry.loyaltyType === "amount_points" ? counted : 1,
+        scanned_at: lastScan,
+      });
+    }
+  }
+  return made;
+}
+
+// Applique UNE entrée du kit (garde + assets + design + programme + clients).
+export async function applyKitEntry(deps: KitSeedDeps, entry: DemoKitEntry): Promise<KitEntryResult> {
+  const now = deps.now ?? new Date();
+  const { db } = deps;
+
+  // 1. Résolution par slug + GARDE STRICTE avant toute écriture.
+  const { data: merchant } = await db
+    .from("merchants")
+    .select("id, slug, email, role")
+    .eq("slug", entry.slug)
+    .maybeSingle();
+  assertDemoKitMerchant(merchant);
+  const merchantId = String((merchant as Record<string, unknown>).id);
+  // Défense supplémentaire : la ligne doit être PRÉCISÉMENT ce marchand du kit.
+  if ((merchant as Record<string, unknown>).email !== entry.email) {
+    throw new Error(`Garde kit : email résolu ≠ email du kit pour ${entry.slug}`);
+  }
+
+  // 2. Rendu + upload des assets (préfixe Storage scoped au tenant).
+  const set = buildArtSet(entry.motif, paletteOf(entry));
+  let assets = 0;
+  for (const a of APPLE_ASSETS) {
+    await deps.upload(applePath(merchantId, a.file), await deps.render(set[a.slot], a.w, a.h));
+    assets++;
+  }
+  for (const g of GOOGLE_ASSETS) {
+    await deps.upload(googlePath(merchantId, g.file), await deps.render(set[g.slot], g.w, g.h));
+    assets++;
+  }
+
+  // 3. Publication du design (version incrémentée).
+  const { data: current } = await db.from("card_designs").select("version").eq("merchant_id", merchantId).maybeSingle();
+  const nextVersion = (Number((current as Record<string, unknown> | null)?.version) || 0) + 1;
+  const design = buildKitDesign(entry, merchantId);
+  const { error: designErr } = await db
+    .from("card_designs")
+    .upsert(designToPublishRow(design, merchantId, deps.actorUserId, nextVersion), { onConflict: "merchant_id" });
+  if (designErr) throw new Error(`card_designs upsert ${entry.slug}: ${String(designErr)}`);
+
+  // 4. Identité + programme (tenancy .eq("id")).
+  const { error: updErr } = await db.from("merchants").update(buildKitMerchantUpdate(entry, now)).eq("id", merchantId);
+  if (updErr) throw new Error(`merchants update ${entry.slug}: ${String(updErr)}`);
+
+  // 5. Repart de clients propres (purge scoped au marchand) puis re-sème.
+  await purgeDemoCustomerData(db as unknown as DemoDb, merchantId);
+  const cards = await seedKitCustomers(db, entry, merchantId, now);
+
+  return { slug: entry.slug, merchantId, cards, assets };
+}
+
+// Applique TOUT le kit (séquentiel — petites écritures idempotentes).
+export async function seedDemoKit(deps: KitSeedDeps): Promise<KitEntryResult[]> {
+  const out: KitEntryResult[] = [];
+  for (const entry of DEMO_KIT) out.push(await applyKitEntry(deps, entry));
+  return out;
+}
