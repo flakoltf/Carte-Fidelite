@@ -44,6 +44,7 @@ export type DemoArtText = {
 export type DemoFieldData = {
   statut: string;        // header « STATUT » (Or / Argent / Membre…)
   since: string;         // header « DEPUIS » (année)
+  primaryValue?: string; // valeur primary STATIQUE (amount_points : seuil > 50, jeton inadapté)
   progression: string;   // secondary « PROGRESSION »
   nextStep: string;      // secondary « PROCHAIN PALIER »
   thisMonth: string;     // secondary « CE MOIS-CI »
@@ -233,6 +234,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     bannerPhoto: "pass-assets/banners/pizza.jpg",
     demo: {
       statut: "Argent", since: "1962",
+      primaryValue: "320 pts",
       progression: "Plus que 80 pts", nextStep: "200 pts", thisMonth: "240 pts",
       memberSince: "Sept. 2024", totalVisits: "23", lastVisit: "il y a 4 j", referrals: "2",
       memberId: "PZ-5582-10",

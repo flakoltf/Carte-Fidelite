@@ -80,12 +80,20 @@ describe("buildKitMerchantUpdate — identité + programme", () => {
     expect(u.setup_mode).toBe("concierge");
   });
 
-  it("Pizzeria : amount_points, stamp_goal = seuil (objectif du jeton {points}), pas de place_id", () => {
+  it("Pizzeria : amount_points, stamp_goal borné à 50 (contrainte 1-50), pas de place_id", () => {
     const u = buildKitMerchantUpdate(pizzeria, new Date());
     expect(u.loyalty_type).toBe("amount_points");
     expect(u.reward_label).toBe("CHF 20 offerts");
-    expect(u.stamp_goal).toBe(200); // {points} = "X / 200"
+    expect(u.stamp_goal).toBe(50); // seuil 200 plafonné à 50 (primary statique de toute façon)
     expect(u.google_place_id).toBeUndefined();
+  });
+
+  it("stamp_goal de chaque marchand respecte la contrainte 1-50", () => {
+    for (const entry of DEMO_KIT) {
+      const g = buildKitMerchantUpdate(entry, new Date()).stamp_goal as number;
+      expect(g, entry.shopName).toBeGreaterThanOrEqual(1);
+      expect(g, entry.shopName).toBeLessThanOrEqual(50);
+    }
   });
 });
 
@@ -105,14 +113,10 @@ describe("planKitCards — clientèle à états variés", () => {
       expect(justOffered!.stampsCount + justOffered!.pointsBalance).toBe(0);
     });
 
-    it(`${entry.shopName} : colonnes compteur cohérentes avec la mécanique`, () => {
+    it(`${entry.shopName} : la bonne colonne porte le compteur selon la mécanique`, () => {
       for (const c of planKitCards(entry)) {
-        if (entry.loyaltyType === "amount_points") {
-          // amount_points : points_balance (comptoir) ET stamps_count (Wallet) miroités.
-          expect(c.stampsCount).toBe(c.pointsBalance);
-        } else {
-          expect(c.pointsBalance).toBe(0);
-        }
+        if (entry.loyaltyType === "amount_points") expect(c.stampsCount).toBe(0);
+        else expect(c.pointsBalance).toBe(0);
       }
     });
   }

@@ -77,14 +77,19 @@ function primaryLabel(entry: DemoKitEntry): string {
   }
 }
 
-// « Objectif » d'affichage pour le jeton {points} = "X / objectif" (merchants.stamp_goal).
+// « Objectif » d'affichage pour le jeton {points} = "X / objectif".
+// Borné à merchants.stamp_goal ∈ [1, 50] (contrainte merchants_stamp_goal_range).
+// amount_points utilise un primary STATIQUE (le seuil 200 dépasse la borne) →
+// son objectif sert seulement au champ {points} discret du dos.
 export function goalForDisplay(entry: DemoKitEntry): number {
+  let raw: number;
   switch (entry.loyaltyType) {
-    case "stamp_card": return entry.loyaltyConfig.goal;
-    case "visit_based": return Math.max(...entry.loyaltyConfig.milestones);
-    case "tiered": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at));
-    case "amount_points": return entry.loyaltyConfig.rewardThreshold;
+    case "stamp_card": raw = entry.loyaltyConfig.goal; break;
+    case "visit_based": raw = Math.max(...entry.loyaltyConfig.milestones); break;
+    case "tiered": raw = Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at)); break;
+    case "amount_points": raw = entry.loyaltyConfig.rewardThreshold; break;
   }
+  return Math.max(1, Math.min(50, raw));
 }
 
 // Jeu de champs RICHE remplissant les zones natives (cf. carte showcase du site).
@@ -93,13 +98,19 @@ export function goalForDisplay(entry: DemoKitEntry): number {
 // (carte vivante F1) → on NE les duplique PAS ici.
 export function kitDesignFields(entry: DemoKitEntry): CardField[] {
   const d = entry.demo;
+  // primary : tiered → {palier} ; amount_points → valeur STATIQUE (seuil > 50,
+  // le jeton {points}="X/50" serait trompeur) ; stamp/visit → {points}="X/objectif".
+  const primary: CardField =
+    entry.loyaltyType === "tiered"
+      ? { id: "primary", zone: "primary", label: "STATUT", value: "{palier}", order: 2 }
+      : entry.loyaltyType === "amount_points"
+        ? { id: "primary", zone: "primary", label: "POINTS", value: d.primaryValue ?? "{points}", order: 2 }
+        : { id: "primary", zone: "primary", label: primaryLabel(entry), value: "{points}", order: 2 };
+
   const fields: CardField[] = [
     { id: "h_statut", zone: "header", label: "STATUT", value: d.statut, order: 0 },
     { id: "h_since", zone: "header", label: "DEPUIS", value: d.since, order: 1 },
-    // primary : tiered → palier (texte) ; sinon le compteur {points} = "X / objectif".
-    entry.loyaltyType === "tiered"
-      ? { id: "primary", zone: "primary", label: "STATUT", value: "{palier}", order: 2 }
-      : { id: "primary", zone: "primary", label: primaryLabel(entry), value: "{points}", order: 2 },
+    primary,
     { id: "s_prog", zone: "secondary", label: "PROGRESSION", value: d.progression, order: 3 },
     { id: "s_next", zone: "secondary", label: "PROCHAIN PALIER", value: d.nextStep, order: 4 },
     { id: "s_month", zone: "secondary", label: "CE MOIS-CI", value: d.thisMonth, order: 5 },
@@ -114,6 +125,11 @@ export function kitDesignFields(entry: DemoKitEntry): CardField[] {
     { id: "b_how", zone: "back", label: "COMMENT ÇA MARCHE", value: d.howItWorks, order: 11 },
     { id: "b_cond", zone: "back", label: "CONDITIONS DE LA RÉCOMPENSE", value: d.conditions, order: 12 },
   ];
+  // amount_points : primary statique → aucun {points} ailleurs. On en place un au
+  // DOS (discret) pour neutraliser le fallback « carte morte » de passJson.
+  if (entry.loyaltyType === "amount_points") {
+    fields.push({ id: "b_counter", zone: "back", label: "PROGRESSION", value: "{points}", order: 13 });
+  }
   return fields;
 }
 
@@ -199,13 +215,12 @@ const DEMO_NAMES = [
   "Claire Favre", "Tom Schneider", "Léa Girard", "Paul Hofer",
 ] as const;
 
-// Place la valeur de compteur dans les bonnes colonnes selon la mécanique.
-// amount_points : on MIROITE points_balance ET stamps_count — le comptoir lit
-// points_balance, et la carte Wallet affiche le jeton {points}="X / objectif"
-// (qui lit stamps_count) avec un nombre cohérent. Les autres : stamps_count.
+// Place la valeur de compteur dans la bonne colonne selon la mécanique.
+// amount_points : le comptoir lit points_balance (la carte affiche un primary
+// STATIQUE) ; les autres : stamps_count (lu par le jeton {points}).
 function counterToCard(entry: DemoKitEntry, value: number): { stampsCount: number; pointsBalance: number } {
   return entry.loyaltyType === "amount_points"
-    ? { stampsCount: value, pointsBalance: value }
+    ? { stampsCount: 0, pointsBalance: value }
     : { stampsCount: value, pointsBalance: 0 };
 }
 
