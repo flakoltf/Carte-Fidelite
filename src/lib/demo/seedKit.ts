@@ -14,7 +14,7 @@
 // chemins d'assets scoped au tenant · aucune nouvelle AuditAction.
 
 import type { CardDesign, CardField, LogoAssets } from "@/lib/cardDesign/types";
-import { designToPublishRow, stampGoalForMerchant } from "@/lib/merchant/cardStudio";
+import { designToPublishRow } from "@/lib/merchant/cardStudio";
 import { purgeDemoCustomerData } from "./purge";
 import type { DemoDb } from "./db";
 import { assertDemoKitMerchant } from "./allowlist";
@@ -64,18 +64,57 @@ export function buildKitLogoAssets(merchantId: string): LogoAssets {
   return { apple: apple as LogoAssets["apple"], google: google as LogoAssets["google"] };
 }
 
-// ─── Design publié (CardDesign complet) ───────────────────────────────────────
+// ─── Design publié (CardDesign complet « showcase ») ──────────────────────────
 
-function defaultFields(entry: DemoKitEntry): CardField[] {
-  // Champ PRIMARY = le gros nombre/statut affiché par Apple PAR-DESSUS le strip
-  // (sur la zone gauche propre). Le label suit la mécanique.
-  if (entry.loyaltyType === "tiered") {
-    // Niveaux : le statut courant (Bronze/Argent/Or) plutôt qu'un nombre.
-    return [{ id: "statut", zone: "primary", label: "STATUT", value: "{palier}", order: 0 }];
+// Le label du champ primary selon la mécanique. Le primary est le gros nombre/
+// statut qu'Apple pose SUR la zone gauche propre du strip.
+function primaryLabel(entry: DemoKitEntry): string {
+  switch (entry.loyaltyType) {
+    case "amount_points": return "POINTS";
+    case "visit_based": return "VISITES";
+    case "tiered": return "STATUT";
+    case "stamp_card": return "TAMPONS";
   }
-  const label =
-    entry.loyaltyType === "amount_points" ? "POINTS" : entry.loyaltyType === "visit_based" ? "VISITES" : "TAMPONS";
-  return [{ id: "points", zone: "primary", label, value: "{points}", order: 0 }];
+}
+
+// « Objectif » d'affichage pour le jeton {points} = "X / objectif" (merchants.stamp_goal).
+export function goalForDisplay(entry: DemoKitEntry): number {
+  switch (entry.loyaltyType) {
+    case "stamp_card": return entry.loyaltyConfig.goal;
+    case "visit_based": return Math.max(...entry.loyaltyConfig.milestones);
+    case "tiered": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at));
+    case "amount_points": return entry.loyaltyConfig.rewardThreshold;
+  }
+}
+
+// Jeu de champs RICHE remplissant les zones natives (cf. carte showcase du site).
+// Toujours ≥ 1 champ porteur de {points} → évite le fallback « carte morte » de
+// passJson. Récompense/horaires/adresse/avis sont injectés AILLEURS par applyIdentity
+// (carte vivante F1) → on NE les duplique PAS ici.
+export function kitDesignFields(entry: DemoKitEntry): CardField[] {
+  const d = entry.demo;
+  const fields: CardField[] = [
+    { id: "h_statut", zone: "header", label: "STATUT", value: d.statut, order: 0 },
+    { id: "h_since", zone: "header", label: "DEPUIS", value: d.since, order: 1 },
+    // primary : tiered → palier (texte) ; sinon le compteur {points} = "X / objectif".
+    entry.loyaltyType === "tiered"
+      ? { id: "primary", zone: "primary", label: "STATUT", value: "{palier}", order: 2 }
+      : { id: "primary", zone: "primary", label: primaryLabel(entry), value: "{points}", order: 2 },
+    { id: "s_prog", zone: "secondary", label: "PROGRESSION", value: d.progression, order: 3 },
+    { id: "s_next", zone: "secondary", label: "PROCHAIN PALIER", value: d.nextStep, order: 4 },
+    { id: "s_month", zone: "secondary", label: "CE MOIS-CI", value: d.thisMonth, order: 5 },
+    { id: "a_since", zone: "auxiliary", label: "MEMBRE DEPUIS", value: d.memberSince, order: 6 },
+    { id: "a_visits", zone: "auxiliary", label: "VISITES", value: d.totalVisits, order: 7 },
+    { id: "a_last", zone: "auxiliary", label: "DERNIÈRE VISITE", value: d.lastVisit, order: 8 },
+    // tiered n'a pas de {points} en primary → on le met en auxiliary (progrès vers le top).
+    entry.loyaltyType === "tiered"
+      ? { id: "a_prog", zone: "auxiliary", label: "PROGRÈS", value: "{points}", order: 9 }
+      : { id: "a_ref", zone: "auxiliary", label: "PARRAINAGES", value: d.referrals, order: 9 },
+    { id: "b_member", zone: "back", label: "VOTRE N° DE MEMBRE", value: d.memberId, order: 10 },
+    { id: "b_how", zone: "back", label: "COMMENT ÇA MARCHE", value: d.howItWorks, order: 11 },
+    { id: "b_cond", zone: "back", label: "CONDITIONS DE LA RÉCOMPENSE", value: d.conditions, order: 12 },
+  ];
+  return fields;
 }
 
 export function buildKitDesign(entry: DemoKitEntry, merchantId: string): CardDesign {
@@ -83,18 +122,15 @@ export function buildKitDesign(entry: DemoKitEntry, merchantId: string): CardDes
     colors: { ...entry.design.colors },
     programName: entry.design.programName,
     logo: { assets: buildKitLogoAssets(merchantId) },
-    fields: defaultFields(entry),
+    fields: kitDesignFields(entry),
     barcode: { ...entry.design.barcode },
     cardType: entry.design.cardType,
-    ...(entry.design.stamps ? { stamps: { ...entry.design.stamps } } : {}),
   };
 }
 
 // ─── Mise à jour identité + programme du marchand ─────────────────────────────
 
 export function buildKitMerchantUpdate(entry: DemoKitEntry, now: Date): Record<string, unknown> {
-  const design = buildKitDesign(entry, "x"); // merchantId factice : on ne lit ici que stamps/cardType
-  const goal = stampGoalForMerchant(design);
   return {
     shop_name: entry.shopName,
     address: entry.address,
@@ -107,7 +143,8 @@ export function buildKitMerchantUpdate(entry: DemoKitEntry, now: Date): Record<s
     reward_label: entry.rewardLabel,
     primary_color: entry.design.colors.background,
     ...(entry.googlePlaceId ? { google_place_id: entry.googlePlaceId } : {}),
-    ...(goal != null ? { stamp_goal: goal } : {}),
+    // « Objectif » du jeton {points} = "X / objectif" (par mécanique).
+    stamp_goal: goalForDisplay(entry),
     // Marqueurs concierge cohérents (jamais d'état mi-rempli → wizard).
     setup_mode: "concierge",
     managed_by_concierge: true,
@@ -162,10 +199,13 @@ const DEMO_NAMES = [
   "Claire Favre", "Tom Schneider", "Léa Girard", "Paul Hofer",
 ] as const;
 
-// Place une valeur de compteur dans la bonne colonne selon la mécanique.
+// Place la valeur de compteur dans les bonnes colonnes selon la mécanique.
+// amount_points : on MIROITE points_balance ET stamps_count — le comptoir lit
+// points_balance, et la carte Wallet affiche le jeton {points}="X / objectif"
+// (qui lit stamps_count) avec un nombre cohérent. Les autres : stamps_count.
 function counterToCard(entry: DemoKitEntry, value: number): { stampsCount: number; pointsBalance: number } {
   return entry.loyaltyType === "amount_points"
-    ? { stampsCount: 0, pointsBalance: value }
+    ? { stampsCount: value, pointsBalance: value }
     : { stampsCount: value, pointsBalance: 0 };
 }
 

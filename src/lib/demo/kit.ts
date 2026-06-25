@@ -37,6 +37,25 @@ export type DemoArtText = {
   wordmark: string[];
 };
 
+// Données « showcase » (v4) : valeurs démo crédibles remplissant TOUS les champs
+// natifs du pass (header / secondary / auxiliary / back) — densité comparable à
+// la carte de référence du site. Les champs vivants ({points}/{palier}) sont
+// gérés par le moteur ; ici uniquement des valeurs démo statiques.
+export type DemoFieldData = {
+  statut: string;        // header « STATUT » (Or / Argent / Membre…)
+  since: string;         // header « DEPUIS » (année)
+  progression: string;   // secondary « PROGRESSION »
+  nextStep: string;      // secondary « PROCHAIN PALIER »
+  thisMonth: string;     // secondary « CE MOIS-CI »
+  memberSince: string;   // auxiliary « MEMBRE DEPUIS »
+  totalVisits: string;   // auxiliary « VISITES »
+  lastVisit: string;     // auxiliary « DERNIÈRE VISITE »
+  referrals: string;     // auxiliary « PARRAINAGES »
+  memberId: string;      // back « VOTRE N° DE MEMBRE »
+  howItWorks: string;    // back « COMMENT ÇA MARCHE »
+  conditions: string;    // back « CONDITIONS »
+};
+
 // Sous-ensemble de CardDesign porté par le kit. Le seed complète `fields` +
 // `logo.assets` (chemins Storage) au moment d'appliquer.
 export type DemoCardDesignSpec = {
@@ -74,6 +93,10 @@ export type DemoKitEntry = {
   googlePlaceId?: string;
   /** Récompense affichée (colonne merchants.reward_label, 1–80 car.). */
   rewardLabel: string;
+  /** Photo de bannière (relatif à public/), si dispo — sinon hero illustré. */
+  bannerPhoto?: string;
+  /** Données showcase remplissant les champs natifs. */
+  demo: DemoFieldData;
   /** Résumé 1 ligne : ce que cette carte démontre sur le terrain. */
   demonstrates: string;
   design: DemoCardDesignSpec;
@@ -139,6 +162,15 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_DAILY,
     googlePlaceId: DEMO_PLACE_ID,
     rewardLabel: "Un café offert",
+    bannerPhoto: "pass-assets/banners/cafe.jpg",
+    demo: {
+      statut: "Or", since: "1894",
+      progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "14 cafés",
+      memberSince: "Mars 2024", totalVisits: "87", lastVisit: "il y a 2 j", referrals: "3",
+      memberId: "CR-4827-6391",
+      howItWorks: "Un tampon offert à chaque café. Le 10ᵉ vous est offert.",
+      conditions: "Un café offert par carte complétée. Non cumulable, non échangeable en espèces.",
+    },
     demonstrates: "Carte à tampons complète : tampon de bienvenue, palier intermédiaire à 5, avis Google.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5 },
@@ -146,8 +178,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       colors: { background: "#2A1A11", foreground: "#F7EFE4", label: "#C9A86A" },
       accent: "#C9A86A",
       programName: "depuis 1894",
-      cardType: "stamps",
-      stamps: { goal: 10, icon: "☕", shape: "circle" },
+      cardType: "points",
       barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Café du Rhône" },
     },
   },
@@ -165,6 +196,14 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 731 44 55",
     businessHours: HOURS_BAKERY,
     rewardLabel: "Une viennoiserie offerte",
+    demo: {
+      statut: "Argent", since: "1971",
+      progression: "Plus que 2 achats", nextStep: "2 achats", thisMonth: "9 visites",
+      memberSince: "Janv. 2025", totalVisits: "46", lastVisit: "hier", referrals: "1",
+      memberId: "BP-3310-274",
+      howItWorks: "Un tampon par achat. Le 8ᵉ achat = une viennoiserie offerte.",
+      conditions: "Viennoiserie au choix (hors pièces spéciales). Valable 30 jours.",
+    },
     demonstrates: "Carte à tampons artisanale (8 achats → 1 viennoiserie), palette chaude.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 8 },
@@ -172,8 +211,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       colors: { background: "#5A3217", foreground: "#FFF6EA", label: "#F2C28B" },
       accent: "#E8B873",
       programName: "pain au levain",
-      cardType: "stamps",
-      stamps: { goal: 8, icon: "🥐", shape: "circle" },
+      cardType: "points",
       // AZTEC (2D) : compact, lecture fiable même à l'écran (diversité kit, demande CHEF).
       barcode: { type: "AZTEC", source: "card_token", altText: "Présentez cette carte — Boulangerie des Pâquis" },
     },
@@ -192,6 +230,15 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 310 99 88",
     businessHours: HOURS_RESTO,
     rewardLabel: "CHF 20 offerts",
+    bannerPhoto: "pass-assets/banners/pizza.jpg",
+    demo: {
+      statut: "Argent", since: "1962",
+      progression: "Plus que 80 pts", nextStep: "200 pts", thisMonth: "240 pts",
+      memberSince: "Sept. 2024", totalVisits: "23", lastVisit: "il y a 4 j", referrals: "2",
+      memberId: "PZ-5582-10",
+      howItWorks: "1 point par franc dépensé. CHF 20 offerts dès 200 points.",
+      conditions: "Récompense déduite au comptoir. Points valables 12 mois.",
+    },
     demonstrates: "Carte à POINTS par franc dépensé : 1 pt/CHF, CHF 20 offerts à 200 pts (saisie du montant au comptoir).",
     loyaltyType: "amount_points",
     loyaltyConfig: {
@@ -222,6 +269,14 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 736 12 00",
     businessHours: HOURS_SALON,
     rewardLabel: "Un soin offert",
+    demo: {
+      statut: "Membre", since: "2009",
+      progression: "Plus que 2 visites", nextStep: "5 visites", thisMonth: "2 visites",
+      memberSince: "Févr. 2025", totalVisits: "12", lastVisit: "il y a 9 j", referrals: "0",
+      memberId: "SL-7741-08",
+      howItWorks: "Une visite enregistrée à chaque passage. Récompenses à 5, 10 et 15 visites.",
+      conditions: "Un soin offert à chaque palier atteint. Sur rendez-vous, non cumulable.",
+    },
     demonstrates: "Carte à VISITES : récompenses aux paliers 5, 10 et 15 passages.",
     loyaltyType: "visit_based",
     loyaltyConfig: { milestones: [5, 10, 15] },
@@ -248,6 +303,14 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 740 55 66",
     businessHours: HOURS_SALON,
     rewardLabel: "Avantages niveau Or",
+    demo: {
+      statut: "Argent", since: "2016",
+      progression: "Plus que 4 soins", nextStep: "Niveau Or", thisMonth: "1 soin",
+      memberSince: "Avril 2024", totalVisits: "6", lastVisit: "il y a 21 j", referrals: "1",
+      memberId: "BR-9920-44",
+      howItWorks: "Votre statut progresse avec vos soins : Bronze (3), Argent (6), Or (10).",
+      conditions: "Avantages Or : −15 % permanents + un soin signature offert par an.",
+    },
     demonstrates: "Carte à NIVEAUX : statut Bronze (3), Argent (6) puis Or (10) — le palier s'affiche sur la carte.",
     loyaltyType: "tiered",
     loyaltyConfig: {
@@ -279,6 +342,14 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 311 00 00",
     businessHours: HOURS_DAILY,
     rewardLabel: "Un café offert",
+    demo: {
+      statut: "Membre", since: "2018",
+      progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "6 cafés",
+      memberSince: "Mai 2025", totalVisits: "10", lastVisit: "hier", referrals: "0",
+      memberId: "BD-1002-55",
+      howItWorks: "Un tampon par café. Le 10ᵉ vous est offert.",
+      conditions: "Un café offert par carte complétée. Compte de démonstration.",
+    },
     demonstrates: "Compte de secours du fondateur : carte à tampons 10 + tampon de bienvenue.",
     loyaltyType: "stamp_card",
     loyaltyConfig: { goal: 10, welcome_stamps: 1 },
@@ -286,8 +357,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       colors: { background: "#3B2A21", foreground: "#F6EFE6", label: "#C9A86A" },
       accent: "#C9A86A",
       programName: "maison de pain",
-      cardType: "stamps",
-      stamps: { goal: 10, icon: "☕", shape: "circle" },
+      cardType: "points",
       // CODE128 (1D) : démontre le 4ᵉ format. ⚠ le jeton signé (~101 car.) produit un
       // code large/dense — voir caveat PR (préférer 2D pour un usage réel).
       barcode: { type: "CODE128", source: "card_token", altText: "Présentez cette carte — Boulangerie Démo" },

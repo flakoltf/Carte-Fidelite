@@ -45,15 +45,10 @@ describe("DEMO_KIT — design premium cohérent", () => {
       expect(contrastRatio(label, background)).toBeGreaterThanOrEqual(3);
     });
 
-    it(`${entry.shopName} : cardType cohérent avec la mécanique`, () => {
-      if (entry.loyaltyType === "stamp_card") {
-        expect(entry.design.cardType).toBe("stamps");
-        expect(entry.design.stamps).toBeDefined();
-        // La grille du pass utilise stamps.goal → doit refléter l'objectif réel.
-        expect(entry.design.stamps?.goal).toBe(entry.loyaltyConfig.goal);
-      } else {
-        expect(entry.design.cardType).toBe("points");
-      }
+    it(`${entry.shopName} : cardType "points" (bannière maîtrisée, pas de grille auto)`, () => {
+      // v4 : la bannière (photo/hero + scrim) est la surface image ; la progression
+      // est portée par le champ primary {points}. Donc pas de grille de tampons auto.
+      expect(entry.design.cardType).toBe("points");
     });
 
     it(`${entry.shopName} : code-barres sur le jeton de carte + altText`, () => {

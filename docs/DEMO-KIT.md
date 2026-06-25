@@ -78,7 +78,29 @@ node scripts/render-demo-contact-sheet.mjs  # cartes d'aperçu + QR
 
 Sources SVG versionnées : `assets/demo-kit/<slug>/src/`. PNG : `assets/demo-kit/<slug>/`.
 
-## Design des cartes (v3 — architecture pro Apple Wallet)
+## Cartes « showcase » (v4 — densité d'agence)
+
+Chaque carte remplit **tous les champs natifs** du pass (≈12-14 champs), au niveau
+de la carte de référence du site (`src/components/landing/LoyaltyCard.tsx`) :
+
+- **Bannière image** : photo réelle (Café `cafe.jpg`, Pizzeria `pizza.jpg`) ou
+  **hero illustré riche** pour les 4 autres (devanture de boulangerie à l'aube,
+  fauteuil de salon + rais de lumière, galets + eau + vapeur de spa, champ de blé).
+  Un **scrim** (voile sombre gauche→centre) est composé par-dessus toute bannière
+  pour que le grand nombre blanc natif reste lisible.
+- **Champs natifs** (`kitDesignFields` dans `seedKit.ts`, données dans `kit.ts`) :
+  header `STATUT` + `DEPUIS` · primary (le grand nombre/statut : `{points}` =
+  « X / objectif », ou `{palier}` pour tiered) · secondary `PROGRESSION` /
+  `PROCHAIN PALIER` / `CE MOIS-CI` (+ `RÉCOMPENSE` ajoutée par `applyIdentity`) ·
+  auxiliary `MEMBRE DEPUIS` / `VISITES` / `DERNIÈRE VISITE` / `PARRAINAGES` ·
+  back `N° DE MEMBRE` / `COMMENT ÇA MARCHE` / `CONDITIONS` (+ horaires/adresse/
+  itinéraire/téléphone/avis Google injectés par `applyIdentity` — non dupliqués).
+- `cardType: "points"` partout : la bannière est la surface image (pas de grille
+  de tampons auto), la progression est portée par le champ primary.
+- amount_points : `stamps_count` est **mirroité** sur `points_balance` au seed
+  pour que `{points}` affiche « X / seuil » (le comptoir lit toujours `points_balance`).
+
+## Design des cartes (architecture v3 — conservée)
 
 **Règle d'or : un strip ne porte JAMAIS de texte** (Apple superpose ses champs
 natifs par-dessus — logoText en haut, gros nombre du champ *primary* centré-gauche

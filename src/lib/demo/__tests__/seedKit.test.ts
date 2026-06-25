@@ -33,27 +33,44 @@ describe("buildKitLogoAssets — chemins Storage scoped au tenant", () => {
   });
 });
 
-describe("buildKitDesign — design publié cohérent", () => {
-  it("carte à tampons : cardType stamps + stamps.goal + champ {points}", () => {
+describe("buildKitDesign — design showcase v4 (champs riches, bannière maîtrisée)", () => {
+  it("carte à tampons : cardType points + primary {points} + assets scoped", () => {
     const d = buildKitDesign(cafe, "m-cafe");
-    expect(d.cardType).toBe("stamps");
-    expect(d.stamps?.goal).toBe(10);
-    expect(d.fields.find((f) => f.value === "{points}")).toBeDefined();
+    expect(d.cardType).toBe("points");
+    const primary = d.fields.find((f) => f.zone === "primary");
+    expect(primary?.value).toBe("{points}");
+    expect(primary?.label).toBe("TAMPONS");
     expect(d.logo.assets?.apple?.strip3).toBe("m-cafe/apple/strip@3x.png");
   });
 
-  it("carte à niveaux : cardType points + champ primary {palier} STATUT, pas de stamps", () => {
+  it("carte à niveaux : primary {palier} STATUT + {points} en auxiliary (progrès)", () => {
     const d = buildKitDesign(institut, "m-inst");
     expect(d.cardType).toBe("points");
-    expect(d.stamps).toBeUndefined();
     const palier = d.fields.find((f) => f.value === "{palier}");
     expect(palier?.zone).toBe("primary");
     expect(palier?.label).toBe("STATUT");
+    // {points} doit exister quelque part (sinon fallback « carte morte » de passJson).
+    expect(d.fields.some((f) => f.value === "{points}")).toBe(true);
+  });
+
+  it("remplit les zones natives dans les limites Apple + ≥1 champ {points}", () => {
+    for (const entry of DEMO_KIT) {
+      const d = buildKitDesign(entry, "m");
+      const byZone = (z: string) => d.fields.filter((f) => f.zone === z).length;
+      expect(byZone("header"), entry.shopName).toBeLessThanOrEqual(3);
+      expect(byZone("primary"), entry.shopName).toBe(1);
+      // 3 secondary design (+ récompense ajoutée par applyIdentity = 4 ≤ limite).
+      expect(byZone("secondary"), entry.shopName).toBe(3);
+      expect(byZone("auxiliary"), entry.shopName).toBeLessThanOrEqual(4);
+      expect(byZone("back"), entry.shopName).toBeGreaterThanOrEqual(3);
+      expect(d.fields.length, entry.shopName).toBeGreaterThanOrEqual(12);
+      expect(d.fields.some((f) => f.value.includes("{points}")), entry.shopName).toBe(true);
+    }
   });
 });
 
 describe("buildKitMerchantUpdate — identité + programme", () => {
-  it("Café du Rhône : programme stamp + reward_label + place_id + stamp_goal + concierge", () => {
+  it("Café du Rhône : programme stamp + reward_label + place_id + stamp_goal 10 + concierge", () => {
     const u = buildKitMerchantUpdate(cafe, new Date("2026-06-24T10:00:00Z"));
     expect(u.loyalty_type).toBe("stamp_card");
     expect(u.reward_label).toBe("Un café offert");
@@ -63,11 +80,11 @@ describe("buildKitMerchantUpdate — identité + programme", () => {
     expect(u.setup_mode).toBe("concierge");
   });
 
-  it("Pizzeria : amount_points, sans stamp_goal ni place_id", () => {
+  it("Pizzeria : amount_points, stamp_goal = seuil (objectif du jeton {points}), pas de place_id", () => {
     const u = buildKitMerchantUpdate(pizzeria, new Date());
     expect(u.loyalty_type).toBe("amount_points");
     expect(u.reward_label).toBe("CHF 20 offerts");
-    expect(u.stamp_goal).toBeUndefined();
+    expect(u.stamp_goal).toBe(200); // {points} = "X / 200"
     expect(u.google_place_id).toBeUndefined();
   });
 });
@@ -88,10 +105,14 @@ describe("planKitCards — clientèle à états variés", () => {
       expect(justOffered!.stampsCount + justOffered!.pointsBalance).toBe(0);
     });
 
-    it(`${entry.shopName} : la bonne colonne porte le compteur selon la mécanique`, () => {
+    it(`${entry.shopName} : colonnes compteur cohérentes avec la mécanique`, () => {
       for (const c of planKitCards(entry)) {
-        if (entry.loyaltyType === "amount_points") expect(c.stampsCount).toBe(0);
-        else expect(c.pointsBalance).toBe(0);
+        if (entry.loyaltyType === "amount_points") {
+          // amount_points : points_balance (comptoir) ET stamps_count (Wallet) miroités.
+          expect(c.stampsCount).toBe(c.pointsBalance);
+        } else {
+          expect(c.pointsBalance).toBe(0);
+        }
       }
     });
   }

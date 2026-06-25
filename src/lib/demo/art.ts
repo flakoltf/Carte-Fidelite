@@ -1,33 +1,22 @@
-// ART VECTORIEL DU KIT DÉMO — v3 « architecture pro » (générateur SVG pur).
+// ART VECTORIEL DU KIT DÉMO — v4 « showcase » (générateur SVG pur).
 //
-// Règle d'or : un STRIP ne porte JAMAIS de texte. Apple superpose ses CHAMPS
-// NATIFS par-dessus (logoText en haut, gros nombre du champ primary centré-gauche
-// SUR le strip). Donc :
-//   • le NOM va dans le LOGO (wordmark) — porté par `logoSvg` ;
-//   • le STRIP est un FOND PUR : zone gauche/centre (≈65%) propre et calme (le
-//     nombre blanc d'Apple doit y être lisible), métaphore éditoriale confinée
-//     au tiers droit (≈35%), halo + grain + ombre pour la profondeur ;
-//   • le TEXTE (valeur, libellés, récompense) = champs natifs (cf. seedKit/kit).
+// La BANNIÈRE (strip Apple / hero Google) devient une vraie surface image :
+//   • Café / Pizzeria : vraie photo (composée par le script de rendu) ;
+//   • les 4 autres : HERO ILLUSTRÉ riche (petite scène : devanture de boulangerie
+//     au lever du jour, fauteuil de salon + rais de lumière, galets + eau + vapeur
+//     de spa, champ de blé à l'aube).
+// SCRIM obligatoire (légibilité, archi v3 conservée) : voile sombre gauche→centre
+// appliqué PAR-DESSUS toute bannière (photo OU illustration) pour que le grand
+// nombre blanc natif d'Apple, posé à gauche, reste lisible. Le NOM reste dans le
+// LOGO (wordmark), jamais sur la bannière.
 //
-// 100 % vectoriel ; le wordmark dépend des polices système → rendu LOCALEMENT
-// puis PNG versionnés uploadés tels quels. Déterministe → testable.
+// 100 % vectoriel + déterministe → testable. Wordmark rendu LOCALEMENT (polices).
 
 import type { DemoArtMotif } from "./kit";
 
-export type ArtPalette = {
-  background: string;
-  foreground: string;
-  label: string;
-  accent: string;
-};
-
-// v3 : la seule donnée texte est le wordmark (nom du commerce), porté par le LOGO.
+export type ArtPalette = { background: string; foreground: string; label: string; accent: string };
 export type ArtText = { wordmark: string[] };
-
 export type ArtSpec = { motif: DemoArtMotif; palette: ArtPalette; text: ArtText };
-
-// Frontière de la zone propre : à gauche de CLEAN_X, aucun détail (le nombre natif).
-const CLEAN = 0.65;
 
 // ── utilitaires ──────────────────────────────────────────────────────────────
 
@@ -46,199 +35,177 @@ function mix(hex: string, towards: "white" | "black", t: number): string {
   return `#${[mc(r), mc(g), mc(b)].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
-// ── fond pur + profondeur (halo droite, ombre métaphore, grain papier) ───────
-
-function defs(p: ArtPalette, w: number, h: number, mx: number, my: number): string {
-  // Gradient HORIZONTAL : gauche ≈ background (fond, blend avec la carte), droite
-  // légèrement relevée sous la métaphore. La zone gauche reste propre et sombre.
-  const left = mix(p.background, "black", 0.05);
-  const right = mix(p.background, "white", 0.06);
-  return (
-    `<defs>` +
-    `<linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">` +
-    `<stop offset="0" stop-color="${left}"/>` +
-    `<stop offset="${f(CLEAN)}" stop-color="${p.background}"/>` +
-    `<stop offset="1" stop-color="${right}"/>` +
-    `</linearGradient>` +
-    `<radialGradient id="halo" cx="${f(mx / w)}" cy="${f(my / h)}" r="0.4">` +
-    `<stop offset="0" stop-color="${p.accent}" stop-opacity="0.2"/>` +
-    `<stop offset="1" stop-color="${p.accent}" stop-opacity="0"/>` +
-    `</radialGradient>` +
-    `<filter id="sh" x="-30%" y="-30%" width="160%" height="160%">` +
-    `<feDropShadow dx="2" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.25"/>` +
-    `</filter>` +
-    `<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>` +
-    `<feColorMatrix in="n" type="saturate" values="0"/></filter>` +
-    `</defs>`
-  );
-}
-
-function backdrop(p: ArtPalette, w: number, h: number, rounded = 0): string {
-  const rx = rounded ? ` rx="${f(rounded)}"` : "";
-  return (
-    `<rect width="${w}" height="${h}"${rx} fill="url(#bg)"/>` +
-    `<rect width="${w}" height="${h}"${rx} fill="url(#halo)"/>` +
-    `<rect width="${w}" height="${h}"${rx} filter="url(#grain)" opacity="0.04"/>`
-  );
-}
-
-// ── métaphores éditoriales — CONFINÉES au tiers droit (x > CLEAN·w) ───────────
-
-function mBean(p: ArtPalette, w: number, h: number): string {
-  const mx = w * 0.84, my = h * 0.5, s = h * 0.28;
-  const sw = Math.max(3, s * 0.13), fg = p.foreground, ac = p.accent;
-  const bean =
-    `<g transform="rotate(-16 ${f(mx)} ${f(my)})">` +
-    `<ellipse cx="${f(mx)}" cy="${f(my)}" rx="${f(s * 0.5)}" ry="${f(s * 0.78)}" fill="none" stroke="${fg}" stroke-width="${f(sw)}"/>` +
-    `<path d="M ${f(mx)} ${f(my - s * 0.66)} C ${f(mx + s * 0.26)} ${f(my - s * 0.22)}, ${f(mx - s * 0.26)} ${f(my + s * 0.22)}, ${f(mx)} ${f(my + s * 0.66)}" fill="none" stroke="${fg}" stroke-width="${f(sw * 0.82)}" stroke-linecap="round"/>` +
-    `</g>`;
-  const vapor = [-0.42, 0, 0.42]
-    .map((o, i) => {
-      const vx = mx + o * s * 0.5, vy = my - s * 0.95, r = s * 0.4;
-      return `<path d="M ${f(vx)} ${f(vy)} q ${f(s * 0.15)} ${f(-r * 0.55)} 0 ${f(-r)} q ${f(-s * 0.15)} ${f(-r * 0.55)} 0 ${f(-r)}" fill="none" stroke="${ac}" stroke-width="${f(sw * 0.6)}" stroke-linecap="round" opacity="${f(0.55 - i * 0.08)}"/>`;
-    })
-    .join("");
-  const small =
-    `<ellipse cx="${f(mx - s * 0.95)}" cy="${f(my + s * 0.6)}" rx="${f(s * 0.16)}" ry="${f(s * 0.25)}" fill="${ac}" opacity="0.5" transform="rotate(22 ${f(mx - s * 0.95)} ${f(my + s * 0.6)})"/>` +
-    `<ellipse cx="${f(mx + s * 0.7)}" cy="${f(my + s * 0.85)}" rx="${f(s * 0.12)}" ry="${f(s * 0.18)}" fill="${ac}" opacity="0.38" transform="rotate(-28 ${f(mx + s * 0.7)} ${f(my + s * 0.85)})"/>`;
-  return `${vapor}<g filter="url(#sh)">${bean}</g>${small}`;
-}
-
-function mCroissant(p: ArtPalette, w: number, h: number): string {
-  const mx = w * 0.84, my = h * 0.5, s = h * 0.3;
-  const sw = Math.max(3, s * 0.1), fg = p.foreground, ac = p.accent;
-  const body =
-    `<path d="M ${f(mx - s * 0.82)} ${f(my + s * 0.45)} A ${f(s * 1.02)} ${f(s * 1.02)} 0 1 1 ${f(mx + s * 0.82)} ${f(my + s * 0.45)} A ${f(s * 0.48)} ${f(s * 0.48)} 0 1 0 ${f(mx - s * 0.82)} ${f(my + s * 0.45)} Z" ` +
-    `fill="none" stroke="${fg}" stroke-width="${f(sw)}" stroke-linejoin="round"/>`;
-  const layers = Array.from({ length: 5 }, (_, i) => {
-    const a = Math.PI * (0.76 - i * 0.13), rr = s * 0.72;
-    const cx = mx + Math.cos(a) * rr, cy = my - s * 0.05 - Math.sin(a) * rr * 0.5;
-    return `<path d="M ${f(cx - s * 0.15)} ${f(cy)} q ${f(s * 0.15)} ${f(-s * 0.18)} ${f(s * 0.3)} 0" fill="none" stroke="${fg}" stroke-width="${f(sw * 0.5)}" stroke-linecap="round" opacity="0.65"/>`;
-  }).join("");
-  const crumb = `<circle cx="${f(mx + s * 0.98)}" cy="${f(my + s * 0.72)}" r="${f(s * 0.11)}" fill="${ac}" opacity="0.55"/>`;
-  return `<g filter="url(#sh)">${body}${layers}</g>${crumb}`;
-}
-
-function mPizza(p: ArtPalette, w: number, h: number): string {
-  const mx = w * 0.83, my = h * 0.5, s = h * 0.3;
-  const sw = Math.max(3, s * 0.09), fg = p.foreground, ac = p.accent;
-  const disc = `<circle cx="${f(mx)}" cy="${f(my)}" r="${f(s * 0.8)}" fill="none" stroke="${fg}" stroke-width="${f(sw)}"/>`;
-  const rays = Array.from({ length: 8 }, (_, i) => {
-    const a = (i * 45 + 22.5) * (Math.PI / 180);
-    return `<line x1="${f(mx)}" y1="${f(my)}" x2="${f(mx + Math.cos(a) * s * 0.8)}" y2="${f(my + Math.sin(a) * s * 0.8)}" stroke="${fg}" stroke-width="${f(sw * 0.5)}" opacity="0.55"/>`;
-  }).join("");
-  const dx = mx + s * 1.02, dy = my - s * 0.72;
-  const slice = `<path d="M ${f(dx)} ${f(dy)} l ${f(s * 0.46)} ${f(s * 0.16)} a ${f(s * 0.5)} ${f(s * 0.5)} 0 0 1 ${f(-s * 0.3)} ${f(s * 0.4)} Z" fill="none" stroke="${fg}" stroke-width="${f(sw * 0.8)}" stroke-linejoin="round"/>`;
-  const basil = `<ellipse cx="${f(mx + s * 0.18)}" cy="${f(my - s * 0.14)}" rx="${f(s * 0.19)}" ry="${f(s * 0.09)}" fill="${ac}" opacity="0.65" transform="rotate(-35 ${f(mx + s * 0.18)} ${f(my - s * 0.14)})"/>`;
-  return `<g filter="url(#sh)">${disc}${rays}${slice}</g>${basil}`;
-}
-
-function mHairlock(p: ArtPalette, w: number, h: number): string {
-  const sw = Math.max(3, h * 0.03), fg = p.foreground, ac = p.accent;
-  // Mèche en S confinée au tiers droit (bas → haut).
-  const x0 = w * 0.7, y0 = h * 0.86, x1 = w * 0.93, y1 = h * 0.16;
-  const s =
-    `<path d="M ${f(x0)} ${f(y0)} C ${f(x0 + w * 0.12)} ${f(y0 - h * 0.12)}, ${f(w * 0.76)} ${f(h * 0.56)}, ${f(w * 0.82)} ${f(h * 0.5)} ` +
-    `S ${f(x1 - w * 0.015)} ${f(y1 + h * 0.26)}, ${f(x1)} ${f(y1)}" fill="none" stroke="${fg}" stroke-width="${f(sw)}" stroke-linecap="round"/>`;
-  const halo = `<circle cx="${f(x1)}" cy="${f(y1)}" r="${f(h * 0.14)}" fill="${ac}" opacity="0.18"/>`;
-  const spark =
-    `<g transform="translate(${f(x1)} ${f(y1)})" stroke="${ac}" stroke-width="${f(sw * 0.5)}" stroke-linecap="round">` +
-    `<line x1="0" y1="${f(-h * 0.06)}" x2="0" y2="${f(h * 0.06)}"/><line x1="${f(-h * 0.06)}" y1="0" x2="${f(h * 0.06)}" y2="0"/>` +
-    `<line x1="${f(-h * 0.035)}" y1="${f(-h * 0.035)}" x2="${f(h * 0.035)}" y2="${f(h * 0.035)}"/><line x1="${f(h * 0.035)}" y1="${f(-h * 0.035)}" x2="${f(-h * 0.035)}" y2="${f(h * 0.035)}"/></g>`;
-  return `${halo}<g filter="url(#sh)">${s}</g>${spark}`;
-}
-
-function mWaves(p: ArtPalette, w: number, h: number): string {
-  const fg = p.foreground, ac = p.accent, sw = Math.max(2.5, h * 0.018);
-  const x0 = w * 0.66, x1 = w * 0.98, span = x1 - x0;
-  // 3 vagues d'amplitude décroissante, confinées au tiers droit.
-  const waves = [0, 1, 2]
-    .map((i) => {
-      const amp = h * (0.1 - i * 0.028), cy = h * (0.34 + i * 0.18);
-      const seg = span / 2;
-      let d = `M ${f(x0)} ${f(cy)}`;
-      for (let k = 0; k < 2; k++) {
-        const cxp = x0 + seg * k + seg / 2, x2 = x0 + seg * (k + 1);
-        const dir = k % 2 === 0 ? -1 : 1;
-        d += ` Q ${f(cxp)} ${f(cy + dir * amp)} ${f(x2)} ${f(cy)}`;
-      }
-      return `<path d="${d}" fill="none" stroke="${fg}" stroke-width="${f(sw)}" opacity="${f(0.8 - i * 0.16)}"/>`;
-    })
-    .join("");
-  const sx = w * 0.84, sy = h * 0.5;
-  const stone =
-    `<ellipse cx="${f(sx)}" cy="${f(sy)}" rx="${f(h * 0.16)}" ry="${f(h * 0.1)}" fill="${ac}" opacity="0.65" transform="rotate(-18 ${f(sx)} ${f(sy)})"/>` +
-    `<ellipse cx="${f(sx - h * 0.045)}" cy="${f(sy - h * 0.025)}" rx="${f(h * 0.05)}" ry="${f(h * 0.025)}" fill="${mix(p.accent, "white", 0.5)}" opacity="0.6" transform="rotate(-18 ${f(sx)} ${f(sy)})"/>`;
-  return `<g filter="url(#sh)">${waves}</g>${stone}`;
-}
-
-function mWheat(p: ArtPalette, w: number, h: number): string {
-  const mx = w * 0.85, my = h * 0.5, s = h * 0.38;
-  const sw = Math.max(2.5, s * 0.05), fg = p.foreground, ac = p.accent;
-  const stem = `<line x1="${f(mx)}" y1="${f(my + s * 0.7)}" x2="${f(mx)}" y2="${f(my - s * 0.72)}" stroke="${fg}" stroke-width="${f(sw)}" stroke-linecap="round"/>`;
-  const grains = Array.from({ length: 5 }, (_, i) => {
-    const gy = my - s * 0.6 + i * s * 0.3;
-    const grain = (sign: number) =>
-      `<path d="M ${f(mx)} ${f(gy)} q ${f(sign * s * 0.25)} ${f(-s * 0.05)} ${f(sign * s * 0.28)} ${f(s * 0.2)} q ${f(-sign * s * 0.04)} ${f(s * 0.06)} ${f(-sign * s * 0.28)} ${f(s * 0.02)} Z" fill="none" stroke="${fg}" stroke-width="${f(sw * 0.8)}" stroke-linejoin="round"/>`;
-    return grain(-1) + grain(1);
-  }).join("");
-  const awns = [-1, 0, 1]
-    .map((sign) => `<line x1="${f(mx)}" y1="${f(my - s * 0.7)}" x2="${f(mx + sign * s * 0.3)}" y2="${f(my - s * 1.02)}" stroke="${ac}" stroke-width="${f(sw * 0.5)}" stroke-linecap="round" opacity="0.65"/>`)
-    .join("");
-  const detached = `<path d="M ${f(mx - s * 0.78)} ${f(my + s * 0.5)} q ${f(s * 0.23)} ${f(-s * 0.05)} ${f(s * 0.26)} ${f(s * 0.18)} q ${f(-s * 0.04)} ${f(s * 0.06)} ${f(-s * 0.26)} ${f(s * 0.02)} Z" fill="${ac}" opacity="0.45" transform="rotate(-20 ${f(mx - s * 0.78)} ${f(my + s * 0.5)})"/>`;
-  return `<g filter="url(#sh)">${awns}${stem}${grains}</g>${detached}`;
-}
-
-function metaphor(m: DemoArtMotif, p: ArtPalette, w: number, h: number): string {
-  switch (m) {
-    case "bean": return mBean(p, w, h);
-    case "croissant": return mCroissant(p, w, h);
-    case "pizza": return mPizza(p, w, h);
-    case "hairlock": return mHairlock(p, w, h);
-    case "waves": return mWaves(p, w, h);
-    case "wheat": return mWheat(p, w, h);
-  }
-}
-
-function haloCenter(m: DemoArtMotif, w: number, h: number): [number, number] {
-  if (m === "hairlock") return [w * 0.86, h * 0.34];
-  return [w * 0.84, h * 0.5];
-}
-
 function svg(w: number, h: number, body: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`;
 }
 
-// ── STRIP / HERO : fond pur, AUCUN texte ─────────────────────────────────────
+// Grain papier + ombre (réutilisés par toutes les scènes).
+function commonDefs(): string {
+  return (
+    `<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="2" dy="3" stdDeviation="5" flood-color="#000000" flood-opacity="0.28"/></filter>` +
+    `<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/><feColorMatrix in="n" type="saturate" values="0"/></filter>`
+  );
+}
+const grain = (w: number, h: number) => `<rect width="${w}" height="${h}" filter="url(#grain)" opacity="0.04"/>`;
 
-function pureBackground(spec: ArtSpec, w: number, h: number): string {
-  const { motif, palette: p } = spec;
-  const [mx, my] = haloCenter(motif, w, h);
-  return defs(p, w, h, mx, my) + backdrop(p, w, h) + metaphor(motif, p, w, h);
+// Lueur radiale douce (soleil / halo).
+function glow(id: string, cx: number, cy: number, r: number, color: string, op: number): string {
+  return `<radialGradient id="${id}" cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}"><stop offset="0" stop-color="${color}" stop-opacity="${f(op)}"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></radialGradient>`;
 }
 
+// ── SCRIM de légibilité (voile sombre gauche→centre) ─────────────────────────
+
+export function scrimOverlaySvg(w = 1125, h = 369): string {
+  const body =
+    `<defs><linearGradient id="scrim" x1="0" y1="0" x2="1" y2="0">` +
+    `<stop offset="0" stop-color="#0A0B0D" stop-opacity="0.72"/>` +
+    `<stop offset="0.42" stop-color="#0A0B0D" stop-opacity="0.34"/>` +
+    `<stop offset="0.68" stop-color="#0A0B0D" stop-opacity="0.12"/>` +
+    `<stop offset="1" stop-color="#0A0B0D" stop-opacity="0"/>` +
+    `</linearGradient>` +
+    // Léger renforcement bas (assoit la scène).
+    `<linearGradient id="scrimY" x1="0" y1="0" x2="0" y2="1"><stop offset="0.55" stop-color="#0A0B0D" stop-opacity="0"/><stop offset="1" stop-color="#0A0B0D" stop-opacity="0.22"/></linearGradient></defs>` +
+    `<rect width="${w}" height="${h}" fill="url(#scrim)"/>` +
+    `<rect width="${w}" height="${h}" fill="url(#scrimY)"/>`;
+  return svg(w, h, body);
+}
+
+// ── SCÈNES illustrées (bannière pleine) ──────────────────────────────────────
+
+// Devanture de boulangerie au lever du jour.
+function sceneBakery(p: ArtPalette, w: number, h: number): string {
+  const sky0 = mix(p.background, "black", 0.35), sky1 = mix(p.accent, "black", 0.05);
+  const wall = mix(p.background, "black", 0.55), warm = mix(p.accent, "white", 0.25);
+  const gx = w * 0.78;
+  const defs = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky0}"/><stop offset="1" stop-color="${sky1}"/></linearGradient>${glow("sun", gx / w, 0.28, 0.5, warm, 0.55)}${commonDefs()}</defs>`;
+  const sky = `<rect width="${w}" height="${h}" fill="url(#sky)"/><rect width="${w}" height="${h}" fill="url(#sun)"/>`;
+  const sun = `<circle cx="${f(gx)}" cy="${f(h * 0.3)}" r="${f(h * 0.13)}" fill="${warm}" opacity="0.9"/>`;
+  // Devanture (bas) : mur + auvent festonné + vitrine éclairée + pains.
+  const base = h * 0.52;
+  const wallR = `<rect x="${f(w * 0.5)}" y="${f(base)}" width="${f(w * 0.5)}" height="${f(h - base)}" fill="${wall}"/>`;
+  const awn = Array.from({ length: 6 }, (_, i) => {
+    const x = w * 0.5 + i * (w * 0.5 / 6);
+    return `<path d="M ${f(x)} ${f(base)} q ${f(w * 0.5 / 12)} ${f(h * 0.07)} ${f(w * 0.5 / 6)} 0 Z" fill="${p.accent}" opacity="0.85"/>`;
+  }).join("");
+  const win = `<rect x="${f(w * 0.56)}" y="${f(base + h * 0.1)}" width="${f(w * 0.34)}" height="${f(h * 0.3)}" rx="4" fill="${warm}" opacity="0.35"/>`;
+  const loaves = [0.62, 0.72, 0.82]
+    .map((o) => `<ellipse cx="${f(w * o)}" cy="${f(base + h * 0.26)}" rx="${f(w * 0.035)}" ry="${f(h * 0.05)}" fill="${mix(p.accent, "black", 0.1)}" opacity="0.8" transform="rotate(-12 ${f(w * o)} ${f(base + h * 0.26)})"/>`)
+    .join("");
+  return defs + sky + sun + `<g filter="url(#sh)">${wallR}${awn}${win}${loaves}</g>` + grain(w, h);
+}
+
+// Champ de blé à l'aube.
+function sceneWheat(p: ArtPalette, w: number, h: number): string {
+  const sky0 = mix(p.background, "black", 0.3), sky1 = mix(p.accent, "black", 0.1);
+  const warm = mix(p.accent, "white", 0.3), stalk = mix(p.accent, "white", 0.1);
+  const gx = w * 0.8;
+  const defs = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky0}"/><stop offset="0.7" stop-color="${sky1}"/></linearGradient>${glow("sun", gx / w, 0.32, 0.55, warm, 0.6)}${commonDefs()}</defs>`;
+  const sky = `<rect width="${w}" height="${h}" fill="url(#sky)"/><rect width="${w}" height="${h}" fill="url(#sun)"/>`;
+  const sun = `<circle cx="${f(gx)}" cy="${f(h * 0.34)}" r="${f(h * 0.12)}" fill="${warm}" opacity="0.95"/>`;
+  // Épis de blé (plusieurs hauteurs) sur la moitié droite.
+  const ear = (mx: number, scale: number, op: number) => {
+    const s = h * 0.3 * scale, base = h * 1.02;
+    const stem = `<line x1="${f(mx)}" y1="${f(base)}" x2="${f(mx)}" y2="${f(base - s * 2.2)}" stroke="${stalk}" stroke-width="${f(Math.max(2, s * 0.12))}" stroke-linecap="round"/>`;
+    const grains = Array.from({ length: 4 }, (_, i) => {
+      const gy = base - s * 1.5 + i * s * 0.4;
+      const g1 = (sign: number) => `<path d="M ${f(mx)} ${f(gy)} q ${f(sign * s * 0.32)} ${f(-s * 0.06)} ${f(sign * s * 0.36)} ${f(s * 0.24)} q ${f(-sign * s * 0.05)} ${f(s * 0.08)} ${f(-sign * s * 0.36)} ${f(s * 0.02)} Z" fill="${stalk}"/>`;
+      return g1(-1) + g1(1);
+    }).join("");
+    return `<g opacity="${f(op)}">${stem}${grains}</g>`;
+  };
+  const ears = ear(w * 0.6, 0.8, 0.55) + ear(w * 0.72, 1.05, 0.8) + ear(w * 0.85, 0.92, 0.95) + ear(w * 0.95, 0.7, 0.5);
+  return defs + sky + sun + `<g filter="url(#sh)">${ears}</g>` + grain(w, h);
+}
+
+// Fauteuil de salon + rais de lumière.
+function sceneSalon(p: ArtPalette, w: number, h: number): string {
+  const bg0 = mix(p.background, "white", 0.05), bg1 = mix(p.background, "black", 0.35);
+  const light = mix(p.accent, "white", 0.35), chair = mix(p.background, "black", 0.5);
+  const defs = `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></linearGradient>${glow("spot", 0.82, 0.2, 0.55, light, 0.5)}${commonDefs()}</defs>`;
+  const bg = `<rect width="${w}" height="${h}" fill="url(#bg)"/>`;
+  // Rais de lumière diagonaux depuis le haut-droite.
+  const rays = [0, 1, 2, 3]
+    .map((i) => `<polygon points="${f(w)},${f(-20)} ${f(w)},${f(h * 0.1 + i * 30)} ${f(w * 0.45 - i * 60)},${f(h + 20)} ${f(w * 0.4 - i * 60)},${f(h + 20)}" fill="${light}" opacity="${f(0.1 - i * 0.02)}"/>`)
+    .join("");
+  const spot = `<rect width="${w}" height="${h}" fill="url(#spot)"/>`;
+  // Fauteuil (silhouette) centre-droit.
+  const cx = w * 0.76, cy = h * 0.62;
+  const chairG =
+    `<g fill="${chair}">` +
+    `<rect x="${f(cx - w * 0.08)}" y="${f(cy - h * 0.3)}" width="${f(w * 0.16)}" height="${f(h * 0.42)}" rx="${f(w * 0.04)}"/>` + // dossier
+    `<rect x="${f(cx - w * 0.11)}" y="${f(cy)}" width="${f(w * 0.22)}" height="${f(h * 0.16)}" rx="${f(w * 0.03)}"/>` + // assise
+    `<rect x="${f(cx - w * 0.12)}" y="${f(cy - h * 0.05)}" width="${f(w * 0.03)}" height="${f(h * 0.18)}" rx="3"/>` + // accoudoir g
+    `<rect x="${f(cx + w * 0.09)}" y="${f(cy - h * 0.05)}" width="${f(w * 0.03)}" height="${f(h * 0.18)}" rx="3"/>` + // accoudoir d
+    `<rect x="${f(cx - w * 0.015)}" y="${f(cy + h * 0.16)}" width="${f(w * 0.03)}" height="${f(h * 0.18)}"/>` + // pied
+    `</g>`;
+  const sparkle = `<g stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round" opacity="0.8"><line x1="${f(w * 0.9)}" y1="${f(h * 0.22)}" x2="${f(w * 0.9)}" y2="${f(h * 0.34)}"/><line x1="${f(w * 0.86)}" y1="${f(h * 0.28)}" x2="${f(w * 0.94)}" y2="${f(h * 0.28)}"/></g>`;
+  return defs + bg + rays + spot + `<g filter="url(#sh)">${chairG}</g>` + sparkle + grain(w, h);
+}
+
+// Galets empilés + eau + vapeur de spa.
+function sceneSpa(p: ArtPalette, w: number, h: number): string {
+  const bg0 = mix(p.background, "white", 0.06), bg1 = mix(p.background, "black", 0.3);
+  const stone = mix(p.accent, "black", 0.05), stoneT = mix(p.accent, "white", 0.4);
+  const water = mix(p.accent, "white", 0.2);
+  const defs = `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></linearGradient>${glow("amb", 0.8, 0.4, 0.5, mix(p.accent, "white", 0.3), 0.35)}${commonDefs()}</defs>`;
+  const bg = `<rect width="${w}" height="${h}" fill="url(#bg)"/><rect width="${w}" height="${h}" fill="url(#amb)"/>`;
+  // Ondes d'eau (ellipses concentriques) sous les galets.
+  const cx = w * 0.8, base = h * 0.78;
+  const ripples = [0, 1, 2]
+    .map((i) => `<ellipse cx="${f(cx)}" cy="${f(base + h * 0.08)}" rx="${f(h * (0.22 + i * 0.12))}" ry="${f(h * (0.05 + i * 0.025))}" fill="none" stroke="${water}" stroke-width="2" opacity="${f(0.5 - i * 0.14)}"/>`)
+    .join("");
+  // 3 galets empilés (du plus large au plus petit).
+  const peb = (cy: number, rx: number, ry: number) =>
+    `<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${f(rx)}" ry="${f(ry)}" fill="${stone}"/>` +
+    `<ellipse cx="${f(cx - rx * 0.28)}" cy="${f(cy - ry * 0.3)}" rx="${f(rx * 0.4)}" ry="${f(ry * 0.3)}" fill="${stoneT}" opacity="0.55"/>`;
+  const stack = peb(base, h * 0.2, h * 0.085) + peb(base - h * 0.13, h * 0.15, h * 0.07) + peb(base - h * 0.24, h * 0.1, h * 0.055);
+  // Vapeur (volutes) montant des galets.
+  const steam = [-0.5, 0, 0.5]
+    .map((o, i) => {
+      const sx = cx + o * h * 0.18, sy = base - h * 0.34, r = h * 0.16;
+      return `<path d="M ${f(sx)} ${f(sy)} q ${f(h * 0.06)} ${f(-r * 0.6)} 0 ${f(-r)} q ${f(-h * 0.06)} ${f(-r * 0.6)} 0 ${f(-r)}" fill="none" stroke="${stoneT}" stroke-width="2.5" stroke-linecap="round" opacity="${f(0.4 - i * 0.05)}"/>`;
+    })
+    .join("");
+  const leaf = `<ellipse cx="${f(cx + h * 0.34)}" cy="${f(base - h * 0.02)}" rx="${f(h * 0.1)}" ry="${f(h * 0.04)}" fill="${p.accent}" opacity="0.6" transform="rotate(-28 ${f(cx + h * 0.34)} ${f(base - h * 0.02)})"/>`;
+  return defs + bg + ripples + steam + `<g filter="url(#sh)">${stack}</g>${leaf}` + grain(w, h);
+}
+
+// Scène générique (café/pizzeria — fallback : photo utilisée en prod).
+function sceneGeneric(p: ArtPalette, w: number, h: number): string {
+  const bg0 = mix(p.background, "white", 0.05), bg1 = mix(p.background, "black", 0.32);
+  const defs = `<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></linearGradient>${glow("amb", 0.8, 0.4, 0.5, p.accent, 0.3)}${commonDefs()}</defs>`;
+  return defs + `<rect width="${w}" height="${h}" fill="url(#bg)"/><rect width="${w}" height="${h}" fill="url(#amb)"/>` + grain(w, h);
+}
+
+function scene(m: DemoArtMotif, p: ArtPalette, w: number, h: number): string {
+  switch (m) {
+    case "croissant": return sceneBakery(p, w, h);
+    case "wheat": return sceneWheat(p, w, h);
+    case "hairlock": return sceneSalon(p, w, h);
+    case "waves": return sceneSpa(p, w, h);
+    case "bean": case "pizza": return sceneGeneric(p, w, h);
+  }
+}
+
+// ── slots ────────────────────────────────────────────────────────────────────
+
+// Strip / hero = scène illustrée (le scrim est appliqué PAR-DESSUS au rendu).
 export function stripSvg(spec: ArtSpec, w = 1125, h = 369): string {
-  return svg(w, h, pureBackground(spec, w, h));
+  return svg(w, h, scene(spec.motif, spec.palette, w, h));
 }
-
 export function heroSvg(spec: ArtSpec, w = 1032, h = 336): string {
-  return svg(w, h, pureBackground(spec, w, h));
+  return svg(w, h, scene(spec.motif, spec.palette, w, h));
 }
 
-// ── LOGO : wordmark du nom (serif italique), fond transparent ────────────────
-
+// Logo = wordmark du nom (serif italique), fond transparent.
 export function logoSvg(spec: ArtSpec, w = 480, h = 150): string {
   const { palette: p, text } = spec;
   const lines = text.wordmark.length ? text.wordmark : [""];
   const serif = "Georgia, 'Times New Roman', serif";
   const maxLen = Math.max(...lines.map((l) => l.length), 1);
-  // Taille adaptée pour tenir dans la boîte (hauteur / lignes ET largeur / texte).
-  const byHeight = (h * 0.86) / lines.length;
-  const byWidth = (w * 0.92) / (maxLen * 0.52);
-  const fontSize = Math.min(byHeight, byWidth);
+  const fontSize = Math.min((h * 0.86) / lines.length, (w * 0.92) / (maxLen * 0.52));
   const lineH = fontSize * 1.04;
-  const blockH = lineH * lines.length;
-  const startY = (h - blockH) / 2 + fontSize * 0.82;
+  const startY = (h - lineH * lines.length) / 2 + fontSize * 0.82;
   const x = w * 0.04;
   const texts = lines
     .map((l, i) => `<text x="${f(x)}" y="${f(startY + i * lineH)}" font-family="${serif}" font-style="italic" font-size="${f(fontSize)}" fill="${p.foreground}">${esc(l)}</text>`)
@@ -246,17 +213,16 @@ export function logoSvg(spec: ArtSpec, w = 480, h = 150): string {
   return svg(w, h, texts);
 }
 
-// ── ICÔNE : métaphore centrée sur fond de marque (reste simple) ──────────────
-
+// Icône carrée : fond de marque + petite scène recadrée (reste simple).
 export function iconSvg(spec: ArtSpec, size = 348): string {
   const { motif, palette: p } = spec;
+  const bg0 = mix(p.background, "white", 0.06), bg1 = mix(p.background, "black", 0.3);
+  const inner = scene(motif, p, size * 1.6, size).replace(/^<svg[^>]*>|<\/svg>$/g, "");
   const body =
-    defs(p, size, size, size / 2, size / 2) +
-    `<rect width="${size}" height="${size}" rx="${f(size * 0.22)}" fill="url(#bg)"/>` +
-    `<rect width="${size}" height="${size}" rx="${f(size * 0.22)}" fill="url(#halo)"/>` +
-    `<rect width="${size}" height="${size}" rx="${f(size * 0.22)}" filter="url(#grain)" opacity="0.04"/>` +
-    // Métaphore recentrée (le dessin bannière vit à droite → on le recadre).
-    `<g transform="translate(${f(-size * 0.34)} 0)">${metaphor(motif, p, size, size)}</g>`;
+    `<defs><clipPath id="r"><rect width="${size}" height="${size}" rx="${f(size * 0.22)}"/></clipPath>` +
+    `<linearGradient id="ibg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg0}"/><stop offset="1" stop-color="${bg1}"/></linearGradient></defs>` +
+    `<g clip-path="url(#r)"><rect width="${size}" height="${size}" fill="url(#ibg)"/>` +
+    `<g transform="translate(${f(-size * 0.55)} 0)">${inner}</g></g>`;
   return svg(size, size, body);
 }
 

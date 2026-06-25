@@ -63,16 +63,18 @@ describe("art SVG v3 — le NOM vit dans le LOGO (wordmark)", () => {
 });
 
 describe("art SVG v3 — profondeur + métaphore confinée à droite", () => {
-  it("profondeur/texture : halo radial, ombre portée, grain", () => {
-    const s = stripSvg(spec("pizza"));
-    expect(s).toContain('radialGradient id="halo"');
+  it("profondeur/texture : lueur radiale, ombre portée, grain", () => {
+    const s = stripSvg(spec("waves"));
+    expect(s).toContain("radialGradient");
     expect(s).toContain("feDropShadow");
     expect(s).toContain("feTurbulence");
   });
 
-  it("les métaphores produisent des strips distincts", () => {
-    const strips = MOTIFS.map((m) => stripSvg(spec(m)));
-    expect(new Set(strips).size).toBe(MOTIFS.length);
+  it("les scènes illustrées produisent des strips distincts", () => {
+    // bean/pizza utilisent une PHOTO en prod → fallback générique partagé en SVG.
+    const illustrated: DemoArtMotif[] = ["croissant", "wheat", "hairlock", "waves"];
+    const strips = illustrated.map((m) => stripSvg(spec(m)));
+    expect(new Set(strips).size).toBe(illustrated.length);
   });
 
   it("déterministe : même entrée → même sortie", () => {
