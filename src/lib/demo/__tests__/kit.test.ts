@@ -73,18 +73,13 @@ describe("DEMO_KIT — design premium cohérent", () => {
     }
   });
 
-  it("diversifie les codes-barres : les 4 formats supportés sont tous représentés", () => {
-    const used = new Set(DEMO_KIT.map((e) => e.design.barcode.type));
-    expect(used.size).toBe(4);
-    for (const fmt of BARCODE_FORMATS) {
-      expect(used.has(fmt), `format manquant : ${fmt}`).toBe(true);
+  it("toutes les cartes sont en QR (scannable instantanément au comptoir)", () => {
+    // Le scanner comptoir (html5-qrcode, fenêtre carrée + formatsToSupport QR) ne lit
+    // de façon fiable que le QR. PDF417/CODE128 (codes larges) ne rentrent pas dans la
+    // fenêtre carrée, AZTEC peu fiable → tout le kit en QR.
+    for (const e of DEMO_KIT) {
+      expect(e.design.barcode.type, e.shopName).toBe("QR");
     }
-    // Répartition voulue par le CHEF : QR×3, AZTEC×1, PDF417×1, CODE128×1.
-    const count = (t: string) => DEMO_KIT.filter((e) => e.design.barcode.type === t).length;
-    expect(count("QR")).toBe(3);
-    expect(count("AZTEC")).toBe(1);
-    expect(count("PDF417")).toBe(1);
-    expect(count("CODE128")).toBe(1);
   });
 });
 

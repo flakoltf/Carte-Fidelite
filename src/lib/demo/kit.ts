@@ -213,8 +213,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#E8B873",
       programName: "pain au levain",
       cardType: "points",
-      // AZTEC (2D) : compact, lecture fiable même à l'écran (diversité kit, demande CHEF).
-      barcode: { type: "AZTEC", source: "card_token", altText: "Présentez cette carte — Boulangerie des Pâquis" },
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Boulangerie des Pâquis" },
     },
   },
 
@@ -287,8 +286,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#D9B3E6",
       programName: "coupe & couleur",
       cardType: "points",
-      // PDF417 (2D empilé) : supporte ~101 car. du jeton signé sans souci d'affichage.
-      barcode: { type: "PDF417", source: "card_token", altText: "Présentez cette carte — Salon Lumière" },
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Salon Lumière" },
     },
   },
 
@@ -360,9 +358,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       accent: "#C9A86A",
       programName: "maison de pain",
       cardType: "points",
-      // CODE128 (1D) : démontre le 4ᵉ format. ⚠ le jeton signé (~101 car.) produit un
-      // code large/dense — voir caveat PR (préférer 2D pour un usage réel).
-      barcode: { type: "CODE128", source: "card_token", altText: "Présentez cette carte — Boulangerie Démo" },
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Boulangerie Démo" },
     },
   },
 ];
