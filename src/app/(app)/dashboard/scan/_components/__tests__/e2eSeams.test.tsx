@@ -21,6 +21,7 @@ vi.mock("html5-qrcode", () => ({
     }
     clear() {}
   },
+  Html5QrcodeSupportedFormats: { QR_CODE: 0 },
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
