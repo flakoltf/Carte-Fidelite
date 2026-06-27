@@ -29,6 +29,10 @@
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
   --color-galet-ink: #6E7073;
+  /* Texte atténué qui passe WCAG AA (≥4.5:1) sur le fond calcaire, là où
+     --color-galet-ink tombe à ~4.4:1. Pour les petites mentions / disclaimers
+     sur calcaire. galet-ink reste correct sur les surfaces blanches. */
+  --color-galet-deep: #5B5D60;
   /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
      --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
      Scanner, plein écran « Offrir la récompense ». Ce n'est PAS la couleur

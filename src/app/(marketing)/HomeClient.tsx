@@ -20,6 +20,8 @@ import {
   HeartHandshake,
   QrCode,
   Quote,
+  Menu,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
@@ -125,6 +127,7 @@ const TESTIMONIALS = [
 
 export default function HomeClient() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -132,12 +135,27 @@ export default function HomeClient() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <div className="min-h-dvh bg-calcaire font-sans text-onyx selection:bg-halo/40 overflow-x-hidden">
+      <a
+        href="#contenu"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-halo focus:px-5 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-white focus:outline-none focus:ring-2 focus:ring-white"
+      >
+        Aller au contenu
+      </a>
       {/* ---------------- NAV ---------------- */}
       <nav
         className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-300 ${
-          scrolled
+          scrolled || menuOpen
             ? "border-line-warm bg-calcaire/80 py-3 backdrop-blur-md"
             : "border-transparent bg-transparent py-5"
         }`}
@@ -153,10 +171,10 @@ export default function HomeClient() {
             <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
             <a href="#faq" className="transition-colors hover:text-onyx">FAQ</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="rounded-full px-4 py-2 text-sm font-medium text-galet-ink transition-colors hover:text-onyx focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
+              className="hidden rounded-full px-4 py-2 text-sm font-medium text-galet-ink transition-colors hover:text-onyx focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo md:inline-flex"
             >
               Connexion
             </Link>
@@ -166,10 +184,52 @@ export default function HomeClient() {
             >
               Créer ma carte
             </Link>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-onyx transition-colors hover:bg-line-warm/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo md:hidden"
+            >
+              {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+            </button>
           </div>
         </div>
+
+        {/* mobile section menu */}
+        {menuOpen && (
+          <div id="mobile-menu" className="mx-auto max-w-7xl px-6 pb-4 pt-2 md:hidden">
+            <div className="flex flex-col gap-1 rounded-2xl border border-line-warm bg-surface p-2 text-sm shadow-[0_8px_30px_-12px_rgba(14,15,17,0.18)]">
+              {[
+                ["#fonctionnement", "Fonctionnement"],
+                ["#mecaniques", "Mécaniques"],
+                ["#galerie", "Exemples"],
+                ["#tarifs", "Tarifs"],
+                ["#faq", "FAQ"],
+              ].map(([href, label]) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl px-4 py-3 font-medium text-onyx transition-colors hover:bg-calcaire focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
+                >
+                  {label}
+                </a>
+              ))}
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-xl px-4 py-3 font-medium text-galet-ink transition-colors hover:bg-calcaire hover:text-onyx focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo"
+              >
+                Connexion
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
+      <main id="contenu" tabIndex={-1}>
       {/* ---------------- HERO ---------------- */}
       <section className="relative px-6 pb-16 pt-36 sm:pt-44">
         <div
@@ -270,7 +330,7 @@ export default function HomeClient() {
                   </span>
                   <h3 className="mt-4 text-lg font-semibold">{m.title}</h3>
                   <p className="mt-1.5 text-sm text-galet-ink">{m.desc}</p>
-                  <p className="mt-4 text-xs uppercase tracking-[0.12em] text-galet-ink/70">{m.ex}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.12em] text-galet-deep">{m.ex}</p>
                 </div>
               </Reveal>
             ))}
@@ -333,7 +393,7 @@ export default function HomeClient() {
             <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
               Des commerçants <em className="italic text-halo">convaincus.</em>
             </h2>
-            <p className="mt-3 text-xs text-galet-ink/60">Témoignages illustratifs — à remplacer par de vrais avis.</p>
+            <p className="mt-3 text-xs text-galet-deep">Témoignages illustratifs — à remplacer par de vrais avis.</p>
           </Reveal>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
@@ -436,7 +496,7 @@ export default function HomeClient() {
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-onyx [&::-webkit-details-marker]:hidden">
                     {item.question}
                     <ChevronRight
-                      className="h-4 w-4 shrink-0 text-galet transition-transform group-open:rotate-90"
+                      className="h-4 w-4 shrink-0 text-galet-ink transition-transform group-open:rotate-90"
                       aria-hidden
                     />
                   </summary>
@@ -475,6 +535,7 @@ export default function HomeClient() {
           </Link>
         </Reveal>
       </section>
+      </main>
 
       {/* ---------------- FOOTER ---------------- */}
       <SiteFooter />
