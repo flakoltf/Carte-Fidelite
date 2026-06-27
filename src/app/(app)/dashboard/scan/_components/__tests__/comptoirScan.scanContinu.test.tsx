@@ -30,15 +30,18 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 vi.mock("framer-motion", () => ({
+  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  useReducedMotion: () => false,
   motion: new Proxy(
     {},
     {
       get: (_t, tag: string) => {
         const Tag = tag as "div" | "span";
         return ({ children, ...rest }: { children?: ReactNode }) => {
-          const { initial, animate, transition, ...dom } = rest as Record<string, unknown>;
+          const { initial, animate, exit, transition, ...dom } = rest as Record<string, unknown>;
           void initial;
           void animate;
+          void exit;
           void transition;
           return <Tag {...(dom as object)}>{children}</Tag>;
         };

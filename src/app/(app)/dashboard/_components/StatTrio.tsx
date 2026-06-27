@@ -42,7 +42,7 @@ export default function StatTrio() {
       aria-label="Chiffres clés du jour"
       aria-busy={loading}
     >
-      {ITEMS.map(({ key, label }) => {
+      {ITEMS.map(({ key, label }, i) => {
         const value = stats ? stats[key] : null;
         return (
           <div key={key} className="flex flex-col items-center text-center">
@@ -53,7 +53,13 @@ export default function StatTrio() {
                 aria-hidden="true"
               />
             ) : (
-              <span className="font-display text-4xl sm:text-6xl font-extrabold tracking-tight text-onyx tabular-nums">
+              // Fondu + léger rise au remplacement du skeleton, micro-stagger
+              // (60 ms/colonne). Pas de count-up : le chiffre doit rester
+              // glançable au comptoir (vu des dizaines de fois/jour).
+              <span
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="halo-rise-in font-display text-4xl sm:text-6xl font-extrabold tracking-tight text-onyx tabular-nums"
+              >
                 {value ?? "—"}
               </span>
             )}

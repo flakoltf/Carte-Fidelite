@@ -9,6 +9,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 // framer-motion → éléments simples et déterministes (pas d'animation en test).
 vi.mock("framer-motion", () => ({
+  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  useReducedMotion: () => false,
   motion: new Proxy(
     {},
     {
@@ -16,9 +18,10 @@ vi.mock("framer-motion", () => ({
         const Tag = tag as "div" | "span";
         return ({ children, ...rest }: { children?: ReactNode }) => {
           // On retire les props d'animation pour ne pas polluer le DOM.
-          const { initial, animate, transition, ...dom } = rest as Record<string, unknown>;
+          const { initial, animate, exit, transition, ...dom } = rest as Record<string, unknown>;
           void initial;
           void animate;
+          void exit;
           void transition;
           return <Tag {...(dom as object)}>{children}</Tag>;
         };

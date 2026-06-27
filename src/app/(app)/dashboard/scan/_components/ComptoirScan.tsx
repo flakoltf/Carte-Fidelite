@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import type { LoyaltyType } from "@/lib/loyalty/types";
+import { EASE_OUT } from "@/lib/motion";
 import RedeemFullScreen from "./RedeemFullScreen";
 import AmountPad from "./AmountPad";
 
@@ -29,6 +30,7 @@ export default function ComptoirScan({
   rewardLabel: string;
 }) {
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [scanned, setScanned] = useState<string | null>(null);
@@ -188,23 +190,28 @@ export default function ComptoirScan({
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-calcaire text-onyx">
-      {/* Toast de confirmation « scan continu » : bandeau compact en haut,
-          slide-in 200 ms, visible pendant que la caméra se relance seule. */}
-      {mode === "added" && (
-        <motion.div
-          role="status"
-          aria-live="polite"
-          initial={{ y: -72, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]"
-        >
-          <span className="flex items-center gap-2 rounded-full bg-halo px-5 py-2.5 text-base font-bold text-white shadow-lg shadow-halo/30">
-            <CheckCircle className="h-5 w-5" aria-hidden="true" />
-            {message}
-          </span>
-        </motion.div>
-      )}
+      {/* Toast de confirmation « scan continu » : bandeau compact en haut.
+          Entrée ET sortie (AnimatePresence) en courbe forte ~200 ms : il
+          respire au lieu d'être coupé net quand la caméra se relance. */}
+      <AnimatePresence>
+        {mode === "added" && (
+          <motion.div
+            key="scan-toast"
+            role="status"
+            aria-live="polite"
+            initial={reduce ? { opacity: 0 } : { y: -72, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={reduce ? { opacity: 0 } : { y: -72, opacity: 0 }}
+            transition={{ duration: 0.2, ease: EASE_OUT }}
+            className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]"
+          >
+            <span className="flex items-center gap-2 rounded-full bg-halo px-5 py-2.5 text-base font-bold text-white shadow-lg shadow-halo/30">
+              <CheckCircle className="h-5 w-5" aria-hidden="true" />
+              {message}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <header className="flex h-14 items-center gap-2 px-4">
         <button
@@ -237,16 +244,22 @@ export default function ComptoirScan({
 
           {mode === "processing" && (
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-12 w-12 animate-spin text-halo" />
+              <Loader2 className="halo-spin h-12 w-12 text-halo" />
               <span className="animate-pulse text-galet-ink">Vérification…</span>
             </div>
           )}
 
           {mode === "added" && (
             <div className="flex flex-col items-center gap-5 p-8 text-center">
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-halo shadow-lg shadow-halo/20">
+              {/* Pop ressort : rien n'apparaît depuis le néant (jamais scale(0)). */}
+              <motion.span
+                initial={reduce ? { opacity: 0 } : { scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={reduce ? { duration: 0.18 } : { type: "spring", duration: 0.4, bounce: 0.3 }}
+                className="flex h-20 w-20 items-center justify-center rounded-full bg-halo shadow-lg shadow-halo/20"
+              >
                 <CheckCircle className="h-12 w-12 text-white" />
-              </span>
+              </motion.span>
               <p className="text-xl font-bold">C&apos;est validé</p>
               {/* Pas de tap obligatoire : la caméra revient seule. Ce bouton ne
                   fait qu'écourter l'attente pour les comptoirs pressés. */}
