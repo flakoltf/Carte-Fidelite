@@ -125,6 +125,14 @@ const TESTIMONIALS = [
   { quote: "Enfin une carte de fidélité aussi soignée que ma boutique. Image au top.", name: "Sophie L.", role: "Boutique mode, Genève" },
 ];
 
+const NAV_LINKS: [href: string, label: string][] = [
+  ["#fonctionnement", "Fonctionnement"],
+  ["#mecaniques", "Mécaniques"],
+  ["#galerie", "Exemples"],
+  ["#tarifs", "Tarifs"],
+  ["#faq", "FAQ"],
+];
+
 /* Éventail des 3 cartes du showpiece hero. `wrap` (élément flex) gère le
    chevauchement par marge négative + la profondeur (z-index) ; `tilt` (carte)
    gère l'inclinaison / l'échelle au repos. Le centre est relevé et devant. */
@@ -137,11 +145,31 @@ const HERO_LAYOUT = [
 export default function HomeClient() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeId, setActiveId] = useState("");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Scroll-spy : surligne la section courante dans la nav.
+  useEffect(() => {
+    const sections = NAV_LINKS.map(([href]) => document.getElementById(href.slice(1))).filter(
+      (el): el is HTMLElement => el !== null
+    );
+    if (sections.length === 0) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (top) setActiveId(top.target.id);
+      },
+      { rootMargin: "-45% 0px -50% 0px", threshold: [0, 0.25, 0.5, 1] }
+    );
+    sections.forEach((s) => obs.observe(s));
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -174,11 +202,19 @@ export default function HomeClient() {
             <HaloWordmark className="text-lg" />
           </Link>
           <div className="hidden items-center gap-8 text-sm text-galet-ink md:flex">
-            <a href="#fonctionnement" className="transition-colors hover:text-onyx">Fonctionnement</a>
-            <a href="#mecaniques" className="transition-colors hover:text-onyx">Mécaniques</a>
-            <a href="#galerie" className="transition-colors hover:text-onyx">Exemples</a>
-            <a href="#tarifs" className="transition-colors hover:text-onyx">Tarifs</a>
-            <a href="#faq" className="transition-colors hover:text-onyx">FAQ</a>
+            {NAV_LINKS.map(([href, label]) => {
+              const active = activeId === href.slice(1);
+              return (
+                <a
+                  key={href}
+                  href={href}
+                  aria-current={active ? "true" : undefined}
+                  className={`transition-colors ${active ? "text-onyx" : "hover:text-onyx"}`}
+                >
+                  {label}
+                </a>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
@@ -210,13 +246,7 @@ export default function HomeClient() {
         {menuOpen && (
           <div id="mobile-menu" className="mx-auto max-w-7xl px-6 pb-4 pt-2 md:hidden">
             <div className="flex flex-col gap-1 rounded-2xl border border-line-warm bg-surface p-2 text-sm shadow-[0_8px_30px_-12px_rgba(14,15,17,0.18)]">
-              {[
-                ["#fonctionnement", "Fonctionnement"],
-                ["#mecaniques", "Mécaniques"],
-                ["#galerie", "Exemples"],
-                ["#tarifs", "Tarifs"],
-                ["#faq", "FAQ"],
-              ].map(([href, label]) => (
+              {NAV_LINKS.map(([href, label]) => (
                 <a
                   key={href}
                   href={href}
@@ -253,7 +283,7 @@ export default function HomeClient() {
             </span>
           </Reveal>
           <Reveal delay={0.05}>
-            <h1 className="font-display text-5xl font-light leading-[1.05] tracking-tight sm:text-7xl">
+            <h1 className="text-balance font-display text-5xl font-light leading-[1.05] tracking-tight sm:text-7xl">
               La carte de fidélité numérique des grandes
               <br className="hidden sm:block" /> enseignes, <em className="italic text-halo">à votre image.</em>
             </h1>
@@ -327,8 +357,7 @@ export default function HomeClient() {
       <section id="fonctionnement" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Fonctionnement</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Trois étapes, <em className="italic text-halo">zéro complexité.</em>
             </h2>
           </Reveal>
@@ -355,8 +384,7 @@ export default function HomeClient() {
       <section id="mecaniques" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Les mécaniques</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Cinq façons de <em className="italic text-halo">fidéliser.</em>
             </h2>
             <p className="mt-4 text-galet-ink">Choisissez celle qui colle à votre métier. Changez quand vous voulez.</p>
@@ -382,8 +410,7 @@ export default function HomeClient() {
       <section id="galerie" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Les exemples</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Chaque commerce, <em className="italic text-halo">sa carte.</em>
             </h2>
             <p className="mt-4 text-galet-ink">Trouvez votre métier — ou inspirez-vous d&apos;un voisin. Tout est personnalisable.</p>
@@ -402,8 +429,7 @@ export default function HomeClient() {
       <section className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Pourquoi HALO</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Tout ce qu&apos;il faut, <em className="italic text-halo">rien de superflu.</em>
             </h2>
           </Reveal>
@@ -429,8 +455,7 @@ export default function HomeClient() {
       <section className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Ils utilisent HALO</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Des commerçants <em className="italic text-halo">convaincus.</em>
             </h2>
             <p className="mt-3 text-xs text-galet-deep">Témoignages illustratifs — à remplacer par de vrais avis.</p>
@@ -458,8 +483,7 @@ export default function HomeClient() {
       <section id="tarifs" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Tarifs</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Un prix clair, <em className="italic text-halo">sans surprise.</em>
             </h2>
             <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de cartes actives.</p>
@@ -524,8 +548,7 @@ export default function HomeClient() {
       <section id="faq" className="border-t border-line-warm px-6 py-24">
         <div className="mx-auto max-w-3xl">
           <Reveal>
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-galet-ink">Questions fréquentes</p>
-            <h2 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl">
+            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
               Les vraies questions, <em className="italic text-halo">sans détour.</em>
             </h2>
           </Reveal>
@@ -560,7 +583,7 @@ export default function HomeClient() {
       <section className="border-t border-line-warm px-6 py-28">
         <Reveal className="mx-auto max-w-3xl text-center">
           <HaloSymbol size={48} ring="var(--color-halo)" className="mx-auto mb-8" />
-          <h2 className="font-display text-4xl font-light tracking-tight sm:text-6xl">
+          <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-6xl">
             Et la vôtre, elle ressemblerait <em className="italic text-halo">à quoi&nbsp;?</em>
           </h2>
           <p className="mx-auto mt-6 max-w-md text-galet-ink">
