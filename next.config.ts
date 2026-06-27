@@ -76,6 +76,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  // La route de seed du kit démo lit les PNG committés (rendus localement avec
+  // polices) pour les uploader tels quels au bucket — on les inclut au bundle de
+  // la fonction (sinon `fs.readFile` échoue côté Vercel). Voir src/lib/demo/seedKit.ts.
+  outputFileTracingIncludes: {
+    "/api/admin/demo/seed-kit": [
+      "./assets/demo-kit/*/apple-*.png",
+      "./assets/demo-kit/*/google-*.png",
+    ],
+  },
   headers: async () => [
     {
       source: "/(.*)",

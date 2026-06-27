@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import type { LoyaltyType } from "@/lib/loyalty/types";
@@ -103,7 +103,14 @@ export default function ComptoirScan({
 
   useEffect(() => {
     if (mode !== "scanning") return;
-    const scanner = new Html5Qrcode("comptoir-reader");
+    // Décodage QR uniquement (les cartes de fidélité portent un QR) : restreindre
+    // les formats accélère/fiabilise la détection, et le BarcodeDetector natif est
+    // utilisé quand le navigateur le supporte. La fenêtre carrée reste adaptée au QR.
+    const scanner = new Html5Qrcode("comptoir-reader", {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      useBarCodeDetectorIfSupported: true,
+      verbose: false,
+    });
     let handled = false;
     const stop = async () => {
       try {
