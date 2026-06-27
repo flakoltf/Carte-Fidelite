@@ -125,6 +125,15 @@ const TESTIMONIALS = [
   { quote: "Enfin une carte de fidélité aussi soignée que ma boutique. Image au top.", name: "Sophie L.", role: "Boutique mode, Genève" },
 ];
 
+/* Éventail des 3 cartes du showpiece hero. `wrap` (élément flex) gère le
+   chevauchement par marge négative + la profondeur (z-index) ; `tilt` (carte)
+   gère l'inclinaison / l'échelle au repos. Le centre est relevé et devant. */
+const HERO_LAYOUT = [
+  { wrap: "z-10 mr-[-1.75rem] sm:mr-[-2.5rem]", tilt: "-rotate-[6deg] scale-90" },
+  { wrap: "z-30", tilt: "-translate-y-5 sm:-translate-y-7" },
+  { wrap: "z-20 ml-[-1.75rem] sm:ml-[-2.5rem]", tilt: "rotate-[6deg] scale-90" },
+];
+
 export default function HomeClient() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -275,11 +284,42 @@ export default function HomeClient() {
           </Reveal>
         </div>
 
-        {/* hero card teaser */}
-        <Reveal delay={0.2} className="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {SAMPLE_CARDS.slice(0, 3).map((c, i) => (
-            <LoyaltyCard key={c.name} card={c} delay={i} />
-          ))}
+        {/* ---- hero showpiece : « le comptoir éclairé » ---- */}
+        <Reveal delay={0.2} className="mx-auto mt-20 max-w-5xl">
+          <div className="relative overflow-hidden rounded-[2rem] border border-onyx-line bg-onyx px-4 py-14 sm:px-12 sm:py-20">
+            {/* halo émeraude + grain — le « halo » de la marque */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-[90px]"
+              style={{ background: "radial-gradient(circle, var(--color-halo-glow), transparent 65%)" }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.05]"
+              style={{
+                backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)",
+                backgroundSize: "22px 22px",
+              }}
+            />
+
+            {/* éventail de cartes */}
+            <div className="relative mx-auto flex max-w-3xl items-end justify-center">
+              {SAMPLE_CARDS.slice(0, 3).map((c, i) => (
+                <div key={c.name} className={HERO_LAYOUT[i].wrap}>
+                  <div
+                    className={`halo-float relative w-[184px] origin-bottom transition-[rotate,scale,translate] duration-500 ease-[var(--ease-out)] hover:z-40 hover:rotate-0 hover:-translate-y-8 sm:w-[244px] ${HERO_LAYOUT[i].tilt}`}
+                    style={{ animationDelay: `${i * 1.3}s` }}
+                  >
+                    <LoyaltyCard card={c} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="relative mt-12 text-center text-xs uppercase tracking-[0.22em] text-calcaire/60">
+              Aperçu réel — Apple &amp; Google Wallet
+            </p>
+          </div>
         </Reveal>
       </section>
 
