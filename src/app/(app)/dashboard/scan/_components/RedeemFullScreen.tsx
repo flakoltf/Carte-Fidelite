@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Gift, Check, Loader2 } from "lucide-react";
+import { EASE_OUT } from "@/lib/motion";
 
 type Phase = "ready" | "redeeming" | "done" | "error";
 
@@ -44,6 +45,7 @@ export default function RedeemFullScreen({
   onRedeemed,
 }: RedeemFullScreenProps) {
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("ready");
   const [error, setError] = useState("");
   const [silent, setSilent] = useState(false);
@@ -84,10 +86,15 @@ export default function RedeemFullScreen({
   const done = phase === "done";
 
   return (
-    <div
+    <motion.div
       role="dialog"
       aria-modal="true"
       aria-label="Offrir la récompense"
+      // Entrée plein écran : modal (non ancrée à un déclencheur) → origin centre,
+      // léger scale + fondu en courbe forte. Jamais scale(0).
+      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.25, ease: EASE_OUT }}
       className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center text-onyx"
       style={{ background: "var(--color-gold-grad)" }}
     >
@@ -103,7 +110,7 @@ export default function RedeemFullScreen({
             aria-hidden="true"
             initial={{ scale: 0.6, opacity: 0.7 }}
             animate={{ scale: 2.4, opacity: 0 }}
-            transition={{ duration: CONFETTI_MS, ease: "easeOut" }}
+            transition={{ duration: CONFETTI_MS, ease: EASE_OUT }}
             className="pointer-events-none absolute h-40 w-40 rounded-full bg-white/60"
           />
           {CONFETTI.map((i) => (
@@ -112,7 +119,7 @@ export default function RedeemFullScreen({
               aria-hidden="true"
               initial={{ y: 0, x: 0, opacity: 1 }}
               animate={{ y: 320, x: (i % 2 ? 1 : -1) * (40 + i * 12), opacity: 0, rotate: 360 }}
-              transition={{ duration: CONFETTI_MS, ease: "easeOut" }}
+              transition={{ duration: CONFETTI_MS, ease: EASE_OUT }}
               className="pointer-events-none absolute top-1/3 h-3 w-3 rounded-[2px] bg-white"
             />
           ))}
@@ -120,12 +127,17 @@ export default function RedeemFullScreen({
       )}
 
       <div className="relative z-10 flex flex-col items-center gap-8">
-        <span
+        <motion.span
           className="flex h-20 w-20 items-center justify-center rounded-full bg-white/35 backdrop-blur"
           aria-hidden="true"
+          // Pop ressort au succès uniquement (overshoot 0.5→1.06→1). Pas
+          // d'animation au montage (initial=false) : c'est l'écran qui entre.
+          initial={false}
+          animate={done && !reduce ? { scale: [0.5, 1.06, 1] } : { scale: 1 }}
+          transition={{ duration: 0.45, ease: EASE_OUT }}
         >
           {done ? <Check className={`h-11 w-11 ${silent ? "text-emerald-600" : ""}`} /> : <Gift className="h-11 w-11" />}
-        </span>
+        </motion.span>
 
         <h1 className="font-display text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl">
           {done ? "Récompense offerte" : rewardLabel}
@@ -147,7 +159,7 @@ export default function RedeemFullScreen({
             className="flex h-20 w-full items-center justify-center gap-3 rounded-3xl bg-onyx text-xl font-extrabold tracking-tight text-white shadow-xl transition-transform active:scale-[0.98] disabled:opacity-60"
           >
             {busy ? (
-              <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              <Loader2 className="halo-spin h-6 w-6" aria-hidden="true" />
             ) : (
               <Gift className="h-6 w-6" aria-hidden="true" />
             )}
@@ -170,6 +182,6 @@ export default function RedeemFullScreen({
           </button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

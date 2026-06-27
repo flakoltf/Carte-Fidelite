@@ -22,13 +22,15 @@ import {
   Gem,
   type LucideIcon
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { createClient } from "@/utils/supabase/client";
 import { HaloSymbol } from "@/components/halo/HaloMark";
+import { EASE_DRAWER } from "@/lib/motion";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const supabaseClient = createClient();
 
@@ -109,7 +111,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                                 key={item.href}
                                 href={item.href}
                                 aria-current={isActive ? "page" : undefined}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-xl text-sm transition-all duration-200 group ${
+                                className={`flex items-center gap-3 px-4 py-2 rounded-xl text-sm transition duration-200 ease-[var(--ease-out)] group ${
                                     isActive
                                     ? "bg-halo text-white"
                                     : item.featured
@@ -130,7 +132,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div className="mt-auto pt-6 border-t border-line-warm">
             <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-3 w-full text-galet-ink hover:text-red-600 hover:bg-red-500/10 rounded-2xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 w-full text-galet-ink hover:text-red-600 hover:bg-red-500/10 rounded-2xl transition"
             >
                 <LogOut className="w-5 h-5" />
                 <span className="font-medium">Déconnexion</span>
@@ -158,9 +160,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       <AnimatePresence>
         {isMobileMenuOpen && (
             <motion.div
-                initial={{ opacity: 0, x: -100 }}
+                initial={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -100 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
+                transition={{ duration: 0.28, ease: EASE_DRAWER }}
                 className="lg:hidden fixed inset-0 bg-calcaire z-40 p-6 pt-24 overflow-y-auto"
             >
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">

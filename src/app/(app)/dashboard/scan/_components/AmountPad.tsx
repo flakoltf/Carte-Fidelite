@@ -71,7 +71,7 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
             type="button"
             onClick={() => press(key)}
             aria-label={KEY_LABEL[key]}
-            className="flex items-center justify-center rounded-2xl bg-surface text-3xl font-bold shadow-sm ring-1 ring-line-warm transition-transform active:scale-95 active:bg-line-warm/40"
+            className="flex items-center justify-center rounded-2xl bg-surface text-3xl font-bold shadow-sm ring-1 ring-line-warm transition-transform duration-100 ease-[var(--ease-out)] active:scale-95 active:bg-line-warm/40"
           >
             {key === "back" ? <Delete className="h-7 w-7" aria-hidden="true" /> : key}
           </button>
@@ -84,7 +84,7 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
           type="button"
           onClick={confirm}
           disabled={submitting || amount <= 0}
-          className="flex h-20 w-full items-center justify-center rounded-3xl bg-halo text-xl font-extrabold tracking-tight text-white shadow-lg shadow-halo/25 transition-transform active:scale-[0.98] disabled:opacity-50"
+          className="flex h-20 w-full items-center justify-center rounded-3xl bg-halo text-xl font-extrabold tracking-tight text-white shadow-lg shadow-halo/25 transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.98] disabled:opacity-50"
         >
           {submitting ? "Validation…" : `VALIDER ${display}`}
         </button>

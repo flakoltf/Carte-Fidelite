@@ -107,7 +107,8 @@ export default function ExpressOnboarding({
                 key={step.n}
                 data-testid={`oe-step-${step.n}`}
                 aria-current={state === "current" ? "step" : undefined}
-                className={`rounded-3xl border p-4 transition-colors sm:p-5 ${
+                style={{ animationDelay: `${i * 60}ms` }}
+                className={`halo-rise-in rounded-3xl border p-4 transition-colors sm:p-5 ${
                   state === "current"
                     ? "border-halo/40 bg-halo/[0.06] shadow-sm"
                     : state === "done"
@@ -166,7 +167,7 @@ export default function ExpressOnboarding({
                     {!step.done && (
                       <Link
                         href={step.href}
-                        className={`mt-3 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-all active:scale-95 ${
+                        className={`mt-3 inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-transform duration-150 ease-[var(--ease-out)] active:scale-95 ${
                           state === "current"
                             ? "bg-halo text-white hover:bg-halo-600"
                             : "border border-line-warm bg-surface text-onyx hover:bg-calcaire"

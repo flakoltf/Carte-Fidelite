@@ -42,6 +42,16 @@
    pour un usage direct `background: var(--color-gold-grad)`. */
 :root {
   --color-gold-grad: linear-gradient(160deg, #F4D9A0 0%, #E8B964 45%, #C9952F 100%);
+
+  /* Courbes d'easing HALO — variantes "fortes" (les easings CSS natifs manquent
+     de punch). Réutilisées en Tailwind via ease-[var(--ease-out)] ET en
+     framer-motion via les constantes de src/lib/motion.ts (mêmes valeurs).
+     --ease-out      : entrées/sorties UI (démarre vite = réactif)
+     --ease-in-out   : déplacements/morphs à l'écran
+     --ease-drawer   : tiroirs façon iOS (Ionic) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -92,7 +102,34 @@ body {
   animation: halo-sheen 6.5s ease-in-out infinite;
 }
 
+/* Spinner comptoir — plus rapide que le défaut Tailwind (1 s). Un spinner qui
+   tourne vite fait *percevoir* un chargement plus court (principe Emil). */
+@keyframes halo-spin {
+  to { transform: rotate(360deg); }
+}
+.halo-spin {
+  animation: halo-spin 0.7s linear infinite;
+}
+
+/* Entrée douce "fade + rise" — pour les chiffres StatTrio (remplacement du
+   skeleton) et le stagger des étapes d'onboarding. `both` : l'élément reste à
+   l'état initial avant son délai → aucun flash. */
+@keyframes halo-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes halo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.halo-rise-in {
+  animation: halo-rise-in 0.42s var(--ease-out) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .halo-holo,
   .halo-sheen { animation: none; }
+  /* Reduced motion = plus doux, pas zéro : on garde le fondu, on retire le
+     déplacement. */
+  .halo-rise-in { animation: halo-fade-in 0.3s ease both; }
 }

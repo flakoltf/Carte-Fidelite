@@ -27,6 +27,7 @@ vi.mock("@/utils/supabase/client", () => ({ createClient: () => ({ auth: { signO
 // framer-motion → éléments simples (pas d'animation en test).
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
+  useReducedMotion: () => false,
   motion: new Proxy(
     {},
     {
