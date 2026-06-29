@@ -5,7 +5,6 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  Check,
   ChevronRight,
   Smartphone,
   Palette,
@@ -27,6 +26,7 @@ import { HaloSymbol, HaloWordmark } from "@/components/halo/HaloMark";
 import { FAQ_ITEMS } from "@/content/faq";
 import { LoyaltyCard, SAMPLE_CARDS, type CardData } from "@/components/landing/LoyaltyCard";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { PricingTiers } from "./_components/PricingTiers";
 
 /* ---------- motion helper (respects reduced-motion) ---------- */
 function Reveal({
@@ -490,49 +490,7 @@ export default function HomeClient() {
             </h2>
             <p className="mt-4 text-galet-ink">Sans matériel. Toutes les fonctionnalités dans chaque palier — le prix évolue simplement avec votre nombre de cartes actives.</p>
           </Reveal>
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {PRICING.map((p, i) => (
-              <Reveal key={p.name} delay={i * 0.08}>
-                <div
-                  className={`flex h-full flex-col rounded-2xl border p-8 ${
-                    p.featured
-                      ? "border-halo/40 bg-halo/[0.06] shadow-[0_16px_50px_-20px_rgba(13,107,94,0.35)]"
-                      : "border-line-warm bg-surface shadow-sm"
-                  }`}
-                >
-                  {p.featured && (
-                    <span className="mb-4 inline-block w-fit rounded-full bg-halo px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
-                      Le plus populaire
-                    </span>
-                  )}
-                  <h3 className="font-display text-2xl">{p.name}</h3>
-                  <p className="mt-1 text-sm text-galet-ink">{p.tagline}</p>
-                  <div className="mt-5 flex items-baseline gap-1.5">
-                    <span className="font-display text-4xl font-light">{p.price}</span>
-                    {p.unit && <span className="text-sm text-galet-ink">{p.unit}</span>}
-                  </div>
-                  <ul className="mt-7 flex-1 space-y-3">
-                    {p.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-onyx/90">
-                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-halo" aria-hidden />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={p.href}
-                    className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo ${
-                      p.featured
-                        ? "bg-halo text-white hover:bg-halo-600"
-                        : "border border-line-warm text-onyx hover:bg-calcaire"
-                    }`}
-                  >
-                    {p.cta}
-                  </Link>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <PricingTiers tiers={PRICING} />
           <Reveal>
             <p className="mt-8 text-center text-sm text-galet-ink">
               Sans engagement. Paiement annuel : <span className="text-onyx">2 mois offerts</span>.
