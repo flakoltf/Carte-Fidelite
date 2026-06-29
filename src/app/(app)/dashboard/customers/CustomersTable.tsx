@@ -36,11 +36,11 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-galet" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" inputMode="search" placeholder="Rechercher..."
+            <Search className="absolute left-3 top-3 w-4 h-4 text-galet" aria-hidden />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" inputMode="search" placeholder="Rechercher..." aria-label="Rechercher un client"
               className="bg-surface border border-line-warm rounded-xl py-2.5 pl-10 pr-4 text-sm text-onyx focus:border-halo outline-none transition-all w-full md:w-64 min-h-11" />
           </div>
-          <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} aria-label="Filtrer par statut de carte"
             className="bg-surface border border-line-warm rounded-xl py-2.5 px-3 text-sm text-galet-ink min-h-11">
             <option value="all">Tous</option>
             <option value="full">Carte pleine</option>
