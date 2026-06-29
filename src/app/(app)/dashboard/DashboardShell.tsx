@@ -34,6 +34,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const supabaseClient = createClient();
 
+  // Ferme le menu mobile à chaque navigation (y compris liens internes, retour
+  // navigateur) — pas seulement au clic d'item, qui ne couvrait pas tous les cas.
+  // Pattern React officiel « ajuster l'état pendant le rendu » (pas d'effet → pas
+  // de rendu en cascade) : on mémorise le chemin précédent dans un état.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+  }
+
   const handleLogout = async () => {
     await supabaseClient.auth.signOut();
     router.push("/login");

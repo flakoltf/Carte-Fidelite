@@ -5,9 +5,17 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
 import { buildGoogleSaveUrl } from "@/lib/googlePass";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 
 export async function POST(req: Request) {
   try {
+    // --- GATE Google Wallet : tant que le publishing access n'est pas accordé,
+    // la voie Google est fermée côté serveur (même garde que GET /api/enroll/[cardId]).
+    // Placé EN TÊTE : aucune création (customer/carte) ne doit avoir lieu si fermé.
+    if (process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY !== "true") {
+      return NextResponse.json({ error: "Google Wallet n'est pas encore disponible" }, { status: 503 });
+    }
+
     // --- SÉCURITÉ : Authentification + Rate limiting ---
     const { createClient } = await import("@/utils/supabase/server");
     const supabase = await createClient();
@@ -28,8 +36,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
     }
 
-    if (typeof currentStamps !== 'number' || currentStamps < 0 || currentStamps > 10) {
-      return NextResponse.json({ error: "currentStamps doit être entre 0 et 10" }, { status: 400 });
+    if (typeof currentStamps !== 'number' || !Number.isInteger(currentStamps) || currentStamps < 0) {
+      return NextResponse.json({ error: "currentStamps invalide" }, { status: 400 });
     }
 
     if (typeof customerName !== 'string' || customerName.length < 2 || customerName.length > 100) {
@@ -46,11 +54,22 @@ export async function POST(req: Request) {
     // Suspension administrative : pas de nouvelle émission de pass (même règle que /api/scan).
     const { data: merchantRow } = await supabaseAdmin
       .from("merchants")
-      .select("suspended_at")
+      .select("suspended_at, loyalty_type, loyalty_config, stamp_goal")
       .eq("id", merchantId)
       .maybeSingle();
     if (merchantRow?.suspended_at) {
       return NextResponse.json({ error: "Compte suspendu — contactez HaloCard." }, { status: 403 });
+    }
+
+    // Plafond du nombre de tampons initiaux : l'objectif RÉEL du programme (cap
+    // codé en dur "10" remplacé). Pour stamp_card on borne au goal ; les autres
+    // types (visites/points/paliers) n'ont pas de plafond fixe ici.
+    const program = resolveLoyaltyProgram(merchantRow);
+    if (program.type === "stamp_card" && currentStamps > program.config.goal) {
+      return NextResponse.json(
+        { error: `currentStamps doit être entre 0 et ${program.config.goal}` },
+        { status: 400 }
+      );
     }
 
     // --- SÉCURITÉ : Idempotence (évite la double création en cas de retry) ---

@@ -58,9 +58,18 @@ export async function POST(req: Request) {
     const actualCardId = qrVerification.cardId;
 
     // --- SÉCURITÉ : Idempotence ---
-    const idempotencyKey = `${user.id}:${actualCardId}:${req.headers.get('idempotency-key') || ''}`;
-    const cachedResponse = await checkIdempotency(idempotencyKey);
-    if (cachedResponse) return NextResponse.json(cachedResponse);
+    // Clé dérivée du header Idempotency-Key : on NE lit/écrit le cache QUE s'il
+    // est fourni (modèle generate-apple-pass / generate-google-pass). Sans header,
+    // la clé est null → un retry sans header n'est jamais bloqué/servi par erreur,
+    // et on n'écrit pas une entrée « vide » qui collerait 24 h.
+    const idempotencyHeader = req.headers.get("idempotency-key");
+    const idempotencyKey = idempotencyHeader
+      ? `${user.id}:${actualCardId}:${idempotencyHeader}`
+      : null;
+    if (idempotencyKey) {
+      const cachedResponse = await checkIdempotency(idempotencyKey);
+      if (cachedResponse) return NextResponse.json(cachedResponse);
+    }
 
     const { data: merchant } = await supabaseAdmin
       .from("merchants").select("id, loyalty_type, loyalty_config, stamp_goal, suspended_at").eq("user_id", user.id).single();
@@ -89,6 +98,10 @@ export async function POST(req: Request) {
     const cfg = await fetchMerchantConfig(merchant.id);
     const program = resolveLoyaltyProgram(merchant);
 
+    // PLANCHER de cooldown : même un cooldown configuré à 0 conserve une garde
+    // anti-double-crédit minimale (≥ 2 s). Appliqué à TOUTES les RPC d'incrément.
+    const cooldownSeconds = Math.max(cfg.scanCooldownSeconds, 2);
+
     // 2-bis. amount_points : crédit par MONTANT via la RPC atomique dédiée
     // (scan_increment_amount). Tenancy/suspension/signature déjà vérifiées plus
     // haut — on ne les duplique pas. La carte appartient bien à ce marchand.
@@ -112,7 +125,7 @@ export async function POST(req: Request) {
       const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc("scan_increment_amount", {
         p_card_id: actualCardId,
         p_amount_chf: amountChf,
-        p_cooldown_seconds: cfg.scanCooldownSeconds,
+        p_cooldown_seconds: cooldownSeconds,
         p_points_per_chf: program.config.pointsPerChf,
         p_max_points: program.config.maxPointsPerScan ?? 1000,
         p_reward_threshold: program.config.rewardThreshold,
@@ -178,13 +191,13 @@ export async function POST(req: Request) {
         rewardReady: result.rewardReady,
         rewardLabel: program.config.rewardLabel,
       };
-      await setIdempotency(idempotencyKey, response);
+      if (idempotencyKey) await setIdempotency(idempotencyKey, response);
       return NextResponse.json(response);
     }
 
     const cap = program.type === "stamp_card" ? program.config.goal : 0; // 0 = illimité (visit/tiered)
 
-    const atomic = await atomicScan(actualCardId, cap, cfg.scanCooldownSeconds);
+    const atomic = await atomicScan(actualCardId, cap, cooldownSeconds);
 
     if (atomic.status === "cooldown") {
       return NextResponse.json(
@@ -233,7 +246,7 @@ export async function POST(req: Request) {
     });
 
     const response = { success: true, card: updatedCard, rewardReady, rewardUnlocked: rewardReady, added: true, stampGoal: cfg.stampGoal, loyaltyType: program.type, events };
-    await setIdempotency(idempotencyKey, response);
+    if (idempotencyKey) await setIdempotency(idempotencyKey, response);
     return NextResponse.json(response);
 
   } catch (error: unknown) {

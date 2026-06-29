@@ -47,7 +47,9 @@ export function applyScan(program: LoyaltyProgram, currentValue: number, scanAmo
       const next = currentValue + 1;
       const before = currentTier(program.config.tiers, currentValue);
       const after = currentTier(program.config.tiers, next);
-      const changed = after !== null && after.name !== before?.name;
+      // Comparaison par SEUIL (at) et non par nom : deux niveaux distincts
+      // portant le même libellé émettent quand même tier_changed au franchissement.
+      const changed = after !== null && after.at !== before?.at;
       return {
         newCount: next,
         added: true,
@@ -63,7 +65,11 @@ export function applyScan(program: LoyaltyProgram, currentValue: number, scanAmo
         throw new Error("amount_points : un montant de scan strictement positif est requis.");
       const { pointsPerChf, rewardThreshold, maxPointsPerScan } = program.config;
       const cap = maxPointsPerScan ?? DEFAULT_MAX_POINTS_PER_SCAN;
-      const earned = Math.min(Math.floor(scanAmountChf * pointsPerChf), cap);
+      // Mirroir EXACT de la RPC SQL (floor(amount_chf * points_per_chf) en numeric).
+      // Le montant est validé à 2 décimales max → on passe par des centimes ENTIERS
+      // pour éviter qu'un flottant (ex. 0,1×3) ne diverge du numeric Postgres.
+      const amountCentimes = Math.round(scanAmountChf * 100);
+      const earned = Math.min(Math.floor((amountCentimes * pointsPerChf) / 100), cap);
       const newValue = currentValue + earned;
       // Event uniquement au FRANCHISSEMENT du seuil (jamais redéclenché ensuite),
       // cohérent avec stamp_card/visit_based.
