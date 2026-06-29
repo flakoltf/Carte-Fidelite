@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { mfaStepUpRequired } from "@/lib/auth/mfa";
 
 export type Role = "admin" | "merchant" | null;
 
@@ -31,10 +32,39 @@ export async function requireAdminPage(): Promise<{ userId: string }> {
 }
 
 // Garde pour les routes API admin : renvoie 401/403 si non-admin, sinon null.
+// SEC-MFA-API : le proxy n'impose le step-up MFA que sur les *pages* (chemins
+// commençant par /admin, /dashboard…). Les routes /api/admin/* ne passent pas
+// par `isProtected` → un admin en aal1 (mot de passe seul) pourrait appeler des
+// opérations destructrices (reset-password, rotate-token, suspension,
+// impersonate) sans 2e facteur. On refait donc le contrôle AAL ici, fail-closed
+// (niveau MFA invérifiable = refus), pour fermer le contournement par l'API.
 export async function requireAdminApi(): Promise<NextResponse | null> {
-  const { userId, role } = await getSessionRole();
-  if (!userId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-  if (role !== "admin")
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+
+  const { data: merchant } = await supabase
+    .from("merchants")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if ((merchant?.role as Role) !== "admin")
     return NextResponse.json({ error: "Accès réservé à l'administrateur" }, { status: 403 });
+
+  try {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (mfaStepUpRequired(aal?.currentLevel, aal?.nextLevel))
+      return NextResponse.json(
+        { error: "Vérification en deux étapes requise", code: "mfa_required" },
+        { status: 403 },
+      );
+  } catch {
+    return NextResponse.json(
+      { error: "Niveau d'authentification invérifiable" },
+      { status: 403 },
+    );
+  }
   return null;
 }
