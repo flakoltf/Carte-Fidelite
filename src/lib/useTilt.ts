@@ -20,9 +20,18 @@ export function useTilt<T extends HTMLElement = HTMLDivElement>({ max = 10 }: Ti
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setEnabled(fine && !reduce);
+    const mqPointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setEnabled(mqPointer.matches && !mqReduce.matches);
+    // initial différé (async) + abonnement aux changements → conforme à set-state-in-effect
+    const raf = requestAnimationFrame(update);
+    mqPointer.addEventListener("change", update);
+    mqReduce.addEventListener("change", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      mqPointer.removeEventListener("change", update);
+      mqReduce.removeEventListener("change", update);
+    };
   }, []);
 
   const onMouseMove = useCallback(

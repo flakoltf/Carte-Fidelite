@@ -26,10 +26,7 @@ function usePriceCounter(target: number, run: boolean, durationMs = 1000) {
   const [val, setVal] = useState(target);
   useEffect(() => {
     if (!run) return;
-    if (prefersReducedMotion()) {
-      setVal(target);
-      return;
-    }
+    if (prefersReducedMotion()) return; // val est initialisé au montant réel → reste affiché tel quel
     let raf = 0;
     let start = 0;
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -53,8 +50,9 @@ export function PricingTiers({ tiers }: { tiers: PricingTier[] }) {
 
   useEffect(() => {
     if (prefersReducedMotion()) {
-      setShown(true);
-      return;
+      // pas d'animation : on affiche tout de suite (setState async → conforme au lint)
+      const raf = requestAnimationFrame(() => setShown(true));
+      return () => cancelAnimationFrame(raf);
     }
     const el = gridRef.current;
     if (!el) return;
