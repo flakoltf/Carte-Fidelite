@@ -19,7 +19,6 @@ import {
   CalendarCheck,
   HeartHandshake,
   QrCode,
-  Quote,
   Menu,
   X,
   type LucideIcon,
@@ -119,12 +118,6 @@ const PRICING = [
   },
 ];
 
-const TESTIMONIALS = [
-  { quote: "Mes clients adorent — plus de carte en carton perdue. Le taux de retour a clairement augmenté.", name: "Camille R.", role: "Café, Genève" },
-  { quote: "Mis en place en un après-midi, sans rien installer. Les notifications de proximité ramènent du monde le midi.", name: "Marco T.", role: "Pizzeria, Carouge" },
-  { quote: "Enfin une carte de fidélité aussi soignée que ma boutique. Image au top.", name: "Sophie L.", role: "Boutique mode, Genève" },
-];
-
 const NAV_LINKS: [href: string, label: string][] = [
   ["#fonctionnement", "Fonctionnement"],
   ["#mecaniques", "Mécaniques"],
@@ -133,19 +126,11 @@ const NAV_LINKS: [href: string, label: string][] = [
   ["#faq", "FAQ"],
 ];
 
-/* Éventail des 3 cartes du showpiece hero. `wrap` (élément flex) gère le
-   chevauchement par marge négative + la profondeur (z-index) ; `tilt` (carte)
-   gère l'inclinaison / l'échelle au repos. Le centre est relevé et devant. */
-const HERO_LAYOUT = [
-  { wrap: "z-10 mr-[-1.75rem] sm:mr-[-2.5rem]", tilt: "-rotate-[6deg] scale-90" },
-  { wrap: "z-30", tilt: "-translate-y-5 sm:-translate-y-7" },
-  { wrap: "z-20 ml-[-1.75rem] sm:ml-[-2.5rem]", tilt: "rotate-[6deg] scale-90" },
-];
-
 export default function HomeClient() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeId, setActiveId] = useState("");
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -315,42 +300,63 @@ export default function HomeClient() {
         </div>
 
         {/* ---- hero showpiece : « le comptoir éclairé » ---- */}
-        <Reveal delay={0.2} className="mx-auto mt-20 max-w-5xl">
-          <div className="relative overflow-hidden rounded-[2rem] border border-onyx-line bg-onyx px-4 py-14 sm:px-12 sm:py-20">
-            {/* halo émeraude + grain — le « halo » de la marque */}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 24 }}
+          animate={reduce ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.2, ease: [0.23, 1, 0.32, 1] }}
+          className="mx-auto mt-16 max-w-4xl sm:mt-20"
+        >
+          <div className="relative overflow-hidden rounded-[2.25rem] border border-onyx-line bg-onyx">
+            {/* lumière : halo émeraude (large + cœur) — « le héros, c'est la lumière » */}
             <div
               aria-hidden
-              className="pointer-events-none absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-[90px]"
-              style={{ background: "radial-gradient(circle, var(--color-halo-glow), transparent 65%)" }}
+              className="pointer-events-none absolute left-1/2 top-[42%] h-[620px] w-[820px] max-w-[125%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.24] blur-[140px]"
+              style={{ background: "radial-gradient(circle, var(--color-halo-glow), transparent 70%)" }}
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 opacity-[0.05]"
+              className="pointer-events-none absolute left-1/2 top-[38%] h-[380px] w-[520px] max-w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.45] blur-[90px]"
+              style={{ background: "radial-gradient(circle, var(--color-halo), transparent 62%)" }}
+            />
+            {/* grain discret */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.04]"
               style={{
                 backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)",
-                backgroundSize: "22px 22px",
+                backgroundSize: "24px 24px",
               }}
             />
 
-            {/* éventail de cartes */}
-            <div className="relative mx-auto flex max-w-3xl items-end justify-center">
-              {SAMPLE_CARDS.slice(0, 3).map((c, i) => (
-                <div key={c.name} className={HERO_LAYOUT[i].wrap}>
-                  <div
-                    className={`halo-float relative w-[184px] origin-bottom transition-[rotate,scale,translate] duration-500 ease-[var(--ease-out)] hover:z-40 hover:rotate-0 hover:-translate-y-8 sm:w-[244px] ${HERO_LAYOUT[i].tilt}`}
-                    style={{ animationDelay: `${i * 1.3}s` }}
-                  >
-                    <LoyaltyCard card={c} />
-                  </div>
+            {/* pile de cartes : carte vedette au premier plan ; deux qui dépassent
+                derrière (desktop). Sur mobile, une seule carte (les cartes wallet
+                « showcase » deviennent trop hautes en étroit pour un éventail net). */}
+            <div className="relative mx-auto flex max-w-2xl items-center justify-center px-4 py-12 sm:h-[560px] sm:px-0 sm:py-0">
+              {/* derrière — gauche (desktop) */}
+              <div className="absolute left-1/2 top-1/2 z-10 hidden w-[198px] [transform:translate(-114%,-52%)_rotate(-12deg)] sm:block">
+                <div className="halo-float drop-shadow-[0_24px_45px_rgba(0,0,0,0.5)]" style={{ animationDelay: "0.9s" }}>
+                  <LoyaltyCard card={SAMPLE_CARDS[1]} />
                 </div>
-              ))}
+              </div>
+              {/* derrière — droite (desktop) */}
+              <div className="absolute left-1/2 top-1/2 z-10 hidden w-[198px] [transform:translate(14%,-52%)_rotate(12deg)] sm:block">
+                <div className="halo-float drop-shadow-[0_24px_45px_rgba(0,0,0,0.5)]" style={{ animationDelay: "1.7s" }}>
+                  <LoyaltyCard card={SAMPLE_CARDS[2]} />
+                </div>
+              </div>
+              {/* devant — la carte vedette */}
+              <div className="relative z-30 w-[208px] sm:w-[224px]">
+                <div className="halo-float drop-shadow-[0_34px_60px_rgba(0,0,0,0.6)]">
+                  <LoyaltyCard card={SAMPLE_CARDS[0]} />
+                </div>
+              </div>
             </div>
 
-            <p className="relative mt-12 text-center text-xs uppercase tracking-[0.22em] text-calcaire/60">
+            <p className="relative pb-10 text-center text-xs uppercase tracking-[0.22em] text-calcaire/55">
               Aperçu réel — Apple &amp; Google Wallet
             </p>
           </div>
-        </Reveal>
+        </motion.div>
       </section>
 
       {/* ---------------- HOW IT WORKS ---------------- */}
@@ -445,34 +451,6 @@ export default function HomeClient() {
                     <p className="mt-1 text-sm text-galet-ink">{w.desc}</p>
                   </div>
                 </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- TESTIMONIALS ---------------- */}
-      <section className="border-t border-line-warm px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <Reveal className="max-w-2xl">
-            <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Des commerçants <em className="italic text-halo">convaincus.</em>
-            </h2>
-            <p className="mt-3 text-xs text-galet-deep">Témoignages illustratifs — à remplacer par de vrais avis.</p>
-          </Reveal>
-          <div className="mt-14 grid gap-6 md:grid-cols-3">
-            {TESTIMONIALS.map((t, i) => (
-              <Reveal key={t.name} delay={i * 0.08}>
-                <figure className="flex h-full flex-col rounded-2xl border border-line-warm bg-surface p-7">
-                  <Quote className="h-6 w-6 text-halo" aria-hidden />
-                  <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-onyx/90">
-                    « {t.quote} »
-                  </blockquote>
-                  <figcaption className="mt-5 text-sm">
-                    <span className="font-semibold">{t.name}</span>
-                    <span className="text-galet-ink"> — {t.role}</span>
-                  </figcaption>
-                </figure>
               </Reveal>
             ))}
           </div>
