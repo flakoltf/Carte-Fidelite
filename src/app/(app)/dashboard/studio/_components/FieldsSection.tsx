@@ -68,7 +68,7 @@ function SortableRow({
   };
 
   const inputCls =
-    'flex-1 min-w-0 bg-calcaire border border-line-warm rounded-lg px-2 py-1.5 text-sm text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet';
+    'flex-1 min-w-0 bg-calcaire border border-line-warm rounded-lg px-2 py-1.5 text-sm text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet-ink';
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-surface border border-line-warm rounded-xl px-2 py-2">
@@ -76,7 +76,7 @@ function SortableRow({
         type="button"
         {...attributes}
         {...listeners}
-        className="shrink-0 text-galet hover:text-galet-ink cursor-grab active:cursor-grabbing p-1 touch-none"
+        className="shrink-0 text-galet-ink hover:text-galet-ink cursor-grab active:cursor-grabbing p-1 touch-none"
         aria-label="Réordonner"
       >
         <GripVertical className="w-4 h-4" aria-hidden />
@@ -110,7 +110,7 @@ function SortableRow({
       <button
         type="button"
         onClick={onDelete}
-        className="shrink-0 p-1.5 text-galet hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        className="shrink-0 p-1.5 text-galet-ink hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
         aria-label="Supprimer le champ"
       >
         <Trash2 className="w-3.5 h-3.5" aria-hidden />
@@ -159,7 +159,7 @@ export default function FieldsSection({
             {token}
           </code>
         ))}
-        <span className="text-galet">— remplacés par les données du client sur sa carte.</span>
+        <span className="text-galet-ink">— remplacés par les données du client sur sa carte.</span>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -192,7 +192,7 @@ export default function FieldsSection({
       </button>
 
       {/* Limites Apple par zone */}
-      <p className="text-[11px] text-galet">
+      <p className="text-[11px] text-galet-ink">
         Limites Apple Wallet :{' '}
         {ZONES.filter((z) => z !== 'back').map((z, i) => (
           <span key={z}>

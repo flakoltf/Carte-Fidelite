@@ -36,11 +36,11 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:flex-none">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-galet" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" inputMode="search" placeholder="Rechercher..."
+            <Search className="absolute left-3 top-3 w-4 h-4 text-galet" aria-hidden />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" inputMode="search" placeholder="Rechercher..." aria-label="Rechercher un client"
               className="bg-surface border border-line-warm rounded-xl py-2.5 pl-10 pr-4 text-sm text-onyx focus:border-halo outline-none transition-all w-full md:w-64 min-h-11" />
           </div>
-          <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}
+          <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)} aria-label="Filtrer par statut de carte"
             className="bg-surface border border-line-warm rounded-xl py-2.5 px-3 text-sm text-galet-ink min-h-11">
             <option value="all">Tous</option>
             <option value="full">Carte pleine</option>
@@ -76,7 +76,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                     <Link href={`/dashboard/customers/${customer.id}`} className="block truncate font-bold text-onyx">
                       {customer.full_name}
                     </Link>
-                    <div className="truncate text-xs text-galet">{customer.email || "Email non renseigné"}</div>
+                    <div className="truncate text-xs text-galet-ink">{customer.email || "Email non renseigné"}</div>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -102,13 +102,13 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                     </div>
                     <span className="whitespace-nowrap text-xs text-galet-ink">{card.stamps_count}/{stampGoal}</span>
                   </div>
-                ) : (<span className="text-xs italic text-galet">Pas de carte active</span>)}
+                ) : (<span className="text-xs italic text-galet-ink">Pas de carte active</span>)}
                 <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
               </div>
             </div>
           );
         }) : (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface px-6 py-16 text-center text-galet">
+          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface px-6 py-16 text-center text-galet-ink">
             <Users className="w-12 h-12 opacity-30" />
             {customers.length === 0 ? (
               <>
@@ -130,7 +130,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-line-warm text-xs font-bold text-galet uppercase tracking-widest bg-[#F7F5EF]">
+              <tr className="border-b border-line-warm text-xs font-bold text-galet-ink uppercase tracking-widest bg-[#F7F5EF]">
                 <th className="px-8 py-5">Client</th>
                 <th className="px-8 py-5">Dernière visite</th>
                 <th className="px-8 py-5">Fidélité</th>
@@ -157,7 +157,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                           >
                             {customer.full_name}
                           </Link>
-                          <div className="text-xs text-galet">{customer.email || "Email non renseigné"}</div>
+                          <div className="text-xs text-galet-ink">{customer.email || "Email non renseigné"}</div>
                         </div>
                       </div>
                     </td>
@@ -175,18 +175,18 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                           </div>
                           <span className="text-sm text-galet-ink whitespace-nowrap">{card.stamps_count}/{stampGoal}</span>
                         </div>
-                      ) : (<span className="text-xs text-galet italic">Pas de carte active</span>)}
+                      ) : (<span className="text-xs text-galet-ink italic">Pas de carte active</span>)}
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-2">
                         <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
                         <button onClick={() => setEditing({ id: customer.id, full_name: customer.full_name, email: customer.email, phone: customer.phone })}
-                          title="Modifier" className="p-2 rounded-lg border border-line-warm hover:bg-calcaire">
-                          <Pencil className="w-4 h-4 text-galet-ink" />
+                          title="Modifier" aria-label={`Modifier ${customer.full_name}`} className="flex h-11 w-11 items-center justify-center rounded-lg border border-line-warm hover:bg-calcaire">
+                          <Pencil className="w-4 h-4 text-galet-ink" aria-hidden />
                         </button>
-                        <button onClick={() => del(customer)} title="Supprimer"
-                          className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10">
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                        <button onClick={() => del(customer)} title="Supprimer" aria-label={`Supprimer ${customer.full_name}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-500/30 hover:bg-red-500/10">
+                          <Trash2 className="w-4 h-4 text-red-600" aria-hidden />
                         </button>
                       </div>
                     </td>
@@ -195,7 +195,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
               }) : (
                 <tr>
                   <td colSpan={4} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-galet">
+                    <div className="flex flex-col items-center gap-4 text-galet-ink">
                       <Users className="w-12 h-12 opacity-30" />
                       {customers.length === 0 ? (
                         <>

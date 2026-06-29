@@ -55,6 +55,10 @@ export async function POST(req: Request) {
     }
 
     // 2. Créer la ligne merchants (role='merchant').
+    // Modèle concierge : l'admin crée un compte DÉJÀ mis en ligne. On pose donc
+    // tout de suite les marqueurs d'onboarding, sinon la ligne naît dans un état
+    // mi-rempli (setup_mode/onboarding_completed_at à null) qui route le marchand
+    // vers le wizard self-service et l'écran « confirmez votre adresse ».
     const { data: merchant, error: insErr } = await supabaseAdmin
       .from("merchants")
       .insert({
@@ -62,6 +66,10 @@ export async function POST(req: Request) {
         shop_name: shopName,
         email,
         role: "merchant",
+        setup_mode: "concierge",
+        managed_by_concierge: true,
+        signup_source: "concierge",
+        onboarding_completed_at: new Date().toISOString(),
         ...(primaryColor ? { primary_color: primaryColor } : {}),
       })
       .select("id")

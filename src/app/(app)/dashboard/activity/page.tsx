@@ -195,7 +195,7 @@ export default async function ActivityPage({
             <section key={day.day} className="rounded-3xl border border-line-warm bg-surface p-6 shadow-sm">
               <h2 className="mb-3 text-sm font-bold capitalize text-onyx">
                 {day.label}
-                <span className="ml-2 text-xs font-normal text-galet">
+                <span className="ml-2 text-xs font-normal text-galet-ink">
                   {day.events.length} événement{day.events.length > 1 ? "s" : ""}
                 </span>
               </h2>
@@ -209,7 +209,7 @@ export default async function ActivityPage({
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
                       <span className="flex-1 text-onyx">{style.label(e.who, e.points)}</span>
-                      <span className="shrink-0 text-xs text-galet">{relativeTime(e.at, now)}</span>
+                      <span className="shrink-0 text-xs text-galet-ink">{relativeTime(e.at, now)}</span>
                     </li>
                   );
                 })}

@@ -49,7 +49,7 @@ export default function StampsSection({
             type="button"
             onClick={() => setGoal(stamps.goal - 1)}
             disabled={stamps.goal <= STAMP_GOAL_MIN}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
             aria-label="Réduire l’objectif"
           >
             <Minus className="w-4 h-4" aria-hidden />
@@ -59,12 +59,12 @@ export default function StampsSection({
             type="button"
             onClick={() => setGoal(stamps.goal + 1)}
             disabled={stamps.goal >= STAMP_GOAL_MAX}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
             aria-label="Augmenter l’objectif"
           >
             <Plus className="w-4 h-4" aria-hidden />
           </button>
-          <span className="text-xs text-galet">
+          <span className="text-xs text-galet-ink">
             La publication aligne automatiquement votre objectif de fidélité ({STAMP_GOAL_MIN}–{STAMP_GOAL_MAX}).
           </span>
         </div>
@@ -76,7 +76,7 @@ export default function StampsSection({
         <div className="space-y-2.5">
           {STAMP_ICON_GROUPS.map((group) => (
             <div key={group.label} className="flex items-center gap-2">
-              <span className="w-32 shrink-0 text-[11px] text-galet">{group.label}</span>
+              <span className="w-32 shrink-0 text-[11px] text-galet-ink">{group.label}</span>
               <div className="flex flex-wrap gap-1.5">
                 {group.icons.map((icon) => (
                   <button
@@ -97,7 +97,7 @@ export default function StampsSection({
             </div>
           ))}
           <div className="flex items-center gap-2">
-            <span className="w-32 shrink-0 text-[11px] text-galet">Emoji libre</span>
+            <span className="w-32 shrink-0 text-[11px] text-galet-ink">Emoji libre</span>
             <input
               value={freeIcon}
               onChange={(e) => {
@@ -109,7 +109,7 @@ export default function StampsSection({
               className="w-20 bg-calcaire border border-line-warm rounded-xl px-3 py-2 text-center text-lg focus:border-halo outline-none"
               aria-label="Emoji libre"
             />
-            <span className="text-[11px] text-galet">Collez n’importe quel emoji.</span>
+            <span className="text-[11px] text-galet-ink">Collez n’importe quel emoji.</span>
           </div>
         </div>
       </div>

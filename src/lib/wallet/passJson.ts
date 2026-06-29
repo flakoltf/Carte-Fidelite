@@ -27,6 +27,12 @@ export interface PassIdentity {
   todaysHours?: string | null;
   /** Lien d'itinéraire (Maps) déjà construit. */
   mapsUrl?: string | null;
+  /**
+   * Lien « Laisser un avis Google » (Feature 2) — présent UNIQUEMENT quand la
+   * carte est reward-ready ET un place id est configuré. Recalculé à chaque
+   * émission → disparaît à la récompense suivante.
+   */
+  reviewUrl?: string | null;
 }
 
 type PassField = { key: string; value: string; label?: string; changeMessage?: string; textAlignment?: string };
@@ -53,7 +59,11 @@ export function applyIdentity(store: StoreCardShape, identity?: PassIdentity): v
   const maps = v(identity.mapsUrl);
   const phone = v(identity.phone);
 
+  const review = v(identity.reviewUrl);
+
   if (reward) store.secondaryFields.push({ key: "reward", label: "RÉCOMPENSE", value: reward });
+  // Avis Google en TÊTE des backFields (moment magique : récompense débloquée).
+  if (review) store.backFields.push({ key: "review", label: "★ LAISSER UN AVIS GOOGLE", value: review });
   if (hours) store.backFields.push({ key: "hours", label: "AUJOURD'HUI", value: hours });
   if (address) store.backFields.push({ key: "address", label: "ADRESSE", value: address });
   if (maps) store.backFields.push({ key: "maps", label: "ITINÉRAIRE", value: maps });

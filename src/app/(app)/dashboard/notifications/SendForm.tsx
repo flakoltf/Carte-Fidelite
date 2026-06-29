@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { AUDIENCE_KEYS, audienceLabel, type AudienceKey } from "@/lib/segments/audience";
 import type { SegmentSummary } from "@/lib/segments/summary";
 
 export function SendForm() {
+  const audienceId = useId();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [audience, setAudience] = useState<AudienceKey>("all");
@@ -44,8 +45,8 @@ export function SendForm() {
   return (
     <div className="bg-surface border border-line-warm shadow-sm rounded-3xl p-6 max-w-xl space-y-4">
       <div className="space-y-1">
-        <label className="text-sm text-galet-ink">Audience</label>
-        <select value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)}
+        <label htmlFor={audienceId} className="text-sm text-galet-ink">Audience</label>
+        <select id={audienceId} value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)}
           className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none">
           {AUDIENCE_KEYS.map((a) => {
             const n = sizeOf(a);
@@ -53,15 +54,15 @@ export function SendForm() {
           })}
         </select>
       </div>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre (ex. Offre du week-end)"
-        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none" />
-      <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3}
-        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none" />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre (ex. Offre du week-end)" aria-label="Titre du message"
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none" />
+      <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3} aria-label="Message"
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none" />
       <button onClick={send} disabled={sending || !title.trim() || !body.trim()}
         className="bg-halo text-white rounded-xl px-5 py-2.5 font-bold hover:bg-halo-600 disabled:opacity-50">
         {sending ? "Envoi…" : "Envoyer à mes clients"}
       </button>
-      {result && <p className="text-sm text-galet-ink">{result}</p>}
+      {result && <p role="status" aria-live="polite" className="text-sm text-galet-ink">{result}</p>}
     </div>
   );
 }

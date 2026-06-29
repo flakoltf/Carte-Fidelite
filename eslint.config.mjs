@@ -33,6 +33,16 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
+  // Tests E2E Playwright : code Node pur (aucun React) ; la convention
+  // `await use(value)` dans `base.extend({ fixture: async ({}, use) => {...} })`
+  // déclenche un faux positif `react-hooks/rules-of-hooks` (homonymie avec le
+  // hook React `use`). On désactive cette règle pour le dossier `e2e/` seul.
+  {
+    files: ["e2e/**"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -11,7 +11,7 @@ export default function StopImpersonationButton() {
     router.push("/admin");
   }
   return (
-    <button onClick={stop} disabled={busy} style={{ background: "#fff", color: "#0D6B5E", border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontWeight: 600 }}>
+    <button onClick={stop} disabled={busy} style={{ background: "#fff", color: "var(--color-halo)", border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontWeight: 600 }}>
       {busy ? "…" : "Quitter"}
     </button>
   );

@@ -95,14 +95,16 @@ export async function buildApplePassBuffer({
     merchantId = cardRow.merchant_id;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config, reward_label, address, phone, business_hours")
+      .select("stamp_goal, latitude, longitude, loyalty_type, loyalty_config, reward_label, address, phone, business_hours, google_place_id")
       .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
-    // Couche identité commerce (Feature 1) — calculée ICI pour que TOUT chemin
-    // d'émission (enrôlement + régénération web-service après scan) la porte.
+    // Couche identité commerce (F1) + lien avis Google si reward-ready (F2),
+    // calculés ICI pour que TOUT chemin d'émission (enrôlement + régénération
+    // web-service après scan) les porte.
     const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
-    identity = identityFromMerchant(mRow, new Date());
+    const { canRedeem } = await import("@/lib/loyalty/stamp");
+    identity = identityFromMerchant(mRow, new Date(), { rewardReady: canRedeem(stamps, stampGoal) });
     if (mRow?.latitude != null && mRow?.longitude != null) {
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
@@ -156,6 +158,53 @@ export async function buildApplePassBuffer({
       );
     } catch {
       // storage module unavailable — all assets fall back to public defaults.
+    }
+  }
+
+  // RENDU DES TAMPONS SUR LE PASS (A + A.2) — strip dynamique généré par carte
+  // selon l'état RÉEL (stamps / goal) : la carte « vit » et se remplit à chaque
+  // scan (régénéré à chaque émission).
+  //  - A.2 COMPOSITE (décision manager PR #33) : si le marchand a une PHOTO de
+  //    commerce (strip uploadé), on ne masque PLUS les tampons — photo en fond +
+  //    voile dégradé sombre (~40 % bas) + grille DANS cette bande (WCAG garanti).
+  //  - Sans photo : grille sur fond couleur (comportement Priorité A).
+  //  - Gaté sur un design PUBLIÉ de type tampons (pas de surprise pour les
+  //    cartes legacy sans design).
+  //  - FAIL-OPEN : toute erreur → on garde l'existant (photo brute ou aucun
+  //    strip), pass valide quand même (« rien ne casse au comptoir »).
+  const isStampsCard = !!design && (design.cardType ?? "stamps") === "stamps";
+  if (isStampsCard) {
+    try {
+      const { chooseStripPlan } = await import("@/lib/cardDesign/stampStrip");
+      const { compositeStampStrip, rasterStampStrip, STRIP_SIZES } = await import(
+        "@/lib/cardDesign/stampStripRaster"
+      );
+      const { DEFAULT_STAMPS_CONFIG } = await import("@/lib/cardDesign/types");
+      const cfg = design!.stamps ?? DEFAULT_STAMPS_CONFIG;
+      const opts = {
+        goal: cfg.goal ?? stampGoal,
+        filledCount: stamps,
+        shape: cfg.shape,
+        colors: design!.colors,
+      };
+      // Photo = strip uploadé (déjà téléchargé plus haut dans designLogoBuffers).
+      const bestPhoto =
+        designLogoBuffers["strip@3x.png"] ??
+        designLogoBuffers["strip@2x.png"] ??
+        designLogoBuffers["strip.png"];
+      const plan = chooseStripPlan({ hasDesign: true, isStampsCard: true, hasPhoto: !!bestPhoto });
+      if (plan === "composite") {
+        for (const [name, w, h] of STRIP_SIZES) {
+          const photo = designLogoBuffers[name] ?? (bestPhoto as Buffer);
+          designLogoBuffers[name] = await compositeStampStrip(photo, w, h, opts);
+        }
+      } else if (plan === "grid") {
+        for (const [name, w, h] of STRIP_SIZES) {
+          designLogoBuffers[name] = await rasterStampStrip(w, h, opts);
+        }
+      }
+    } catch (e) {
+      console.error("[applePass] génération strip tampons (fail-open):", e instanceof Error ? e.message : e);
     }
   }
 

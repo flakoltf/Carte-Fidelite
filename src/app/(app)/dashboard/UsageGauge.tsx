@@ -68,7 +68,7 @@ export default function UsageGauge({
               style={{ width: `${Math.max(pct, usage.activeCards > 0 ? 2 : 0)}%` }}
             />
           </div>
-          <div className="mt-1.5 flex justify-between text-xs text-galet">
+          <div className="mt-1.5 flex justify-between text-xs text-galet-ink">
             <span>
               {usage.activeCards} / {usage.cap} cartes actives (90 j)
             </span>

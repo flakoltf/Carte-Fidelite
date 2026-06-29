@@ -68,7 +68,7 @@ export default function GeneratePage() {
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
                             placeholder="Ex: Jean Dupont"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-4 px-6 focus:border-halo outline-none transition-all placeholder:text-galet text-lg text-onyx"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-4 px-6 focus:border-halo outline-none transition-all placeholder:text-galet-ink text-lg text-onyx"
                         />
                     </div>
 
@@ -148,7 +148,7 @@ export default function GeneratePage() {
 
         {/* Aide visuelle / Preview */}
         <div className="hidden lg:block space-y-6">
-            <h3 className="text-sm font-bold text-galet ml-1">PRÉVISUALISATION DU PASS</h3>
+            <h3 className="text-sm font-bold text-galet-ink ml-1">PRÉVISUALISATION DU PASS</h3>
             <div className="aspect-[1/1.6] w-64 mx-auto bg-surface border border-line-warm rounded-[40px] p-3 shadow-2xl relative">
                 {/* Notch */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-onyx rounded-b-2xl z-20" />
@@ -176,7 +176,7 @@ export default function GeneratePage() {
                     </div>
                 </div>
             </div>
-            <p className="text-xs text-center text-galet italic">Ceci est un aperçu générique de la carte.</p>
+            <p className="text-xs text-center text-galet-ink italic">Ceci est un aperçu générique de la carte.</p>
         </div>
 
       </div>

@@ -3,16 +3,33 @@ import { currentMerchantId } from "@/lib/analytics/merchant";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
+// Dépend de la session + du cookie d'impersonation : jamais mis en cache (sinon
+// une réponse d'un autre contexte/marchand pourrait être resservie).
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const merchantId = await currentMerchantId();
-  if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
-  const { data } = await supabaseAdmin
-    .from("merchants")
-    .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone")
-    .eq("id", merchantId)
-    .maybeSingle();
-  return NextResponse.json({ merchant: data });
+  try {
+    const merchantId = await currentMerchantId();
+    if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
+    const { data, error } = await supabaseAdmin
+      .from("merchants")
+      .select("id, shop_name, email, slug, primary_color, logo_url, address, stamp_goal, latitude, longitude, reward_label, business_hours, phone, google_place_id")
+      .eq("id", merchantId)
+      .maybeSingle();
+    // Une erreur PostgREST (ex. colonne manquante, 42703) NE DOIT PAS être avalée
+    // en data=null : sinon le client reçoit { merchant: null } et l'interprète à
+    // tort comme « marchand sans page » (→ faux « pas prête »). 500 explicite.
+    if (error) {
+      console.error("GET /api/merchant/me — erreur SELECT merchants :", error.message);
+      return NextResponse.json({ error: "erreur serveur" }, { status: 500 });
+    }
+    return NextResponse.json({ merchant: data });
+  } catch (e) {
+    // Jamais de throw nu (→ 500 HTML opaque) : réponse JSON stable que le client
+    // sait distinguer d'un 401 et d'un marchand vide.
+    console.error("GET /api/merchant/me a échoué :", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "erreur serveur" }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: Request) {
@@ -58,6 +75,19 @@ export async function PATCH(req: Request) {
   if ("business_hours" in src) {
     const { normalizeBusinessHours } = await import("@/lib/merchant-config/hours");
     updates.business_hours = normalizeBusinessHours(src.business_hours);
+    identityTouched = true;
+  }
+  if ("google_place_id" in src) {
+    const raw = src.google_place_id;
+    if (raw === null || raw === "") {
+      updates.google_place_id = null;
+    } else {
+      const { isValidPlaceId } = await import("@/lib/wallet/googleReview");
+      if (!isValidPlaceId(raw)) {
+        return NextResponse.json({ error: "Place ID Google invalide (doit commencer par ChIJ)" }, { status: 400 });
+      }
+      updates.google_place_id = (raw as string).trim();
+    }
     identityTouched = true;
   }
 

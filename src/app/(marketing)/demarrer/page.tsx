@@ -98,7 +98,7 @@ export default async function Page({
                   required
                   maxLength={120}
                   placeholder="ex. Café du Marché"
-                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet focus:border-halo"
+                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
                 />
               </div>
 
@@ -134,13 +134,13 @@ export default async function Page({
                   required
                   maxLength={160}
                   placeholder="079 … ou vous@commerce.ch"
-                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet focus:border-halo"
+                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
                 />
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="plan" className="ml-1 text-sm font-medium text-galet-ink">
-                  Palier envisagé <span className="text-galet">(facultatif)</span>
+                  Palier envisagé <span className="text-galet-deep">(facultatif)</span>
                 </label>
                 <select
                   id="plan"
@@ -162,7 +162,7 @@ export default async function Page({
                 Démarrer — sans engagement
               </button>
 
-              <p className="text-center text-xs text-galet">
+              <p className="text-center text-xs text-galet-deep">
                 Vous préférez écrire ?{" "}
                 <a href={`mailto:${company.emailContact}`} className="text-halo hover:underline">
                   {company.emailContact}

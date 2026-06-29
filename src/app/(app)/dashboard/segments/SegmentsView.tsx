@@ -76,11 +76,11 @@ export function SegmentsView({ summary }: { summary: SegmentSummary }) {
           {loading ? (
             <div className="h-24 animate-pulse bg-[#ECE7DB] rounded-xl" />
           ) : members.length === 0 ? (
-            <p className="text-sm text-galet">Aucun client dans ce groupe.</p>
+            <p className="text-sm text-galet-ink">Aucun client dans ce groupe.</p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="text-xs uppercase tracking-widest text-galet border-b border-line-warm">
+                <tr className="text-xs uppercase tracking-widest text-galet-ink border-b border-line-warm">
                   <th className="py-3">Client</th>
                   <th className="py-3">Dernière visite</th>
                   <th className="py-3">Visites</th>

@@ -22,13 +22,49 @@
   --color-onyx-soft: #16171A;
   --color-onyx-line: #21232a;
   --color-calcaire: #F3F0E9;
+  /* galet = gris clair RÉSERVÉ aux icônes décoratives et bordures (jamais du
+     texte : 2.4:1 sur calcaire = sous le seuil). */
   --color-galet: #9B9DA0;
   --color-halo: #0D6B5E;
   --color-halo-600: #0A574C;
   --color-halo-glow: #1FB89A;
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
-  --color-galet-ink: #6E7073;
+  /* Couche neutre "panneau" (sidebar/toolbars) — légèrement plus chaude que le
+     contenu (registre produit : 2e neutre pour les panneaux). Extrait des hex
+     #EFEBE1/#E9E4D8 qui traînaient en dur dans DashboardShell. */
+  --color-sidebar: #EFEBE1;
+  --color-sidebar-hover: #E9E4D8;
+  /* galet-ink = TOKEN texte secondaire/atténué. Calé pour AA (≥ 4.5:1) sur TOUS
+     les fonds clairs de l'app : calcaire 5.5 · blanc 6.3 · sidebar 5.3 ·
+     sidebar-hover 5.0 (avant : #6E7073 tombait à 4.0–4.4 sur les fonds beiges). */
+  --color-galet-ink: #5E6063;
+  /* Variante encore plus contrastée pour les mentions/disclaimers les plus
+     discrets du landing (AA sur calcaire). */
+  --color-galet-deep: #5B5D60;
+  /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
+     --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
+     Scanner, plein écran « Offrir la récompense ». Ce n'est PAS la couleur
+     de marque (qui reste le teal --color-halo). */
+  --color-gold: #E8B964;
+  --color-gold-deep: #C9952F;
+  --color-gold-soft: #F4D9A0;
+}
+
+/* Dégradé doré plein écran de l'encaissement récompense (U2). Exposé en :root
+   pour un usage direct `background: var(--color-gold-grad)`. */
+:root {
+  --color-gold-grad: linear-gradient(160deg, #F4D9A0 0%, #E8B964 45%, #C9952F 100%);
+
+  /* Courbes d'easing HALO — variantes "fortes" (les easings CSS natifs manquent
+     de punch). Réutilisées en Tailwind via ease-[var(--ease-out)] ET en
+     framer-motion via les constantes de src/lib/motion.ts (mêmes valeurs).
+     --ease-out      : entrées/sorties UI (démarre vite = réactif)
+     --ease-in-out   : déplacements/morphs à l'écran
+     --ease-drawer   : tiroirs façon iOS (Ionic) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,6 +78,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* ============ Focus visible (a11y) ============ */
+/* Indicateur de focus CLAVIER homogène pour tout élément interactif qui n'a pas
+   déjà son propre style. En @layer base + :where() → spécificité 0 : n'importe
+   quel utilitaire `focus-visible:ring-*` / `focus-visible:outline-*` d'un
+   composant le surcharge. `outline` (et non box-shadow) : jamais rognée par un
+   parent overflow-hidden/auto. Couleur halo = 3:1+ sur tous les fonds clairs. */
+@layer base {
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-halo);
+    outline-offset: 2px;
+  }
 }
 
 /* ============ HALO motion ============ */
@@ -79,7 +128,61 @@ body {
   animation: halo-sheen 6.5s ease-in-out infinite;
 }
 
+/* Spinner comptoir — plus rapide que le défaut Tailwind (1 s). Un spinner qui
+   tourne vite fait *percevoir* un chargement plus court (principe Emil). */
+@keyframes halo-spin {
+  to { transform: rotate(360deg); }
+}
+.halo-spin {
+  animation: halo-spin 0.7s linear infinite;
+}
+
+/* Entrée douce "fade + rise" — pour les chiffres StatTrio (remplacement du
+   skeleton) et le stagger des étapes d'onboarding. `both` : l'élément reste à
+   l'état initial avant son délai → aucun flash. */
+@keyframes halo-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes halo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.halo-rise-in {
+  animation: halo-rise-in 0.42s var(--ease-out) both;
+}
+
+/* Flottement lent des cartes du showpiece hero (« comptoir éclairé »).
+   Transform-only, amplitude faible : présence sans distraction. Le délai
+   est posé inline par carte pour décaler les phases. */
+@keyframes halo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+.halo-float {
+  animation: halo-float 7s ease-in-out infinite;
+}
+
+/* Bordure conic-gradient animée du tier recommandé (tarifs). @property permet
+   d'animer l'angle de façon fluide. Couleurs = tokens émeraude uniquement. */
+@property --halo-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes halo-rotate {
+  to { --halo-angle: 360deg; }
+}
+.halo-border-spin {
+  animation: halo-rotate 4s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .halo-holo,
-  .halo-sheen { animation: none; }
+  .halo-sheen,
+  .halo-float,
+  .halo-border-spin { animation: none; }
+  /* Reduced motion = plus doux, pas zéro : on garde le fondu, on retire le
+     déplacement. */
+  .halo-rise-in { animation: halo-fade-in 0.3s ease both; }
 }

@@ -120,7 +120,7 @@ export default async function SubscriptionPage() {
                   ? `${usage.cap} cartes actives incluses (activité sur ${BILLING_ACTIVE_DAYS} jours)`
                   : "Palier sur mesure, sans plafond"}
                 {planStartedAt && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-galet">
+                  <span className="ml-2 inline-flex items-center gap-1 text-galet-ink">
                     <CalendarClock className="h-3 w-3" aria-hidden /> depuis le {planStartedAt}
                   </span>
                 )}
@@ -178,7 +178,7 @@ export default async function SubscriptionPage() {
                     Sans setup, sans engagement
                   </li>
                 </ul>
-                <p className="mt-3 text-xs text-galet">{PLAN_PITCH[key]}</p>
+                <p className="mt-3 text-xs text-galet-ink">{PLAN_PITCH[key]}</p>
                 {!isCurrent && PLAN_ORDER.indexOf(key) > PLAN_ORDER.indexOf(plan as PlanKey) && (
                   <Link
                     href={`mailto:contact@halocard.ch?subject=${encodeURIComponent(`Passage au palier ${p.label}`)}`}
@@ -192,7 +192,7 @@ export default async function SubscriptionPage() {
             );
           })}
         </div>
-        <p className="mt-3 text-xs text-galet">
+        <p className="mt-3 text-xs text-galet-ink">
           Le dépassement n&apos;interrompt jamais le service : le palier s&apos;ajuste le mois
           suivant, conformément aux CGV. Le comptage contractuel est figé le 1er de chaque mois.
         </p>
@@ -211,7 +211,7 @@ export default async function SubscriptionPage() {
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-line-warm text-xs uppercase tracking-wider text-galet">
+              <tr className="border-b border-line-warm text-xs uppercase tracking-wider text-galet-ink">
                 <th className="py-2 pr-4 font-semibold">Période</th>
                 <th className="py-2 pr-4 font-semibold">Cartes actives (90 j)</th>
                 <th className="py-2 font-semibold">Palier</th>
