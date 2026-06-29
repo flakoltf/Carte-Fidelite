@@ -133,13 +133,13 @@ export default function StartupChecklist({
         </span>
       </div>
 
-      <ol className="space-y-3">
+      {/* Lignes (pas de cartes imbriquées) : le panneau est la seule carte ;
+          les étapes sont des rangées séparées par un filet. */}
+      <ol className="divide-y divide-line-warm/70">
         {items.map((item, i) => (
           <li
             key={item.key}
-            className={`relative flex flex-col gap-2 rounded-2xl border p-3.5 sm:flex-row sm:items-center sm:justify-between ${
-              item.done ? "border-halo/30 bg-surface/60" : "border-line-warm bg-surface"
-            }`}
+            className="relative flex flex-col gap-2 py-3.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex min-w-0 items-start gap-3">
               <span

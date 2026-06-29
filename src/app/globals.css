@@ -30,6 +30,11 @@
   --color-halo-glow: #1FB89A;
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
+  /* Couche neutre "panneau" (sidebar/toolbars) — légèrement plus chaude que le
+     contenu (registre produit : 2e neutre pour les panneaux). Extrait des hex
+     #EFEBE1/#E9E4D8 qui traînaient en dur dans DashboardShell. */
+  --color-sidebar: #EFEBE1;
+  --color-sidebar-hover: #E9E4D8;
   /* galet-ink = TOKEN texte secondaire/atténué. Calé pour AA (≥ 4.5:1) sur TOUS
      les fonds clairs de l'app : calcaire 5.5 · blanc 6.3 · sidebar 5.3 ·
      sidebar-hover 5.0 (avant : #6E7073 tombait à 4.0–4.4 sur les fonds beiges). */

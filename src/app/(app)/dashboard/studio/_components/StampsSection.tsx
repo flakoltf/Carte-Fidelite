@@ -49,7 +49,7 @@ export default function StampsSection({
             type="button"
             onClick={() => setGoal(stamps.goal - 1)}
             disabled={stamps.goal <= STAMP_GOAL_MIN}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
             aria-label="Réduire l’objectif"
           >
             <Minus className="w-4 h-4" aria-hidden />
@@ -59,7 +59,7 @@ export default function StampsSection({
             type="button"
             onClick={() => setGoal(stamps.goal + 1)}
             disabled={stamps.goal >= STAMP_GOAL_MAX}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-line-warm text-galet-ink hover:border-halo hover:text-halo disabled:opacity-40 transition-colors"
             aria-label="Augmenter l’objectif"
           >
             <Plus className="w-4 h-4" aria-hidden />

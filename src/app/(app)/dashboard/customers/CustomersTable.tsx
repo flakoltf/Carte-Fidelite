@@ -181,12 +181,12 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                       <div className="flex items-center justify-end gap-2">
                         <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
                         <button onClick={() => setEditing({ id: customer.id, full_name: customer.full_name, email: customer.email, phone: customer.phone })}
-                          title="Modifier" className="p-2 rounded-lg border border-line-warm hover:bg-calcaire">
-                          <Pencil className="w-4 h-4 text-galet-ink" />
+                          title="Modifier" aria-label={`Modifier ${customer.full_name}`} className="flex h-11 w-11 items-center justify-center rounded-lg border border-line-warm hover:bg-calcaire">
+                          <Pencil className="w-4 h-4 text-galet-ink" aria-hidden />
                         </button>
-                        <button onClick={() => del(customer)} title="Supprimer"
-                          className="p-2 rounded-lg border border-red-500/30 hover:bg-red-500/10">
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                        <button onClick={() => del(customer)} title="Supprimer" aria-label={`Supprimer ${customer.full_name}`}
+                          className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-500/30 hover:bg-red-500/10">
+                          <Trash2 className="w-4 h-4 text-red-600" aria-hidden />
                         </button>
                       </div>
                     </td>
