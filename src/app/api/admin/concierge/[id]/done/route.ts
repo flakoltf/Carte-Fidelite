@@ -5,10 +5,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const runtime = "nodejs";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminApi();

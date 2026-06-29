@@ -3,8 +3,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // POST /api/admin/merchants/[id]/rotate-token — régénère le jeton d'enrôlement
 // (invalide l'ancien QR/lien). Admin only.

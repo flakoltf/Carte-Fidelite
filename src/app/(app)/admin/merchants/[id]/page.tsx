@@ -30,10 +30,9 @@ import BillingControls from "./BillingControls";
 import CustomersPanel from "./CustomersPanel";
 import NotesPanel from "../../components/NotesPanel";
 import { KpiCard, PageHeader, Pill, Section, EmptyState, formatDateCH, relativeDays } from "../../components/ui";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const dynamic = "force-dynamic";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Centre de contrôle d'un marchand : profil, usage vs palier, facturation,
 // timeline d'activité, notes CRM, clients (nLPD), suspension/réactivation.

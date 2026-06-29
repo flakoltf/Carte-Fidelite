@@ -11,10 +11,9 @@ import { rateLimit } from "@/lib/rateLimit";
 import { verifyQRCode } from "@/lib/qrSignature";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { REVERT_WINDOW_SECONDS, normalizeRevertStatus, revertStatusMessage } from "@/lib/loyalty/revert";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const runtime = "nodejs";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(req: Request) {
   try {

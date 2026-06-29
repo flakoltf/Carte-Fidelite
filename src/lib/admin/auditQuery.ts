@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AUDIT_ACTIONS, type AuditAction } from "@/lib/auditLog";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // Événements « sensibles » : pouvoir admin, données personnelles, sécurité.
 export const SENSITIVE_ACTIONS: readonly AuditAction[] = [
@@ -35,8 +36,6 @@ export interface AuditFilters {
 }
 
 export const AUDIT_PAGE_SIZE = 50;
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Parse les searchParams de la page audit — tolérant, jamais d'exception. */
 export function parseAuditFilters(params: Record<string, string | string[] | undefined>): AuditFilters {

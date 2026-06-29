@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { fetchSegmentMembers, isStageKey } from "@/lib/segments/fetch";
-import { toCsv } from "@/lib/analytics/csv";
+import { csvResponse } from "@/lib/analytics/csv";
 import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
@@ -13,14 +13,9 @@ export async function GET(req: NextRequest) {
   if (!isStageKey(segment)) return new Response("bad segment", { status: 400 });
 
   const members = await fetchSegmentMembers(merchantId, segment);
-  const csv = toCsv(
+  return csvResponse(
+    `segment-${segment}.csv`,
     ["nom", "derniere_visite", "visites", "tampons"],
     members.map((m) => [m.name, m.lastScan ?? "", m.visits, m.stamps]),
   );
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="segment-${segment}.csv"`,
-    },
-  });
 }

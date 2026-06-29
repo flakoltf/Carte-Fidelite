@@ -1,6 +1,8 @@
 // Calculs purs du mini-CRM leads (testés sans réseau).
 // Surface ADMIN UNIQUEMENT — même règle d'import que overviewCompute.
 
+import { UUID_RE } from "@/lib/validation/uuid";
+
 export const LEAD_STATUSES = ["nouveau", "contacte", "demo", "gagne", "perdu"] as const;
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 
@@ -94,8 +96,6 @@ export interface LeadPatch {
 export type LeadPatchResult =
   | { ok: true; value: LeadPatch; changedFields: string[] }
   | { ok: false; error: string };
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function validateLeadPatch(body: unknown): LeadPatchResult {
   if (typeof body !== "object" || body === null) {

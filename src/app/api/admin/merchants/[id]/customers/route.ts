@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { UUID_RE } from "@/lib/validation/uuid";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE_SIZE = 25;
 
 // GET /api/admin/merchants/[id]/customers — données personnelles des clients

@@ -3,8 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { validateSuspensionBody } from "@/lib/admin/merchantControls";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // POST /api/admin/merchants/[id]/suspension — suspendre ou réactiver un
 // marchand (admin only, action à impact → confirmation explicite côté UI).

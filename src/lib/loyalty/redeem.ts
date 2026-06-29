@@ -4,8 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { verifyQRCode } from "@/lib/qrSignature";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // Encaissement « Offrir la récompense » — logique partagée par /api/redeem et
 // /api/scan/redeem (le comptoir poste sur le second ; la fiche Clients sur le

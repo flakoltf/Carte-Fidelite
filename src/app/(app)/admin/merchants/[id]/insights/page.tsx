@@ -11,10 +11,9 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { computeUsage } from "@/lib/billing/usage";
 import UsageGauge from "@/app/(app)/dashboard/UsageGauge";
 import MiniVisitsChart from "./MiniVisitsChart";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const dynamic = "force-dynamic";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function MerchantInsightsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

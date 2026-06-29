@@ -4,8 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { validateCustomerUpdate } from "@/lib/customers/validate";
 import { currentMerchantContext } from "@/lib/auth/currentMerchant";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // Données personnelles d'un client final (suppression RGPD, modification PII) :
 // un admin en mode concierge ne doit PAS agir au nom du marchand sur ces

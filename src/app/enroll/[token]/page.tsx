@@ -1,11 +1,10 @@
 import { notFound, permanentRedirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // Ancienne URL d'enrôlement par token (UUID du QR physique). Conservée pour
 // compatibilité : on redirige (308) vers l'URL canonique lisible /c/[slug].
 export const dynamic = "force-dynamic";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function EnrollTokenRedirect({
   params,
