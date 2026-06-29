@@ -68,7 +68,7 @@ export default function GeneratePage() {
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
                             placeholder="Ex: Jean Dupont"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-4 px-6 focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all placeholder:text-galet-ink text-lg text-onyx"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-4 px-6 focus:border-halo outline-none transition-all placeholder:text-galet-ink text-lg text-onyx"
                         />
                     </div>
 

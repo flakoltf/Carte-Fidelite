@@ -408,7 +408,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
                 onChange={(e) => update({ programName: e.target.value })}
                 maxLength={60}
                 placeholder="Carte de fidélité"
-                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 placeholder:text-galet-ink"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet-ink"
               />
             </div>
             <div>
@@ -421,7 +421,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
                 onChange={(e) => setReward(e.target.value)}
                 maxLength={80}
                 placeholder="Ex. Le 10e café offert"
-                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 placeholder:text-galet-ink"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet-ink"
               />
               <p className="mt-1 text-[11px] text-galet-ink">Ce que le client gagne — affiché sur sa carte.</p>
             </div>
@@ -507,7 +507,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
               onChange={(e) => update({ programName: e.target.value })}
               placeholder="Carte de fidélité"
               maxLength={60}
-              className="w-full bg-calcaire border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-colors placeholder:text-galet-ink"
+              className="w-full bg-calcaire border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet-ink"
             />
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               <div>

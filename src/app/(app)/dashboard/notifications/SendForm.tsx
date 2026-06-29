@@ -47,7 +47,7 @@ export function SendForm() {
       <div className="space-y-1">
         <label htmlFor={audienceId} className="text-sm text-galet-ink">Audience</label>
         <select id={audienceId} value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)}
-          className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1">
+          className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none">
           {AUDIENCE_KEYS.map((a) => {
             const n = sizeOf(a);
             return <option key={a} value={a}>{audienceLabel(a)}{n !== null ? ` (${n})` : ""}</option>;
@@ -55,9 +55,9 @@ export function SendForm() {
         </select>
       </div>
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre (ex. Offre du week-end)" aria-label="Titre du message"
-        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1" />
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none" />
       <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3} aria-label="Message"
-        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1" />
+        className="w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none" />
       <button onClick={send} disabled={sending || !title.trim() || !body.trim()}
         className="bg-halo text-white rounded-xl px-5 py-2.5 font-bold hover:bg-halo-600 disabled:opacity-50">
         {sending ? "Envoi…" : "Envoyer à mes clients"}

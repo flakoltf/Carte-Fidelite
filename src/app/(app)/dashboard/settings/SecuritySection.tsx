@@ -67,7 +67,7 @@ export function SecuritySection() {
     } finally { setBusy(false); }
   };
 
-  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1";
+  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none";
 
   return (
     <div className="bg-surface border border-line-warm rounded-3xl p-8 space-y-6 shadow-sm">
