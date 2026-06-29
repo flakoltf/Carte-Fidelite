@@ -21,7 +21,13 @@ export function useFocusTrap<T extends HTMLElement>(
   // onClose capturé par ref : évite de relancer l'effet (et de re-déclencher
   // l'autofocus) à chaque rendu si le parent recrée la fonction.
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  // MAJ dans un effet (post-commit) et non pendant le rendu : la mutation d'une
+  // ref pendant le rendu est interdite (react-hooks/refs). Effet sans deps →
+  // rejoué à chaque rendu, donc le handler keydown lit toujours le dernier
+  // onClose sans relancer l'effet principal (qui re-déclencherait l'autofocus).
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!active) return;
