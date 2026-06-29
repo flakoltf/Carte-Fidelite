@@ -39,6 +39,9 @@
      les fonds clairs de l'app : calcaire 5.5 · blanc 6.3 · sidebar 5.3 ·
      sidebar-hover 5.0 (avant : #6E7073 tombait à 4.0–4.4 sur les fonds beiges). */
   --color-galet-ink: #5E6063;
+  /* Variante encore plus contrastée pour les mentions/disclaimers les plus
+     discrets du landing (AA sur calcaire). */
+  --color-galet-deep: #5B5D60;
   /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
      --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
      Scanner, plein écran « Offrir la récompense ». Ce n'est PAS la couleur
@@ -149,9 +152,21 @@ body {
   animation: halo-rise-in 0.42s var(--ease-out) both;
 }
 
+/* Flottement lent des cartes du showpiece hero (« comptoir éclairé »).
+   Transform-only, amplitude faible : présence sans distraction. Le délai
+   est posé inline par carte pour décaler les phases. */
+@keyframes halo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+.halo-float {
+  animation: halo-float 7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .halo-holo,
-  .halo-sheen { animation: none; }
+  .halo-sheen,
+  .halo-float { animation: none; }
   /* Reduced motion = plus doux, pas zéro : on garde le fondu, on retire le
      déplacement. */
   .halo-rise-in { animation: halo-fade-in 0.3s ease both; }

@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-27",
+  "title": "Design System: HALO — HaloCard",
+  "extensions": {
+    "colorMeta": {
+      "halo-emeraude": { "role": "primary", "displayName": "Émeraude", "canonical": "#0D6B5E", "tonalRamp": ["#04221E", "#06322C", "#08443B", "#0A574C", "#0D6B5E", "#2E8C7B", "#5BAD9C", "#8FC7BB", "#C2E0D9", "#E6F2EF"] },
+      "halo-glow": { "role": "primary", "displayName": "Halo Glow", "canonical": "#1FB89A", "tonalRamp": ["#062721", "#0C4A3E", "#126E5D", "#17937B", "#1FB89A", "#34C7A8", "#5CD7BD", "#92E9D5", "#C8F5EA", "#E9FBF6"] },
+      "reward-gold": { "role": "secondary", "displayName": "Reward Gold", "canonical": "#E8B964", "tonalRamp": ["#C9952F", "#E8B964", "#F4D9A0"] },
+      "onyx": { "role": "neutral", "displayName": "Onyx", "canonical": "#0E0F11", "tonalRamp": ["#020203", "#050506", "#08090A", "#0B0C0E", "#0E0F11", "#46484C", "#7A7C7F", "#A7A8AB", "#D2D3D5", "#EDEDEE"] },
+      "calcaire": { "role": "neutral", "displayName": "Calcaire", "canonical": "#F3F0E9", "tonalRamp": ["#E6E1D5", "#F3F0E9", "#FFFFFF"] },
+      "line-warm": { "role": "neutral", "displayName": "Line Warm", "canonical": "#E6E1D5", "tonalRamp": ["#E6E1D5"] },
+      "galet": { "role": "neutral", "displayName": "Galet", "canonical": "#9B9DA0", "tonalRamp": ["#6E7073", "#9B9DA0", "#C4C6C8"] },
+      "galet-ink": { "role": "neutral", "displayName": "Galet Ink", "canonical": "#6E7073", "tonalRamp": ["#6E7073"] },
+      "danger": { "role": "system", "displayName": "Danger", "canonical": "#E2513A", "tonalRamp": ["#E2513A", "#F09683"] },
+      "info": { "role": "system", "displayName": "Info", "canonical": "#4FA3E0", "tonalRamp": ["#4FA3E0", "#8FC3EC"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Fraunces)", "purpose": "Hero headlines and brand moments only; italic for emphasis." },
+      "headline": { "displayName": "Headline (Fraunces)", "purpose": "Section titles and major page headers." },
+      "title": { "displayName": "Title (Inter)", "purpose": "Card titles, dialog headers, list-group labels — work surfaces stay sans." },
+      "body": { "displayName": "Body (Inter)", "purpose": "All running copy, 65–75ch measure." },
+      "label": { "displayName": "Label (Inter caps)", "purpose": "Émeraude pill badge and small status caps — a branded device, not a per-section eyebrow." },
+      "mono": { "displayName": "Mono (Geist Mono)", "purpose": "Tabular figures, codes, IDs." }
+    },
+    "shadows": [
+      { "name": "resting-card", "value": "0 1px 2px rgba(0,0,0,0.05)", "purpose": "Default lift for cards/panels in the light world (Tailwind shadow-sm)." },
+      { "name": "soft-float", "value": "0 8px 30px -12px rgba(14,15,17,0.18)", "purpose": "Raised moments — featured cards, hover lift, popovers. Diffuse and light." },
+      { "name": "dark-world-card", "value": "0 8px 24px rgba(0,0,0,0.35)", "purpose": "Digital card and dark-surface panels against onyx." }
+    ],
+    "motion": [
+      { "name": "duration-standard", "value": "150ms–300ms", "purpose": "All state transitions; transform/opacity only." },
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default ease-out-quint for entrances and state changes; no bounce/elastic." },
+      { "name": "press", "value": "scale(0.95)", "purpose": "Active-press feedback on primary buttons (active:scale-95)." },
+      { "name": "reduced-motion", "value": "animation: none; crossfade only", "purpose": "Mandatory prefers-reduced-motion path; halo-holo and halo-sheen disable entirely." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "design-targets", "value": "375 / 768 / 1024 / 1440 — no horizontal scroll, min-h-dvh" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary CTA (marketing)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The émeraude pill that drives every marketing conversion ('Créer ma carte').",
+      "html": "<button class=\"ds-btn-primary\">Créer ma carte</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; background: #0D6B5E; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-weight: 600; padding: 16px 32px; border: none; border-radius: 9999px; cursor: pointer; transition: background 200ms cubic-bezier(0.22,1,0.36,1), transform 120ms ease; } .ds-btn-primary:hover { background: #0A574C; } .ds-btn-primary:active { transform: scale(0.95); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #0D6B5E; }"
+    },
+    {
+      "name": "Primary Button (in-app)",
+      "kind": "button",
+      "refersTo": "button-app-primary",
+      "description": "Compact émeraude action inside the dashboard/app.",
+      "html": "<button class=\"ds-btn-app\">Enregistrer</button>",
+      "css": ".ds-btn-app { display: inline-flex; align-items: center; gap: 8px; background: #0D6B5E; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-weight: 700; font-size: 14px; padding: 8px 16px; border: none; border-radius: 12px; cursor: pointer; transition: background 200ms ease; } .ds-btn-app:hover { background: #0A574C; } .ds-btn-app:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The quiet 'not the one action' control — back, cancel, filter.",
+      "html": "<button class=\"ds-btn-secondary\">Annuler</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: #FFFFFF; color: #0E0F11; font-family: Inter, system-ui, sans-serif; font-weight: 500; font-size: 14px; padding: 8px 16px; border: 1px solid #E6E1D5; border-radius: 12px; cursor: pointer; transition: background 200ms ease, border-color 200ms ease; } .ds-btn-secondary:hover { background: #F3F0E9; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(13,107,94,0.25); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Calcaire-filled field with warm hairline; border shifts émeraude on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Nom du commerce\" />",
+      "css": ".ds-input { width: 100%; background: #F3F0E9; color: #0E0F11; font-family: Inter, system-ui, sans-serif; font-size: 14px; padding: 8px 12px; border: 1px solid #E6E1D5; border-radius: 12px; outline: none; transition: border-color 150ms ease, box-shadow 150ms ease; } .ds-input::placeholder { color: #9B9DA0; } .ds-input:focus { border-color: #0D6B5E; box-shadow: 0 0 0 2px rgba(13,107,94,0.25); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The standard light-world container — white on calcaire, warm hairline, flat at rest.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Ma carte</h3><p class=\"ds-card-body\">Votre carte de fidélité est active.</p></div>",
+      "css": ".ds-card { background: #FFFFFF; border: 1px solid #E6E1D5; border-radius: 24px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: box-shadow 200ms ease; } .ds-card:hover { box-shadow: 0 8px 30px -12px rgba(14,15,17,0.18); } .ds-card-title { font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 18px; color: #0E0F11; margin: 0 0 8px; } .ds-card-body { font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.6; color: #6E7073; margin: 0; }"
+    },
+    {
+      "name": "Label Pill (badge)",
+      "kind": "chip",
+      "refersTo": "button-app-primary",
+      "description": "The branded émeraude cap badge — the one deliberate uppercase device.",
+      "html": "<span class=\"ds-pill\">Nouveau</span>",
+      "css": ".ds-pill { display: inline-block; background: #0D6B5E; color: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-weight: 600; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 4px 12px; border-radius: 9999px; }"
+    },
+    {
+      "name": "Reward Flash (signature)",
+      "kind": "custom",
+      "refersTo": "reward-flash",
+      "description": "The full-screen gold moment when a customer earns a reward — the only place gold appears.",
+      "html": "<div class=\"ds-reward\"><span class=\"ds-reward-label\">Récompense offerte</span></div>",
+      "css": ".ds-reward { display: flex; align-items: center; justify-content: center; min-height: 160px; background: linear-gradient(160deg, #F4D9A0 0%, #E8B964 45%, #C9952F 100%); border-radius: 16px; padding: 24px; } .ds-reward-label { font-family: Fraunces, Georgia, serif; font-style: italic; font-size: 28px; color: #0E0F11; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lit Counter",
+    "overview": "HALO is the halo of warm light over a well-kept Geneva shop counter. The dark onyx ground is the dim of the shop; émeraude is the steady, trustworthy glow of the brand and every primary action; gold is the single warm flare reserved for the moment a customer earns a reward. The personality is Clair · Élégant · Vibrant — Swiss-French restraint with a craftsman's warmth, Fraunces serif for identity and Inter for the workflow, generous density, flat surfaces at rest.",
+    "keyCharacteristics": [
+      "Two grounded surface worlds: onyx-dark for brand/marketing, calcaire-light for the working app.",
+      "Émeraude is the one steady voice; gold is rationed to the reward beat alone.",
+      "Flat by default — depth via tonal layering and warm hairlines, not shadow.",
+      "Serif (Fraunces) for identity, sans (Inter) for the workflow; Swiss-French copy.",
+      "Counter-first ergonomics: big, forgiving, unmistakable primary actions."
+    ],
+    "rules": [
+      { "name": "The One Glow Rule", "body": "Émeraude is the only color that signals action. There is never more than one primary émeraude element per section; everything else recedes to neutral.", "section": "colors" },
+      { "name": "The Rationed Gold Rule", "body": "Gold is forbidden outside the reward moment. It is not a secondary brand color, highlight, or chart hue. Its rarity is the point — it must mean 'you earned this' every time.", "section": "colors" },
+      { "name": "The Serif-Says-Who, Sans-Says-What Rule", "body": "Fraunces is for identity and emotion (heroes, brand headlines); Inter is for the job (titles, body, labels, forms). Never set body or controls in serif; never set a hero in sans.", "section": "typography" },
+      { "name": "The Hairline-First Rule", "body": "Reach for a 1px line-warm/onyx-line border before a shadow. If a card needs separation, the warm hairline does it. Shadow is the second resort.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep émeraude (#0D6B5E) as the single action color — one primary per section.",
+      "Do ration gold (#E8B964) to the reward moment only; it is not a brand color.",
+      "Do define cards and fields with the warm 1px hairline before reaching for shadow.",
+      "Do use galet-ink (#6E7073), not galet (#9B9DA0), for muted body text on light grounds — galet fails AA at body size.",
+      "Do set identity in Fraunces and the working UI in Inter.",
+      "Do keep motion 150–300ms, transform/opacity, with a prefers-reduced-motion path for every animation.",
+      "Do write copy in Swiss-French (vouvoiement), direct artisan tone, lucide icons only, no emoji."
+    ],
+    "donts": [
+      "Don't ship the generic SaaS template — no cream/sand backgrounds, gradient blobs, hero-metric panels, or identical icon-card grids.",
+      "Don't go loud fintech/crypto — no neon-on-black, decorative glassmorphism, or aggressive gradients.",
+      "Don't go cold enterprise — no navy-and-gray dense soulless dashboards.",
+      "Don't go childish loyalty app — no mascots, candy primaries, or badge confetti.",
+      "Don't use a colored border-left/border-right stripe as an accent; use the full hairline, a tonal fill, or nothing.",
+      "Don't use background-clip:text gradient text or per-section uppercase eyebrows — the label cap is one deliberate branded device.",
+      "Don't tint a near-white background warm and call it the brand; warmth lives in type and the gold flare, not in default-tinting every surface.",
+      "Don't nest a card inside a card, or stack shadows for depth — layer tonally instead."
+    ]
+  }
+}
