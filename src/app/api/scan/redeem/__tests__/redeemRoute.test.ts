@@ -11,6 +11,8 @@ const state = {
   card: null as Record<string, unknown> | null,
   updatedRows: [] as unknown[],
   updateError: null as { message: string } | null,
+  rpcResult: null as Record<string, unknown> | null,
+  rpcError: null as { message: string } | null,
 };
 const calls = {
   audit: [] as Record<string, unknown>[],
@@ -25,6 +27,10 @@ vi.mock("@/utils/supabase/server", () => ({
 
 vi.mock("@/lib/supabaseAdmin", () => ({
   supabaseAdmin: {
+    rpc: async (_name: string, _args: Record<string, unknown>) => ({
+      data: state.rpcResult,
+      error: state.rpcError,
+    }),
     from: (table: string) => {
       if (table === "merchants") {
         return {
@@ -100,6 +106,8 @@ beforeEach(() => {
   };
   state.updatedRows = [{ ...state.card, stamps_count: 0 }];
   state.updateError = null;
+  state.rpcResult = null;
+  state.rpcError = null;
   calls.audit = [];
   calls.updateFilters = [];
 });
@@ -144,6 +152,40 @@ describe("POST /api/scan/redeem", () => {
 
   it("carte non pleine / déjà offerte → 409 (aucune ligne mise à jour)", async () => {
     state.updatedRows = [];
+    const res = await POST(redeemReq());
+    expect(res.status).toBe(409);
+    expect(calls.audit).toHaveLength(0);
+  });
+
+  it("amount_points : succès → 200, encaissement via RPC + audit REWARD_REDEEMED", async () => {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "amount_points",
+      loyalty_config: { type: "amount_points", pointsPerChf: 1, rewardThreshold: 100, rewardLabel: "Café offert" },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "550e8400-e29b-41d4-a716-446655440000", merchant_id: "merchant-1", points_balance: 150, customers: { full_name: "Nadia" } };
+    state.rpcResult = { ok: true, currentValue: 50 };
+    const res = await POST(redeemReq());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(calls.audit[0].action).toBe("REWARD_REDEEMED");
+    // pas d'UPDATE direct côté app : le décrément est atomique côté RPC
+    expect(calls.updateFilters).toHaveLength(0);
+  });
+
+  it("amount_points : carte sous le seuil → 409 (RPC ok=false), pas d'audit", async () => {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "amount_points",
+      loyalty_config: { type: "amount_points", pointsPerChf: 1, rewardThreshold: 100, rewardLabel: "Café offert" },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "550e8400-e29b-41d4-a716-446655440000", merchant_id: "merchant-1", points_balance: 30, customers: { full_name: "Nadia" } };
+    state.rpcResult = { ok: false, error: "not_ready", currentValue: 30 };
     const res = await POST(redeemReq());
     expect(res.status).toBe(409);
     expect(calls.audit).toHaveLength(0);

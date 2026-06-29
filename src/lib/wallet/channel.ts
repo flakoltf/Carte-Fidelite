@@ -4,12 +4,19 @@ import { EmailChannel } from "@/lib/email/channel";
 import { isEmailConfigured } from "@/lib/email/send";
 
 export interface NotificationChannel {
+  // "wallet" : ne joint que les cartes installées (filtre par registrations) →
+  //   l'appelant lui passe la sous-liste joignable.
+  // "direct" (email) : joint TOUS les clients ciblés, y compris ceux SANS Wallet
+  //   → l'appelant lui passe la liste complète des cartes (c'est tout l'intérêt
+  //   du canal email). cf. deliverToCards.
+  readonly kind: "wallet" | "direct";
   notify(cardIds: string[], message?: { title: string; body: string }): Promise<{ pushed: number }>;
 }
 
 const passTypeId = () => process.env.APPLE_PASS_TYPE_ID || "pass.com.walletcard.fidelite";
 
 export const AppleChannel: NotificationChannel = {
+  kind: "wallet",
   async notify(cardIds, message) {
     if (!cardIds.length) return { pushed: 0 };
     const update: Record<string, unknown> = { pass_updated_at: new Date().toISOString() };
@@ -29,6 +36,7 @@ export const AppleChannel: NotificationChannel = {
 
 // Désactivé tant que l'émetteur Google Wallet est en mode démo (pas d'accès publishing).
 export const GoogleChannel: NotificationChannel = {
+  kind: "wallet",
   async notify() { return { pushed: 0 }; },
 };
 

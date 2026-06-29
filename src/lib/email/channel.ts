@@ -11,6 +11,7 @@ import { sendEmail, isEmailConfigured } from "./send";
 const MAX_EMAILS = 500;
 
 export const EmailChannel: NotificationChannel = {
+  kind: "direct",
   async notify(cardIds, message) {
     if (!isEmailConfigured() || !message || !cardIds.length) return { pushed: 0 };
 
