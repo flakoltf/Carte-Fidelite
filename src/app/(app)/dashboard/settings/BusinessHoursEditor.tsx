@@ -37,7 +37,7 @@ export default function BusinessHoursEditor({
                 onChange={(e) => setDay(key, e.target.checked ? { open: "09:00", close: "18:00" } : null)}
                 className="accent-halo"
               />
-              <span className="text-xs text-galet">{open ? "Ouvert" : "Fermé"}</span>
+              <span className="text-xs text-galet-ink">{open ? "Ouvert" : "Fermé"}</span>
             </label>
             {open && (
               <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export default function BusinessHoursEditor({
                   className="rounded-lg border border-line-warm bg-surface px-2 py-1"
                   aria-label={`${DAY_LABELS[key]} ouverture`}
                 />
-                <span className="text-galet">–</span>
+                <span className="text-galet-ink">–</span>
                 <input
                   type="time"
                   value={day.close}

@@ -22,16 +22,25 @@
   --color-onyx-soft: #16171A;
   --color-onyx-line: #21232a;
   --color-calcaire: #F3F0E9;
+  /* galet = gris clair RÉSERVÉ aux icônes décoratives et bordures (jamais du
+     texte : 2.4:1 sur calcaire = sous le seuil). */
   --color-galet: #9B9DA0;
   --color-halo: #0D6B5E;
   --color-halo-600: #0A574C;
   --color-halo-glow: #1FB89A;
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
-  --color-galet-ink: #6E7073;
-  /* Texte atténué qui passe WCAG AA (≥4.5:1) sur le fond calcaire, là où
-     --color-galet-ink tombe à ~4.4:1. Pour les petites mentions / disclaimers
-     sur calcaire. galet-ink reste correct sur les surfaces blanches. */
+  /* Couche neutre "panneau" (sidebar/toolbars) — légèrement plus chaude que le
+     contenu (registre produit : 2e neutre pour les panneaux). Extrait des hex
+     #EFEBE1/#E9E4D8 qui traînaient en dur dans DashboardShell. */
+  --color-sidebar: #EFEBE1;
+  --color-sidebar-hover: #E9E4D8;
+  /* galet-ink = TOKEN texte secondaire/atténué. Calé pour AA (≥ 4.5:1) sur TOUS
+     les fonds clairs de l'app : calcaire 5.5 · blanc 6.3 · sidebar 5.3 ·
+     sidebar-hover 5.0 (avant : #6E7073 tombait à 4.0–4.4 sur les fonds beiges). */
+  --color-galet-ink: #5E6063;
+  /* Variante encore plus contrastée pour les mentions/disclaimers les plus
+     discrets du landing (AA sur calcaire). */
   --color-galet-deep: #5B5D60;
   /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
      --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
@@ -69,6 +78,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+/* ============ Focus visible (a11y) ============ */
+/* Indicateur de focus CLAVIER homogène pour tout élément interactif qui n'a pas
+   déjà son propre style. En @layer base + :where() → spécificité 0 : n'importe
+   quel utilitaire `focus-visible:ring-*` / `focus-visible:outline-*` d'un
+   composant le surcharge. `outline` (et non box-shadow) : jamais rognée par un
+   parent overflow-hidden/auto. Couleur halo = 3:1+ sur tous les fonds clairs. */
+@layer base {
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-halo);
+    outline-offset: 2px;
+  }
 }
 
 /* ============ HALO motion ============ */

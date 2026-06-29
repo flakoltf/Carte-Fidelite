@@ -74,7 +74,7 @@ export default function TemplateGallery({
           </button>
         ))}
       </div>
-      <p className="mt-3 text-[11px] text-galet">
+      <p className="mt-3 text-[11px] text-galet-ink">
         Appliquer un modèle remplace couleurs, champs et tampons — vos images et votre nom de
         programme sont conservés. Rien n&apos;est publié tant que vous ne le décidez pas.
       </p>

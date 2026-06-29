@@ -195,7 +195,7 @@ export default function ExpressOnboarding({
           <button
             type="button"
             onClick={dismiss}
-            className="text-xs font-medium text-galet hover:text-galet-ink"
+            className="text-xs font-medium text-galet-ink hover:text-galet-ink"
           >
             Découvrir ma carte sans guide
           </button>

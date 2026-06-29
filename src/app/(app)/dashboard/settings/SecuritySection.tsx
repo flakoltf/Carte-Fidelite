@@ -67,7 +67,7 @@ export function SecuritySection() {
     } finally { setBusy(false); }
   };
 
-  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none";
+  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none";
 
   return (
     <div className="bg-surface border border-line-warm rounded-3xl p-8 space-y-6 shadow-sm">
@@ -81,7 +81,7 @@ export function SecuritySection() {
         <div className="space-y-3">
           <p className="text-sm text-halo">✅ Double authentification activée.</p>
           <p className="text-xs text-galet-ink">Un code de votre appli d&apos;authentification sera demandé à chaque connexion.</p>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button onClick={disable} disabled={busy}
             className="px-5 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-bold disabled:opacity-50">
             {busy ? "…" : "Désactiver"}
@@ -92,10 +92,10 @@ export function SecuritySection() {
           <p className="text-sm text-galet-ink">1. Scannez ce QR avec votre appli (Google / Microsoft Authenticator) :</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={enrolling.qr} alt="QR code 2FA" className="w-44 h-44 bg-white rounded-xl p-2" />
-          <p className="text-xs text-galet break-all">Ou clé manuelle : <span className="font-mono text-galet-ink">{enrolling.secret}</span></p>
+          <p className="text-xs text-galet-ink break-all">Ou clé manuelle : <span className="font-mono text-galet-ink">{enrolling.secret}</span></p>
           <p className="text-sm text-galet-ink">2. Entrez le code à 6 chiffres affiché :</p>
-          <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" className={inputCls} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" aria-label="Code à 6 chiffres" autoComplete="one-time-code" className={inputCls} />
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2">
             <button onClick={confirmEnroll} disabled={busy} className="px-5 py-2.5 rounded-xl bg-halo text-white font-bold text-sm disabled:opacity-50 hover:bg-halo-600 transition-all">{busy ? "…" : "Confirmer"}</button>
             <button onClick={cancelEnroll} disabled={busy} className="px-4 py-2.5 rounded-xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink text-sm">Annuler</button>
@@ -104,7 +104,7 @@ export function SecuritySection() {
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-galet-ink">Protégez votre compte : en plus du mot de passe, un code temporaire de votre téléphone sera requis à la connexion.</p>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button onClick={startEnroll} disabled={busy}
             className="px-5 py-2.5 rounded-xl bg-halo text-white font-bold text-sm disabled:opacity-50 hover:bg-halo-600 transition-all">
             {busy ? "…" : "Activer la double authentification"}

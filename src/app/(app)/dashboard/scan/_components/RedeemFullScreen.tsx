@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { Gift, Check, Loader2 } from "lucide-react";
 import { EASE_OUT } from "@/lib/motion";
+import { useFocusTrap } from "../../_components/useFocusTrap";
 
 type Phase = "ready" | "redeeming" | "done" | "error";
 
@@ -85,8 +86,16 @@ export default function RedeemFullScreen({
   const busy = phase === "redeeming";
   const done = phase === "done";
 
+  // Modale : focus piégé + restitué, Échap = annuler (ignoré pendant
+  // l'encaissement, comme le bouton « Annuler » qui est alors désactivé).
+  const trapRef = useFocusTrap<HTMLDivElement>(true, () => {
+    if (phase !== "redeeming") onCancel();
+  });
+
   return (
     <motion.div
+      ref={trapRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Offrir la récompense"

@@ -20,7 +20,7 @@ export default function ConnectionStatus({ version }: { version: string }) {
   }, []);
 
   return (
-    <div className="flex items-center justify-center gap-2 text-[11px] text-galet">
+    <div className="flex items-center justify-center gap-2 text-[11px] text-galet-ink">
       <span
         role="status"
         aria-label={online ? "Connexion active" : "Hors ligne"}

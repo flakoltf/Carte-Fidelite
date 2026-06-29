@@ -9,6 +9,7 @@ import {
   KEYPAD_ROWS,
   type AmountKey,
 } from "@/lib/comptoir/amountPad";
+import { useFocusTrap } from "../../_components/useFocusTrap";
 
 export interface AmountPadProps {
   /** Crédité après « VALIDER ». Reçoit le montant en CHF (ex. 12.5). */
@@ -28,6 +29,8 @@ const KEY_LABEL: Partial<Record<AmountKey, string>> = {
 export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
   const [entry, setEntry] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // Modale : focus piégé, Échap = annuler, focus restitué à la fermeture.
+  const trapRef = useFocusTrap<HTMLDivElement>(true, onCancel);
 
   const amount = entryToChf(entry);
   const display = displayChf(amount);
@@ -48,10 +51,17 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-calcaire px-5 pb-[env(safe-area-inset-bottom)] text-onyx">
+    <div
+      ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="amountpad-title"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex flex-col bg-calcaire px-5 pb-[env(safe-area-inset-bottom)] text-onyx focus:outline-none"
+    >
       {/* Montant en grand. */}
       <div className="flex h-1/4 flex-col items-center justify-center">
-        <span className="text-xs font-medium uppercase tracking-wide text-galet">
+        <span id="amountpad-title" className="text-xs font-medium uppercase tracking-wide text-galet-ink">
           Montant de l’achat
         </span>
         <output
@@ -93,7 +103,7 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
             type="button"
             onClick={onCancel}
             disabled={submitting}
-            className="min-h-11 text-sm font-medium text-galet underline-offset-4 hover:underline disabled:opacity-50"
+            className="min-h-11 text-sm font-medium text-galet-ink underline-offset-4 hover:underline disabled:opacity-50"
           >
             Annuler
           </button>

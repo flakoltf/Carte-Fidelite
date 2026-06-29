@@ -92,7 +92,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     <div className="min-h-screen bg-calcaire text-onyx flex overflow-hidden">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-[#EFEBE1] p-6">
+      <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-sidebar p-6">
         <div className="flex items-center gap-3 mb-12 px-2">
           <HaloSymbol size={32} className="text-halo" />
           <span className="font-display text-xl tracking-[0.14em]">HALO</span>
@@ -101,7 +101,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <nav aria-label="Navigation principale" className="flex-1 space-y-5 overflow-y-auto">
             {navZones.map((zone) => (
                 <section key={zone.title} aria-label={zone.title} className="space-y-0.5">
-                    <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet">
+                    <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet-ink">
                         {zone.title}
                     </h6>
                     {zone.items.map((item) => {
@@ -116,7 +116,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                                     ? "bg-halo text-white"
                                     : item.featured
                                     ? "bg-halo/10 text-halo hover:bg-halo/15"
-                                    : "text-galet-ink hover:text-onyx hover:bg-[#E9E4D8]"
+                                    : "text-galet-ink hover:text-onyx hover:bg-sidebar-hover"
                                 }`}
                             >
                                 <item.icon className={`w-[18px] h-[18px] ${isActive ? "text-white" : item.featured ? "text-halo" : "group-hover:text-onyx"}`} />
@@ -169,7 +169,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">
                     {navZones.map((zone) => (
                         <section key={zone.title} aria-label={zone.title} className="space-y-2">
-                            <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet">
+                            <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet-ink">
                                 {zone.title}
                             </h6>
                             {zone.items.map((item) => (

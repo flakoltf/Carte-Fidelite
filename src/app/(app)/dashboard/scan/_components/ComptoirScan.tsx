@@ -218,7 +218,7 @@ export default function ComptoirScan({
           type="button"
           onClick={() => router.push("/dashboard")}
           aria-label="Retour au comptoir"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-galet hover:bg-line-warm/60 hover:text-onyx"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-galet-ink hover:bg-line-warm/60 hover:text-onyx"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -279,9 +279,9 @@ export default function ComptoirScan({
           {mode === "error" && (
             <div className="flex flex-col items-center gap-5 p-8 text-center">
               <span className="flex h-20 w-20 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
-                <AlertCircle className="h-12 w-12 text-red-600" />
+                <AlertCircle className="h-12 w-12 text-red-600" aria-hidden="true" />
               </span>
-              <p className="font-medium text-galet-ink">{message}</p>
+              <p role="alert" className="font-medium text-galet-ink">{message}</p>
               <button
                 type="button"
                 onClick={() => setMode("scanning")}

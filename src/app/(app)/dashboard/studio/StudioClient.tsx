@@ -408,7 +408,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
                 onChange={(e) => update({ programName: e.target.value })}
                 maxLength={60}
                 placeholder="Carte de fidélité"
-                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet-ink"
               />
             </div>
             <div>
@@ -421,9 +421,9 @@ export default function StudioClient({ express = false }: { express?: boolean })
                 onChange={(e) => setReward(e.target.value)}
                 maxLength={80}
                 placeholder="Ex. Le 10e café offert"
-                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet"
+                className="w-full rounded-2xl border border-line-warm bg-calcaire px-4 py-3 text-onyx outline-none transition-colors focus:border-halo placeholder:text-galet-ink"
               />
-              <p className="mt-1 text-[11px] text-galet">Ce que le client gagne — affiché sur sa carte.</p>
+              <p className="mt-1 text-[11px] text-galet-ink">Ce que le client gagne — affiché sur sa carte.</p>
             </div>
           </div>
 
@@ -507,7 +507,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
               onChange={(e) => update({ programName: e.target.value })}
               placeholder="Carte de fidélité"
               maxLength={60}
-              className="w-full bg-calcaire border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet"
+              className="w-full bg-calcaire border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet-ink"
             />
             <div className="mt-6 grid gap-6 lg:grid-cols-2">
               <div>
@@ -568,7 +568,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
               {(['cashback', 'subscription'] as CardTypeKey[]).map((t) => (
                 <span
                   key={t}
-                  className="rounded-xl border border-dashed border-line-warm px-4 py-2 text-sm text-galet cursor-not-allowed select-none"
+                  className="rounded-xl border border-dashed border-line-warm px-4 py-2 text-sm text-galet-ink cursor-not-allowed select-none"
                   title="Bientôt disponible"
                 >
                   {CARD_TYPE_LABELS[t]} · bientôt
@@ -656,11 +656,11 @@ export default function StudioClient({ express = false }: { express?: boolean })
             {/* Apple et Google côte à côte (défilement horizontal sur écran étroit) */}
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
               <div className="shrink-0 w-[280px] snap-start">
-                <p className="text-[11px] uppercase tracking-wide text-galet mb-2"> Apple Wallet</p>
+                <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2"> Apple Wallet</p>
                 <AppleWalletPreview design={design} assets={previewAssets} sample={sample} />
               </div>
               <div className="shrink-0 w-[280px] snap-start">
-                <p className="text-[11px] uppercase tracking-wide text-galet mb-2">Google Wallet</p>
+                <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2">Google Wallet</p>
                 <GoogleWalletPreview design={design} assets={previewAssets} sample={sample} />
               </div>
             </div>
@@ -668,7 +668,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
             {/* Suivi des tampons */}
             {cardType === 'stamps' && (
               <div className="mt-4">
-                <p className="text-[11px] uppercase tracking-wide text-galet mb-2">Suivi des tampons</p>
+                <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2">Suivi des tampons</p>
                 <div className="rounded-2xl p-4" style={{ background: design.colors.background }}>
                   <StampGrid
                     stamps={stamps}
@@ -678,7 +678,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
                     emptyUrl={assets.stampEmpty}
                   />
                 </div>
-                <p className="mt-1.5 text-[11px] text-galet">
+                <p className="mt-1.5 text-[11px] text-galet-ink">
                   Grille affichée dans le studio et sur la page client — le pass Wallet affiche le
                   compteur ({'{points}'}) en chiffres.
                 </p>

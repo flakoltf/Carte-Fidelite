@@ -125,7 +125,7 @@ export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
               <div>
                 <div className="font-bold text-onyx">{c.title}</div>
                 <div className="text-sm text-galet-ink">{c.body}</div>
-                <div className="text-xs text-galet mt-1">{audienceLabel(c.audience)} · {statusLabel(c)}</div>
+                <div className="text-xs text-galet-ink mt-1">{audienceLabel(c.audience)} · {statusLabel(c)}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {c.mode === "recurring" && (
@@ -138,7 +138,7 @@ export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
                 </button>
               </div>
             </div>
-          )) : <p className="text-galet text-sm">Aucune campagne programmée ou récurrente pour l&apos;instant.</p>}
+          )) : <p className="text-galet-ink text-sm">Aucune campagne programmée ou récurrente pour l&apos;instant.</p>}
         </div>
       </div>
     </div>

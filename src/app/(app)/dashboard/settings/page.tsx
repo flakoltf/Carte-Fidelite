@@ -138,8 +138,9 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-galet-ink">Nom public</label>
+                        <label htmlFor="set-shopname" className="text-sm font-medium text-galet-ink">Nom public</label>
                         <input
+                            id="set-shopname"
                             type="text"
                             value={shopName}
                             onChange={(e) => setShopName(e.target.value)}
@@ -157,33 +158,37 @@ export default function Settings() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-galet-ink">Couleur principale</label>
+                            <label htmlFor="set-color" className="text-sm font-medium text-galet-ink">Couleur principale</label>
                             <div className="flex gap-3">
                                 <input
+                                    id="set-color"
                                     type="color"
                                     value={primaryColor}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
+                                    aria-label="Couleur principale (sélecteur)"
                                     className="w-12 h-12 bg-transparent border-none outline-none cursor-pointer"
                                 />
                                 <input
                                     type="text"
                                     value={primaryColor}
                                     onChange={(e) => setPrimaryColor(e.target.value)}
-                                    className="flex-1 bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm font-mono text-onyx"
+                                    aria-label="Couleur principale (code hex)"
+                                    className="flex-1 bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm font-mono text-onyx focus:border-halo outline-none"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-galet-ink">URL du Logo (HTTPS)</label>
+                            <label htmlFor="set-logo" className="text-sm font-medium text-galet-ink">URL du Logo (HTTPS)</label>
                             <div className="relative group">
-                                <ImageIcon className="absolute left-4 top-3.5 w-5 h-5 text-galet" />
+                                <ImageIcon className="absolute left-4 top-3.5 w-5 h-5 text-galet" aria-hidden />
                                 <input
-                                    type="text"
+                                    id="set-logo"
+                                    type="url"
                                     value={logoUrl}
                                     onChange={(e) => setLogoUrl(e.target.value)}
                                     placeholder="https://..."
-                                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all"
+                                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -198,16 +203,17 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-galet-ink">Récompense affichée</label>
+                        <label htmlFor="set-reward" className="text-sm font-medium text-galet-ink">Récompense affichée</label>
                         <input
+                            id="set-reward"
                             type="text"
                             maxLength={80}
                             value={rewardLabel}
                             onChange={(e) => setRewardLabel(e.target.value)}
                             placeholder="Un café offert"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all"
                         />
-                        <p className="text-xs text-galet">{rewardLabel.length}/80</p>
+                        <p className="text-xs text-galet-ink">{rewardLabel.length}/80</p>
                     </div>
 
                     <div className="space-y-2">
@@ -216,32 +222,34 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Star className="w-4 h-4" /> Avis Google (au moment magique)</label>
-                        <p className="text-xs text-galet">Quand un client débloque sa récompense, sa carte affiche « Laisser un avis Google ». Collez votre Place ID (commence par <code>ChIJ…</code>).</p>
+                        <label htmlFor="set-placeid" className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Star className="w-4 h-4" aria-hidden /> Avis Google (au moment magique)</label>
+                        <p className="text-xs text-galet-ink">Quand un client débloque sa récompense, sa carte affiche « Laisser un avis Google ». Collez votre Place ID (commence par <code>ChIJ…</code>).</p>
                         <input
+                            id="set-placeid"
                             type="text"
                             value={googlePlaceId}
                             onChange={(e) => setGooglePlaceId(e.target.value)}
                             placeholder="ChIJ…"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all font-mono"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all font-mono"
                         />
                         {googlePlaceId.trim() !== "" && !/^ChIJ[A-Za-z0-9_-]{10,256}$/.test(googlePlaceId.trim()) && (
-                            <p className="text-xs text-amber-600">Format inattendu — un Place ID commence par « ChIJ ».</p>
+                            <p role="alert" className="text-xs text-amber-700">Format inattendu — un Place ID commence par « ChIJ ».</p>
                         )}
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Camera className="w-4 h-4" /> Photo du commerce</label>
-                        <p className="text-xs text-galet">Affichée en bandeau sur la carte. Même image que dans le Studio — la dernière modification fait foi.</p>
+                        <label htmlFor="set-photo" className="text-sm font-medium text-galet-ink flex items-center gap-1.5"><Camera className="w-4 h-4" aria-hidden /> Photo du commerce</label>
+                        <p className="text-xs text-galet-ink">Affichée en bandeau sur la carte. Même image que dans le Studio — la dernière modification fait foi.</p>
                         <input
+                            id="set-photo"
                             type="file"
                             accept="image/png,image/jpeg,image/webp"
                             disabled={uploadingPhoto}
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }}
                             className="block text-sm text-galet-ink file:mr-3 file:rounded-full file:border-0 file:bg-halo file:px-4 file:py-2 file:text-white file:font-semibold disabled:opacity-50"
                         />
-                        {uploadingPhoto && <p className="text-xs text-galet inline-flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" /> Envoi…</p>}
-                        {photoMsg && <p className="text-xs text-galet-ink">{photoMsg}</p>}
+                        {uploadingPhoto && <p className="text-xs text-galet-ink inline-flex items-center gap-1.5"><Loader2 className="w-3 h-3 animate-spin" aria-hidden /> Envoi…</p>}
+                        {photoMsg && <p role="status" aria-live="polite" className="text-xs text-galet-ink">{photoMsg}</p>}
                     </div>
                 </div>
 
@@ -256,11 +264,13 @@ export default function Settings() {
 
                     {success && (
                         <motion.div
+                            role="status"
+                            aria-live="polite"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             className="flex items-center gap-2 text-halo text-sm font-medium"
                         >
-                            <CheckCircle className="w-5 h-5" />
+                            <CheckCircle className="w-5 h-5" aria-hidden />
                             Modifications enregistrées !
                         </motion.div>
                     )}
@@ -269,26 +279,26 @@ export default function Settings() {
           <div className="bg-surface border border-line-warm rounded-3xl p-6 space-y-4 shadow-sm">
             <h2 className="font-bold text-onyx flex items-center gap-2"><Store className="w-4 h-4" /> Adresse & proximité</h2>
             <p className="text-sm text-galet-ink">Vos clients verront leur carte sur leur écran verrouillé quand ils passent près de votre boutique (≈100 m).</p>
-            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, Genève"
-              className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet outline-none focus:border-halo" />
+            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, Genève" aria-label="Adresse de la boutique"
+              className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
             <div className="grid grid-cols-2 gap-3">
-              <input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="Latitude (optionnel)"
-                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet outline-none focus:border-halo" />
-              <input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="Longitude (optionnel)"
-                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet outline-none focus:border-halo" />
+              <input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="Latitude (optionnel)" aria-label="Latitude"
+                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
+              <input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="Longitude (optionnel)" aria-label="Longitude"
+                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
             </div>
-            <p className="text-xs text-galet">Si l&apos;adresse n&apos;est pas trouvée, collez vos coordonnées (Google Maps → clic droit → copier).</p>
+            <p className="text-xs text-galet-ink">Si l&apos;adresse n&apos;est pas trouvée, collez vos coordonnées (Google Maps → clic droit → copier).</p>
             <button type="button" onClick={saveAddress} disabled={savingAddr || address.trim().length < 5}
               className="bg-halo text-white rounded-xl px-5 py-2.5 font-bold disabled:opacity-50 hover:bg-halo-600 transition-all">
               {savingAddr ? "Enregistrement…" : "Enregistrer l'adresse"}
             </button>
-            {addrMsg && <p className="text-sm text-galet-ink">{addrMsg}</p>}
+            {addrMsg && <p role="status" aria-live="polite" className="text-sm text-galet-ink">{addrMsg}</p>}
           </div>
         </div>
 
         {/* Aperçu */}
         <div className="space-y-6">
-            <h3 className="text-sm font-bold text-galet ml-1">APERÇU DE LA CARTE</h3>
+            <h3 className="text-sm font-bold text-galet-ink ml-1">APERÇU DE LA CARTE</h3>
             <div
                 className="aspect-[1.58/1] w-full rounded-3xl p-8 relative overflow-hidden shadow-2xl transition-all duration-500"
                 style={{ backgroundColor: primaryColor }}
