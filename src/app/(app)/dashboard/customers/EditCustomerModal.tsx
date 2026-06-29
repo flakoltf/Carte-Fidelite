@@ -31,14 +31,14 @@ export function EditCustomerModal({ customer, onClose }: { customer: EditableCus
     }
   };
 
-  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none transition-all";
+  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-surface border border-line-warm rounded-3xl shadow-xl p-6 w-full max-w-md space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-onyx">Modifier le client</h2>
-          <button onClick={onClose} className="text-galet hover:text-galet-ink"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-galet-ink hover:text-galet-ink"><X className="w-5 h-5" /></button>
         </div>
         <div className="space-y-1">
           <label className="text-sm text-galet-ink">Nom</label>

@@ -51,7 +51,7 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
     <div className="fixed inset-0 z-50 flex flex-col bg-calcaire px-5 pb-[env(safe-area-inset-bottom)] text-onyx">
       {/* Montant en grand. */}
       <div className="flex h-1/4 flex-col items-center justify-center">
-        <span className="text-xs font-medium uppercase tracking-wide text-galet">
+        <span className="text-xs font-medium uppercase tracking-wide text-galet-ink">
           Montant de l’achat
         </span>
         <output
@@ -93,7 +93,7 @@ export default function AmountPad({ onConfirm, onCancel }: AmountPadProps) {
             type="button"
             onClick={onCancel}
             disabled={submitting}
-            className="min-h-11 text-sm font-medium text-galet underline-offset-4 hover:underline disabled:opacity-50"
+            className="min-h-11 text-sm font-medium text-galet-ink underline-offset-4 hover:underline disabled:opacity-50"
           >
             Annuler
           </button>

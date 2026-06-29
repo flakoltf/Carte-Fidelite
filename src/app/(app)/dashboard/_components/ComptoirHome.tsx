@@ -53,7 +53,7 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1", banner
         <Link
           href="/dashboard/full"
           aria-label="Réglages et tableau de bord complet"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-galet transition-colors hover:bg-line-warm/60 hover:text-onyx"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-galet-ink transition-colors hover:bg-line-warm/60 hover:text-onyx"
         >
           <Settings className="h-5 w-5" aria-hidden="true" />
         </Link>

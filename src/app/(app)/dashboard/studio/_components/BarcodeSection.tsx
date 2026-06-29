@@ -35,7 +35,7 @@ export default function BarcodeSection({
             </option>
           ))}
         </select>
-        <p className="text-xs text-galet ml-1">
+        <p className="text-xs text-galet-ink ml-1">
           QR &amp; Aztec : carrés, denses. PDF417 : rectangle (style carte d&apos;embarquement). Code 128 : barres 1D.
         </p>
       </div>
@@ -54,7 +54,7 @@ export default function BarcodeSection({
           ))}
         </select>
         {value.source === 'card_token' && (
-          <p className="text-xs text-galet ml-1">
+          <p className="text-xs text-galet-ink ml-1">
             Le code encode le jeton unique de la carte — c&apos;est lui que vous scannez en caisse.
           </p>
         )}
@@ -68,7 +68,7 @@ export default function BarcodeSection({
             onChange={(e) => onChange({ ...value, value: e.target.value })}
             placeholder="Texte ou URL encodée dans le code-barres"
             maxLength={512}
-            className={inputCls + ' placeholder:text-galet'}
+            className={inputCls + ' placeholder:text-galet-ink'}
           />
         </div>
       )}
@@ -80,7 +80,7 @@ export default function BarcodeSection({
           onChange={(e) => onChange({ ...value, altText: e.target.value })}
           placeholder="Affiché sous le code si le scan échoue"
           maxLength={100}
-          className={inputCls + ' placeholder:text-galet'}
+          className={inputCls + ' placeholder:text-galet-ink'}
         />
       </div>
     </div>

@@ -61,7 +61,7 @@ export default async function ActivityFeed({ merchantId }: { merchantId: string 
                 <span className="font-semibold">{e.who}</span>
                 {e.type === "scan" ? " — passage scanné" : " — nouvelle carte"}
               </span>
-              <span className="shrink-0 text-xs text-galet">{relativeTime(e.at, now)}</span>
+              <span className="shrink-0 text-xs text-galet-ink">{relativeTime(e.at, now)}</span>
             </li>
           ))}
         </ul>

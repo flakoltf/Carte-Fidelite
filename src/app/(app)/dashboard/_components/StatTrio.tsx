@@ -63,7 +63,7 @@ export default function StatTrio() {
                 {value ?? "—"}
               </span>
             )}
-            <span className="mt-1 sm:mt-2 text-[11px] sm:text-sm font-medium uppercase tracking-wide text-galet">
+            <span className="mt-1 sm:mt-2 text-[11px] sm:text-sm font-medium uppercase tracking-wide text-galet-ink">
               {label}
             </span>
           </div>

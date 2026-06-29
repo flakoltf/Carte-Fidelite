@@ -10,6 +10,6 @@ export function Card({ title, children }: { title: string; children: React.React
 export function WidgetState({ loading, error, empty }: { loading?: boolean; error?: unknown; empty?: boolean }) {
   if (loading) return <div className="h-24 animate-pulse bg-[#ECE7DB] rounded-xl" />;
   if (error) return <div className="text-sm text-red-600">Erreur de chargement</div>;
-  if (empty) return <div className="text-sm text-galet">Pas encore de données</div>;
+  if (empty) return <div className="text-sm text-galet-ink">Pas encore de données</div>;
   return null;
 }

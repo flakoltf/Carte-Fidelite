@@ -101,7 +101,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <nav aria-label="Navigation principale" className="flex-1 space-y-5 overflow-y-auto">
             {navZones.map((zone) => (
                 <section key={zone.title} aria-label={zone.title} className="space-y-0.5">
-                    <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet">
+                    <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet-ink">
                         {zone.title}
                     </h6>
                     {zone.items.map((item) => {
@@ -169,7 +169,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">
                     {navZones.map((zone) => (
                         <section key={zone.title} aria-label={zone.title} className="space-y-2">
-                            <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet">
+                            <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet-ink">
                                 {zone.title}
                             </h6>
                             {zone.items.map((item) => (

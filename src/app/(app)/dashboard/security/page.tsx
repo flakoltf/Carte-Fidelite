@@ -8,7 +8,7 @@ export default async function SecurityPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: merchant } = await supabase.from("merchants").select("id").eq("user_id", user?.id).single();
-  if (!merchant) return <p className="text-galet">Aucun profil marchand associé à ce compte.</p>;
+  if (!merchant) return <p className="text-galet-ink">Aucun profil marchand associé à ce compte.</p>;
 
   const flags = await fetchMerchantFlags(merchant.id);
 

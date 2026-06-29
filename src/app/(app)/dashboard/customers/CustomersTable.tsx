@@ -76,7 +76,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                     <Link href={`/dashboard/customers/${customer.id}`} className="block truncate font-bold text-onyx">
                       {customer.full_name}
                     </Link>
-                    <div className="truncate text-xs text-galet">{customer.email || "Email non renseigné"}</div>
+                    <div className="truncate text-xs text-galet-ink">{customer.email || "Email non renseigné"}</div>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -102,13 +102,13 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                     </div>
                     <span className="whitespace-nowrap text-xs text-galet-ink">{card.stamps_count}/{stampGoal}</span>
                   </div>
-                ) : (<span className="text-xs italic text-galet">Pas de carte active</span>)}
+                ) : (<span className="text-xs italic text-galet-ink">Pas de carte active</span>)}
                 <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
               </div>
             </div>
           );
         }) : (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface px-6 py-16 text-center text-galet">
+          <div className="flex flex-col items-center gap-4 rounded-2xl border border-line-warm bg-surface px-6 py-16 text-center text-galet-ink">
             <Users className="w-12 h-12 opacity-30" />
             {customers.length === 0 ? (
               <>
@@ -130,7 +130,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-line-warm text-xs font-bold text-galet uppercase tracking-widest bg-[#F7F5EF]">
+              <tr className="border-b border-line-warm text-xs font-bold text-galet-ink uppercase tracking-widest bg-[#F7F5EF]">
                 <th className="px-8 py-5">Client</th>
                 <th className="px-8 py-5">Dernière visite</th>
                 <th className="px-8 py-5">Fidélité</th>
@@ -157,7 +157,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                           >
                             {customer.full_name}
                           </Link>
-                          <div className="text-xs text-galet">{customer.email || "Email non renseigné"}</div>
+                          <div className="text-xs text-galet-ink">{customer.email || "Email non renseigné"}</div>
                         </div>
                       </div>
                     </td>
@@ -175,7 +175,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                           </div>
                           <span className="text-sm text-galet-ink whitespace-nowrap">{card.stamps_count}/{stampGoal}</span>
                         </div>
-                      ) : (<span className="text-xs text-galet italic">Pas de carte active</span>)}
+                      ) : (<span className="text-xs text-galet-ink italic">Pas de carte active</span>)}
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-2">
@@ -195,7 +195,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
               }) : (
                 <tr>
                   <td colSpan={4} className="py-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-galet">
+                    <div className="flex flex-col items-center gap-4 text-galet-ink">
                       <Users className="w-12 h-12 opacity-30" />
                       {customers.length === 0 ? (
                         <>

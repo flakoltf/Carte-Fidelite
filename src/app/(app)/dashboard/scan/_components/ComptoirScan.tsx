@@ -218,7 +218,7 @@ export default function ComptoirScan({
           type="button"
           onClick={() => router.push("/dashboard")}
           aria-label="Retour au comptoir"
-          className="flex h-11 w-11 items-center justify-center rounded-full text-galet hover:bg-line-warm/60 hover:text-onyx"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-galet-ink hover:bg-line-warm/60 hover:text-onyx"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>

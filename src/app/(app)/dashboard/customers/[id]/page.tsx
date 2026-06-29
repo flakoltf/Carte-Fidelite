@@ -191,7 +191,7 @@ export default async function CustomerDetailPage({
                       ? `Passage scanné${e.points > 1 ? ` (+${e.points} tampons)` : ""}`
                       : "Récompense encaissée — carte remise à zéro"}
                   </span>
-                  <span className="shrink-0 text-xs text-galet">
+                  <span className="shrink-0 text-xs text-galet-ink">
                     {new Date(e.at).toLocaleString("fr-CH", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </li>
@@ -207,11 +207,11 @@ export default async function CustomerDetailPage({
             <ul className="space-y-2.5 text-sm">
               <li className="flex items-center gap-2.5 text-galet-ink">
                 <Mail className="h-4 w-4 shrink-0 text-galet" aria-hidden />
-                {(customer.email as string | null) || <span className="italic text-galet">Email non renseigné</span>}
+                {(customer.email as string | null) || <span className="italic text-galet-ink">Email non renseigné</span>}
               </li>
               <li className="flex items-center gap-2.5 text-galet-ink">
                 <Phone className="h-4 w-4 shrink-0 text-galet" aria-hidden />
-                {(customer.phone as string | null) || <span className="italic text-galet">Téléphone non renseigné</span>}
+                {(customer.phone as string | null) || <span className="italic text-galet-ink">Téléphone non renseigné</span>}
               </li>
               <li className="flex items-center gap-2.5 text-galet-ink">
                 <CalendarPlus className="h-4 w-4 shrink-0 text-galet" aria-hidden />
@@ -230,7 +230,7 @@ export default async function CustomerDetailPage({
               {cards.length > 1 ? "Cartes" : "Carte"}
             </h2>
             {cards.length === 0 ? (
-              <p className="text-sm italic text-galet">Pas de carte active.</p>
+              <p className="text-sm italic text-galet-ink">Pas de carte active.</p>
             ) : (
               <ul className="space-y-3">
                 {cards.map((c) => (
@@ -250,7 +250,7 @@ export default async function CustomerDetailPage({
                         {c.stamps_count}/{stampGoal}
                       </span>
                     </div>
-                    <p className="mt-1.5 text-[11px] text-galet">
+                    <p className="mt-1.5 text-[11px] text-galet-ink">
                       Installée le {new Date(c.created_at).toLocaleDateString("fr-CH")}
                       {c.last_scan && ` · dernier scan ${relativeTime(c.last_scan, now)}`}
                     </p>

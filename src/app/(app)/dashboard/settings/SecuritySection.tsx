@@ -67,7 +67,7 @@ export function SecuritySection() {
     } finally { setBusy(false); }
   };
 
-  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet focus:border-halo outline-none";
+  const inputCls = "w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none";
 
   return (
     <div className="bg-surface border border-line-warm rounded-3xl p-8 space-y-6 shadow-sm">
@@ -92,7 +92,7 @@ export function SecuritySection() {
           <p className="text-sm text-galet-ink">1. Scannez ce QR avec votre appli (Google / Microsoft Authenticator) :</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={enrolling.qr} alt="QR code 2FA" className="w-44 h-44 bg-white rounded-xl p-2" />
-          <p className="text-xs text-galet break-all">Ou clé manuelle : <span className="font-mono text-galet-ink">{enrolling.secret}</span></p>
+          <p className="text-xs text-galet-ink break-all">Ou clé manuelle : <span className="font-mono text-galet-ink">{enrolling.secret}</span></p>
           <p className="text-sm text-galet-ink">2. Entrez le code à 6 chiffres affiché :</p>
           <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="123456" className={inputCls} />
           {error && <p className="text-sm text-red-600">{error}</p>}

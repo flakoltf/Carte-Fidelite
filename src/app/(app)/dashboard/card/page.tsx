@@ -128,7 +128,7 @@ export default function MyCardPage() {
               fileName={`affichette-${merchant.slug}`}
             />
           </div>
-          <p className="mt-2 text-center text-[11px] text-galet">
+          <p className="mt-2 text-center text-[11px] text-galet-ink">
             Format A6, prêt à poser en caisse — encadrez-le, il fera le travail.
           </p>
         </section>
@@ -179,7 +179,7 @@ export default function MyCardPage() {
                 10 secondes. »
               </em>
             </p>
-            <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-galet">
+            <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-galet-ink">
               <Printer className="h-3.5 w-3.5" aria-hidden />
               Besoin d&apos;un chevalet imprimé ? Écrivez-nous, on vous en fournit un.
             </p>

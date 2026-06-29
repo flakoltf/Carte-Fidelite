@@ -22,13 +22,18 @@
   --color-onyx-soft: #16171A;
   --color-onyx-line: #21232a;
   --color-calcaire: #F3F0E9;
+  /* galet = gris clair RÉSERVÉ aux icônes décoratives et bordures (jamais du
+     texte : 2.4:1 sur calcaire = sous le seuil). */
   --color-galet: #9B9DA0;
   --color-halo: #0D6B5E;
   --color-halo-600: #0A574C;
   --color-halo-glow: #1FB89A;
   --color-surface: #FFFFFF;
   --color-line-warm: #E6E1D5;
-  --color-galet-ink: #6E7073;
+  /* galet-ink = TOKEN texte secondaire/atténué. Calé pour AA (≥ 4.5:1) sur TOUS
+     les fonds clairs de l'app : calcaire 5.5 · blanc 6.3 · sidebar 5.3 ·
+     sidebar-hover 5.0 (avant : #6E7073 tombait à 4.0–4.4 sur les fonds beiges). */
+  --color-galet-ink: #5E6063;
   /* Or HALO — accent « récompense / halo doré » au comptoir (famille du
      --color-warning #E8B964). Réservé aux moments de fête : tap du bouton
      Scanner, plein écran « Offrir la récompense ». Ce n'est PAS la couleur

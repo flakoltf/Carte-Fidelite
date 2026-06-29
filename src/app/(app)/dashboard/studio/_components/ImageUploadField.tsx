@@ -249,7 +249,7 @@ export default function ImageUploadField({
           {state === 'done' || currentUrl ? 'Remplacer — glisser une image ou ' : 'Glisser une image ou '}
           <span className="text-halo underline underline-offset-2">parcourir</span>
         </p>
-        <p className="text-[11px] text-galet max-w-xs">{meta.note}</p>
+        <p className="text-[11px] text-galet-ink max-w-xs">{meta.note}</p>
       </div>
       <input
         ref={fileInputRef}
