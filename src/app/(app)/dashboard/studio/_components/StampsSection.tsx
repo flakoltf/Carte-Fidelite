@@ -106,7 +106,7 @@ export default function StampsSection({
               }}
               placeholder="🎯"
               maxLength={16}
-              className="w-20 bg-calcaire border border-line-warm rounded-xl px-3 py-2 text-center text-lg focus:border-halo outline-none"
+              className="w-20 bg-calcaire border border-line-warm rounded-xl px-3 py-2 text-center text-lg focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1"
               aria-label="Emoji libre"
             />
             <span className="text-[11px] text-galet-ink">Collez n’importe quel emoji.</span>

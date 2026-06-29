@@ -72,6 +72,19 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
+/* ============ Focus visible (a11y) ============ */
+/* Indicateur de focus CLAVIER homogène pour tout élément interactif qui n'a pas
+   déjà son propre style. En @layer base + :where() → spécificité 0 : n'importe
+   quel utilitaire `focus-visible:ring-*` / `focus-visible:outline-*` d'un
+   composant le surcharge. `outline` (et non box-shadow) : jamais rognée par un
+   parent overflow-hidden/auto. Couleur halo = 3:1+ sur tous les fonds clairs. */
+@layer base {
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-halo);
+    outline-offset: 2px;
+  }
+}
+
 /* ============ HALO motion ============ */
 @keyframes halo-holo {
   0% { background-position: 0% 50%; }

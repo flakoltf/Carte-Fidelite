@@ -38,7 +38,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
           <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-3 w-4 h-4 text-galet" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} type="search" inputMode="search" placeholder="Rechercher..."
-              className="bg-surface border border-line-warm rounded-xl py-2.5 pl-10 pr-4 text-sm text-onyx focus:border-halo outline-none transition-all w-full md:w-64 min-h-11" />
+              className="bg-surface border border-line-warm rounded-xl py-2.5 pl-10 pr-4 text-sm text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all w-full md:w-64 min-h-11" />
           </div>
           <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}
             className="bg-surface border border-line-warm rounded-xl py-2.5 px-3 text-sm text-galet-ink min-h-11">

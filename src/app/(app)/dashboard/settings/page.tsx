@@ -143,7 +143,7 @@ export default function Settings() {
                             type="text"
                             value={shopName}
                             onChange={(e) => setShopName(e.target.value)}
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-all"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all"
                         />
                     </div>
                 </div>
@@ -183,7 +183,7 @@ export default function Settings() {
                                     value={logoUrl}
                                     onChange={(e) => setLogoUrl(e.target.value)}
                                     placeholder="https://..."
-                                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all"
+                                    className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all"
                                 />
                             </div>
                         </div>
@@ -205,7 +205,7 @@ export default function Settings() {
                             value={rewardLabel}
                             onChange={(e) => setRewardLabel(e.target.value)}
                             placeholder="Un café offert"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all"
                         />
                         <p className="text-xs text-galet-ink">{rewardLabel.length}/80</p>
                     </div>
@@ -223,7 +223,7 @@ export default function Settings() {
                             value={googlePlaceId}
                             onChange={(e) => setGooglePlaceId(e.target.value)}
                             placeholder="ChIJ…"
-                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none transition-all font-mono"
+                            className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all font-mono"
                         />
                         {googlePlaceId.trim() !== "" && !/^ChIJ[A-Za-z0-9_-]{10,256}$/.test(googlePlaceId.trim()) && (
                             <p className="text-xs text-amber-600">Format inattendu — un Place ID commence par « ChIJ ».</p>
@@ -270,12 +270,12 @@ export default function Settings() {
             <h2 className="font-bold text-onyx flex items-center gap-2"><Store className="w-4 h-4" /> Adresse & proximité</h2>
             <p className="text-sm text-galet-ink">Vos clients verront leur carte sur leur écran verrouillé quand ils passent près de votre boutique (≈100 m).</p>
             <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="12 rue de la Paix, Genève"
-              className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
+              className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1" />
             <div className="grid grid-cols-2 gap-3">
               <input value={lat} onChange={(e) => setLat(e.target.value)} inputMode="decimal" placeholder="Latitude (optionnel)"
-                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
+                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1" />
               <input value={lng} onChange={(e) => setLng(e.target.value)} inputMode="decimal" placeholder="Longitude (optionnel)"
-                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo" />
+                className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-sm text-onyx placeholder:text-galet-ink outline-none focus:border-halo focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1" />
             </div>
             <p className="text-xs text-galet-ink">Si l&apos;adresse n&apos;est pas trouvée, collez vos coordonnées (Google Maps → clic droit → copier).</p>
             <button type="button" onClick={saveAddress} disabled={savingAddr || address.trim().length < 5}

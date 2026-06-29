@@ -18,7 +18,7 @@ export default function BarcodeSection({
   onChange: (value: CardBarcode) => void;
 }) {
   const inputCls =
-    'w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-all';
+    'w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-all';
 
   return (
     <div className="space-y-3">

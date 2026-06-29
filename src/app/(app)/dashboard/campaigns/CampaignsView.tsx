@@ -77,7 +77,7 @@ export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
     router.refresh();
   };
 
-  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none";
+  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1";
 
   return (
     <div className="space-y-8">

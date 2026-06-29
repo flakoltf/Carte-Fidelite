@@ -68,7 +68,7 @@ function SortableRow({
   };
 
   const inputCls =
-    'flex-1 min-w-0 bg-calcaire border border-line-warm rounded-lg px-2 py-1.5 text-sm text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet-ink';
+    'flex-1 min-w-0 bg-calcaire border border-line-warm rounded-lg px-2 py-1.5 text-sm text-onyx focus:border-halo outline-none focus-visible:ring-2 focus-visible:ring-halo focus-visible:ring-offset-1 transition-colors placeholder:text-galet-ink';
 
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-surface border border-line-warm rounded-xl px-2 py-2">
