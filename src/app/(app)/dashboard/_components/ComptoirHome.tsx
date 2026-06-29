@@ -75,7 +75,7 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1", banner
           prefetch
           role="button"
           aria-label="Scanner une carte"
-          className="group flex h-24 w-3/5 min-w-[260px] items-center justify-center rounded-[28px] bg-halo text-center text-2xl font-extrabold tracking-tight text-white shadow-lg shadow-halo/25 transition duration-150 ease-[var(--ease-out)] hover:bg-halo-600 active:scale-[0.98] active:shadow-[0_0_0_8px_var(--color-gold-soft),0_18px_40px_-12px_var(--color-gold)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold"
+          className="group flex h-24 w-3/5 min-w-[min(260px,90%)] items-center justify-center rounded-[28px] bg-halo text-center text-2xl font-extrabold tracking-tight text-white shadow-lg shadow-halo/25 transition duration-150 ease-[var(--ease-out)] hover:bg-halo-600 active:scale-[0.98] active:shadow-[0_0_0_8px_var(--color-gold-soft),0_18px_40px_-12px_var(--color-gold)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold"
         >
           Scanner une carte
         </Link>

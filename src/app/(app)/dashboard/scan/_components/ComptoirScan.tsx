@@ -279,9 +279,9 @@ export default function ComptoirScan({
           {mode === "error" && (
             <div className="flex flex-col items-center gap-5 p-8 text-center">
               <span className="flex h-20 w-20 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10">
-                <AlertCircle className="h-12 w-12 text-red-600" />
+                <AlertCircle className="h-12 w-12 text-red-600" aria-hidden="true" />
               </span>
-              <p className="font-medium text-galet-ink">{message}</p>
+              <p role="alert" className="font-medium text-galet-ink">{message}</p>
               <button
                 type="button"
                 onClick={() => setMode("scanning")}
