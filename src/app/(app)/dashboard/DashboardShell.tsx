@@ -141,7 +141,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-50">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-[60]">
         <div className="flex items-center gap-2">
             <HaloSymbol size={22} className="text-halo" />
             <span className="font-display tracking-[0.12em]">HALO</span>
@@ -164,7 +164,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 animate={{ opacity: 1, x: 0 }}
                 exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
                 transition={{ duration: 0.28, ease: EASE_DRAWER }}
-                className="lg:hidden fixed inset-0 bg-calcaire z-40 p-6 pt-24 overflow-y-auto"
+                className="lg:hidden fixed inset-0 bg-calcaire z-50 p-6 pt-24 overflow-y-auto"
             >
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">
                     {navZones.map((zone) => (
