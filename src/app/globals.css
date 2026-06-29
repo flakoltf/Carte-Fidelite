@@ -163,10 +163,25 @@ body {
   animation: halo-float 7s ease-in-out infinite;
 }
 
+/* Bordure conic-gradient animée du tier recommandé (tarifs). @property permet
+   d'animer l'angle de façon fluide. Couleurs = tokens émeraude uniquement. */
+@property --halo-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes halo-rotate {
+  to { --halo-angle: 360deg; }
+}
+.halo-border-spin {
+  animation: halo-rotate 4s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .halo-holo,
   .halo-sheen,
-  .halo-float { animation: none; }
+  .halo-float,
+  .halo-border-spin { animation: none; }
   /* Reduced motion = plus doux, pas zéro : on garde le fondu, on retire le
      déplacement. */
   .halo-rise-in { animation: halo-fade-in 0.3s ease both; }
