@@ -15,8 +15,6 @@ import {
   Stamp,
   Coins,
   Crown,
-  PiggyBank,
-  CalendarCheck,
   HeartHandshake,
   QrCode,
   Menu,
@@ -56,8 +54,6 @@ const MECHANICS: { Icon: LucideIcon; title: string; desc: string; ex: string }[]
   { Icon: Stamp, title: "Tampons", desc: "X achats = 1 offert.", ex: "Café, boulangerie, coiffeur, pizzeria" },
   { Icon: Coins, title: "Points cumulés", desc: "Des points à chaque franc dépensé.", ex: "Restaurant, fleuriste, retail" },
   { Icon: Crown, title: "Paliers VIP", desc: "Bronze → Argent → Or, avantages croissants.", ex: "Boutique, concept-store" },
-  { Icon: PiggyBank, title: "Cashback", desc: "Un % de la dépense rendu en cagnotte.", ex: "Institut beauté, spa" },
-  { Icon: CalendarCheck, title: "Passages", desc: "Suivi d'assiduité et d'abonnement.", ex: "Salle de sport, studio" },
 ];
 
 const STEPS: { Icon: LucideIcon; title: string; desc: string }[] = [
@@ -404,7 +400,7 @@ export default function HomeClient() {
         <div className="mx-auto max-w-6xl">
           <Reveal className="max-w-2xl">
             <h2 className="text-balance font-display text-4xl font-light tracking-tight sm:text-5xl">
-              Cinq façons de <em className="italic text-halo">fidéliser.</em>
+              Trois façons de <em className="italic text-halo">fidéliser.</em>
             </h2>
             <p className="mt-4 text-galet-ink">Choisissez celle qui colle à votre métier. Changez quand vous voulez.</p>
           </Reveal>
