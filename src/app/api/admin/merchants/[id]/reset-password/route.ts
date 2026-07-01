@@ -3,8 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { sendEmail } from "@/lib/email/send";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // POST /api/admin/merchants/[id]/reset-password — génère un lien de
 // récupération Supabase pour le marchand (modèle concierge : le fondateur le

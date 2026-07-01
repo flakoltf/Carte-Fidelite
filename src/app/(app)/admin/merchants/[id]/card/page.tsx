@@ -6,10 +6,9 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { loadDesign } from "@/lib/cardDesign/repository";
 import { signedUrl } from "@/lib/cardDesign/storage";
 import CardEditor from "./CardEditor";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const dynamic = "force-dynamic";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function CardDesignPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

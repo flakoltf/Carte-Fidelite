@@ -10,7 +10,7 @@
 // Principe produit (cf. usage.ts) : rien ne casse au comptoir — 'pending'
 // n'interrompt aucun service, il pilote les relances et l'UI.
 
-import { BILLING_PLANS, normalizePlan, type PlanKey } from "./usage";
+import { BILLING_PLANS, NEAR_THRESHOLD, normalizePlan, type PlanKey } from "./usage";
 
 export type SubscriptionStatus = "trial" | "active" | "pending" | "suspended";
 export type BillingCycle = "monthly" | "annual";
@@ -108,7 +108,7 @@ export function evaluatePlanChange(input: {
     };
   }
 
-  if (target.cap !== null && cards >= target.cap * 0.8) {
+  if (target.cap !== null && cards >= target.cap * NEAR_THRESHOLD) {
     return {
       allowed: true,
       warning: `Avec ${cards} cartes actives, vous êtes déjà proche du plafond du palier ${target.label} (${target.cap}).`,

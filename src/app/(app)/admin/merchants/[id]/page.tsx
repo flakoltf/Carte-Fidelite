@@ -30,10 +30,9 @@ import BillingControls from "./BillingControls";
 import CustomersPanel from "./CustomersPanel";
 import NotesPanel from "../../components/NotesPanel";
 import { KpiCard, PageHeader, Pill, Section, EmptyState, formatDateCH, relativeDays } from "../../components/ui";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const dynamic = "force-dynamic";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Centre de contrôle d'un marchand : profil, usage vs palier, facturation,
 // timeline d'activité, notes CRM, clients (nLPD), suspension/réactivation.
@@ -54,7 +53,7 @@ export default async function MerchantCommandCenter({ params }: { params: Promis
     fetchNotesForMerchant(supabase, id),
     supabase
       .from("merchants")
-      .select("enrollment_token, logo_url, stamp_goal, segment_config, business_type, address, primary_color, loyalty_type, loyalty_config")
+      .select("slug, logo_url, stamp_goal, segment_config, business_type, address, primary_color, loyalty_type, loyalty_config")
       .eq("id", id)
       .maybeSingle(),
   ]);
@@ -74,6 +73,10 @@ export default async function MerchantCommandCenter({ params }: { params: Promis
   const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
   const proto = h.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
   const origin = `${proto}://${host}`;
+  // Le QR d'enrôlement pointe vers la page publique canonique /c/[slug] (jamais
+  // l'enrollment_token rotatif — invariant 5 : aucun secret au navigateur). En
+  // prod la page vit sur le domaine vitrine ; en dev/preview on reste sur l'origine.
+  const enrollBase = host.endsWith("halocard.ch") ? "https://halocard.ch" : origin;
 
   // Jauge calculée sur le plafond EFFECTIF (override admin éventuel).
   const usage = computeUsage(stats.activeCards90, detail.plan);
@@ -328,10 +331,16 @@ export default async function MerchantCommandCenter({ params }: { params: Promis
           <p className="mb-5 text-xs text-galet-ink">
             QR à afficher en boutique. Les clients le scannent pour créer leur carte.
           </p>
-          <EnrollmentQR
-            url={`${origin}/enroll/${m?.enrollment_token}`}
-            fileName={`qr-${detail.shopName.toLowerCase().replace(/\s+/g, "-") || "marchand"}`}
-          />
+          {m?.slug ? (
+            <EnrollmentQR
+              url={`${enrollBase}/c/${m.slug}`}
+              fileName={`qr-${detail.shopName.toLowerCase().replace(/\s+/g, "-") || "marchand"}`}
+            />
+          ) : (
+            <p className="text-sm text-galet-ink">
+              Slug pas encore défini — il sera généré à la complétion du profil.
+            </p>
+          )}
         </div>
       </div>
     </div>

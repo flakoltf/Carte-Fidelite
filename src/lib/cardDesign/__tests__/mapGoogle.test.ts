@@ -12,11 +12,15 @@ const base: CardDesign = {
 };
 describe('mapToGoogleClass', () => {
   it('mappe couleur, nom et modules texte', () => {
-    const c = mapToGoogleClass(base, 'https://cdn/m1/google/logo.png');
+    const c = mapToGoogleClass(base, 'https://cdn/m1/google/logo.png') as any;
     expect(c.hexBackgroundColor).toBe('#0D6B5E');
     expect(c.programName).toBe('Café Démo');
     expect(c.programLogo.sourceUri.uri).toBe('https://cdn/m1/google/logo.png');
     expect(c.textModulesData.some((t: any) => t.header === 'Palier')).toBe(true);
+  });
+  it("n'inclut PAS programLogo sans URL de logo (sinon le PATCH d'émission écrase le logo synchronisé — invariant 2)", () => {
+    const c = mapToGoogleClass(base) as any;
+    expect(c.programLogo).toBeUndefined();
   });
   it('ajoute heroImage quand une URL hero est fournie', () => {
     const c = mapToGoogleClass(base, 'https://cdn/logo.png', 'https://cdn/hero.png') as any;

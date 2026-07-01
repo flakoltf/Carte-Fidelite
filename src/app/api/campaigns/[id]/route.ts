@@ -1,10 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { currentMerchantId } from "@/lib/analytics/merchant";
 import { updateCampaign, deleteCampaign } from "@/lib/campaigns/fetch";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const runtime = "nodejs";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const merchantId = await currentMerchantId();

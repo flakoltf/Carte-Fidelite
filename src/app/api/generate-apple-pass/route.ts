@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { checkIdempotency, setIdempotency } from "@/lib/idempotency";
 import { buildApplePassBuffer } from "@/lib/applePass";
+import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 
 type CachedCard = { cardId: string; customerId: string; customerName: string; stamps: number };
 
@@ -30,8 +31,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
     }
 
-    if (typeof currentStamps !== 'number' || currentStamps < 0 || currentStamps > 10) {
-      return NextResponse.json({ error: "currentStamps doit être entre 0 et 10" }, { status: 400 });
+    if (typeof currentStamps !== 'number' || !Number.isInteger(currentStamps) || currentStamps < 0) {
+      return NextResponse.json({ error: "currentStamps invalide" }, { status: 400 });
     }
 
     if (typeof customerName !== 'string' || customerName.length < 2 || customerName.length > 100) {
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id, shop_name, primary_color, suspended_at")
+      .select("id, shop_name, primary_color, suspended_at, loyalty_type, loyalty_config, stamp_goal")
       .eq("id", merchantId)
       .maybeSingle();
 
@@ -58,6 +59,17 @@ export async function POST(req: NextRequest) {
     // Suspension administrative : pas de nouvelle émission de pass (même règle que /api/scan).
     if (merchant.suspended_at) {
       return NextResponse.json({ error: "Compte suspendu — contactez HaloCard." }, { status: 403 });
+    }
+
+    // Plafond du nombre de tampons initiaux : l'objectif RÉEL du programme (cap
+    // codé en dur "10" remplacé). Pour stamp_card on borne au goal ; les autres
+    // types (visites/points/paliers) n'ont pas de plafond fixe ici.
+    const program = resolveLoyaltyProgram(merchant);
+    if (program.type === "stamp_card" && currentStamps > program.config.goal) {
+      return NextResponse.json(
+        { error: `currentStamps doit être entre 0 et ${program.config.goal}` },
+        { status: 400 }
+      );
     }
 
     // --- SÉCURITÉ : Idempotence (évite la double création BDD en cas de retry) ---

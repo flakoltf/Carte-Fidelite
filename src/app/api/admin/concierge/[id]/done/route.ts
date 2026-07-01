@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAdminApi, getSessionRole } from "@/lib/adminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
+import { UUID_RE } from "@/lib/validation/uuid";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (guard) return guard;
 
   const { id } = await params;
+  // Valide l'id en UUID en tête : un id malformé doit répondre 400, pas 500
+  // (la requête Postgres lèverait une erreur de type sinon).
+  if (!UUID_RE.test(id)) {
+    return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 });
+  }
+
   const { data, error } = await supabaseAdmin
     .from("merchants")
     .update({ concierge_design_done_at: new Date().toISOString() })

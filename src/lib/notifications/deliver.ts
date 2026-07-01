@@ -16,8 +16,14 @@ export async function deliverToCards(
     .from("wallet_device_registrations").select("serial_number").in("serial_number", cardIds);
   const reachable = [...new Set((regs ?? []).map((r) => r.serial_number as string))];
 
+  // Les canaux Wallet ne joignent que les cartes installées (reachable) ; le canal
+  // email (direct) doit recevoir la liste COMPLÈTE — sinon il ne touche jamais les
+  // clients sans Wallet, ce qui est précisément sa raison d'être.
   let pushed = 0;
-  for (const ch of getChannels()) pushed += (await ch.notify(reachable, message)).pushed;
+  for (const ch of getChannels()) {
+    const targets = ch.kind === "direct" ? cardIds : reachable;
+    pushed += (await ch.notify(targets, message)).pushed;
+  }
 
   await supabaseAdmin
     .from("wallet_notifications")

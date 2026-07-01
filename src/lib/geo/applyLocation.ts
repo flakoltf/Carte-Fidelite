@@ -18,12 +18,23 @@ export async function applyMerchantLocation(merchantId: string, input: ApplyLoca
     if (coords) { latitude = coords.latitude; longitude = coords.longitude; }
   }
 
+  const located = latitude != null && longitude != null;
+
+  // L'adresse est toujours persistée. Les coordonnées NE sont écrites QUE si la
+  // résolution a réussi : un géocodage en échec ne doit jamais écraser des
+  // coordonnées valides déjà en base (ni les remettre à null par erreur).
+  const patch: Record<string, unknown> = { address: input.address?.trim() ?? null };
+  if (located) {
+    patch.latitude = latitude;
+    patch.longitude = longitude;
+  }
+
   await supabaseAdmin
     .from("merchants")
-    .update({ address: input.address?.trim() ?? null, latitude, longitude })
+    .update(patch)
     .eq("id", merchantId);
 
-  if (latitude != null && longitude != null) {
+  if (located) {
     try {
       const { data: cards } = await supabaseAdmin.from("loyalty_cards").select("id").eq("merchant_id", merchantId);
       const cardIds = (cards ?? []).map((c) => c.id as string);
@@ -36,5 +47,5 @@ export async function applyMerchantLocation(merchantId: string, input: ApplyLoca
     }
   }
 
-  return { located: latitude != null && longitude != null, latitude, longitude };
+  return { located, latitude, longitude };
 }

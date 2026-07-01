@@ -4,7 +4,7 @@
 // redimensionnement serveur aux formats exacts Apple / Google. Les dimensions
 // cibles sont affichées clairement pour chaque type d'image.
 
-import { useCallback, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
 import ReactCrop, {
   centerCrop,
   makeAspectCrop,
@@ -97,6 +97,18 @@ export default function ImageUploadField({
   const [dragOver, setDragOver] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Dernière object URL d'aperçu créée (URL.createObjectURL) : on la révoque au
+  // remplacement et au démontage pour ne pas fuir la mémoire du blob sous-jacent.
+  const previewUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const loadFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -147,7 +159,11 @@ export default function ImageUploadField({
         setState('error');
         return;
       }
-      onUploaded(json, URL.createObjectURL(blob));
+      // Révoque l'aperçu précédent avant d'en créer un nouveau (anti-fuite).
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      const previewUrl = URL.createObjectURL(blob);
+      previewUrlRef.current = previewUrl;
+      onUploaded(json, previewUrl);
       setState('done');
     } catch {
       setErrorMsg('Erreur de connexion.');

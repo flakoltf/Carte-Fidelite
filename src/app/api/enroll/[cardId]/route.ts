@@ -4,8 +4,8 @@ import { rateLimit } from "@/lib/rateLimit";
 import { extractRequestMeta } from "@/lib/auditLog";
 import { buildApplePassBuffer } from "@/lib/applePass";
 import { buildGoogleSaveUrl } from "@/lib/googlePass";
+import { UUID_RE } from "@/lib/validation/uuid";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 
 // Sert l'artefact Wallet d'une carte créée par l'enrôlement public.

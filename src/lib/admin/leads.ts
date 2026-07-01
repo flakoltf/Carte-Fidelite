@@ -62,35 +62,12 @@ function mapNote(n: Record<string, unknown>): AdminNote {
   };
 }
 
-export async function fetchNotesForLead(supabase: SupabaseClient, leadId: string): Promise<AdminNote[]> {
-  const { data, error } = await supabase
-    .from("admin_notes")
-    .select("id, merchant_id, lead_id, body, author_user_id, pinned, created_at")
-    .eq("lead_id", leadId)
-    .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map(mapNote);
-}
-
 export async function fetchNotesForMerchant(supabase: SupabaseClient, merchantId: string): Promise<AdminNote[]> {
   const { data, error } = await supabase
     .from("admin_notes")
     .select("id, merchant_id, lead_id, body, author_user_id, pinned, created_at")
     .eq("merchant_id", merchantId)
     .order("pinned", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map(mapNote);
-}
-
-/** Marchands « flagués pour relance » = au moins une note épinglée. */
-export async function fetchPinnedMerchantNotes(supabase: SupabaseClient): Promise<AdminNote[]> {
-  const { data, error } = await supabase
-    .from("admin_notes")
-    .select("id, merchant_id, lead_id, body, author_user_id, pinned, created_at")
-    .eq("pinned", true)
-    .not("merchant_id", "is", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(mapNote);

@@ -19,11 +19,15 @@ export function proximityText(shopName: string): string {
   return `À deux pas — votre carte ${shopName}`;
 }
 
+// User-Agent Nominatim : marque/contact à jour (HaloCard). Pilotable par env
+// si besoin, valeur canonique par défaut.
+const NOMINATIM_USER_AGENT = process.env.NOMINATIM_USER_AGENT || "HaloCard/1.0 (support@halocard.ch)";
+
 // Wrapper réseau : géocode une adresse via Nominatim. null en cas d'échec.
 export async function geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
   try {
     const res = await fetch(buildNominatimUrl(address), {
-      headers: { "User-Agent": "CarteFidelite/1.0 (support@walletcard.app)" },
+      headers: { "User-Agent": NOMINATIM_USER_AGENT },
     });
     if (!res.ok) return null;
     const json = await res.json();

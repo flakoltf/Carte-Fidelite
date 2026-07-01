@@ -23,7 +23,11 @@ export function mapToGoogleClass(design: CardDesign, logoPublicUrl?: string, her
   return {
     programName: design.programName,
     hexBackgroundColor: design.colors.background,
-    programLogo: image(logoPublicUrl ?? ''),
+    // programLogo n'est inclus QUE si une URL réelle est fournie. ensureLoyaltyClass
+    // PATCHe à chaque émission (GET-then-merge) : envoyer `image('')` ici écrasait
+    // le logo de marque déjà synchronisé par une URI vide (violation invariant 2 —
+    // un champ omis est préservé par le PATCH, un champ vide l'écrase).
+    ...(logoPublicUrl ? { programLogo: image(logoPublicUrl) } : {}),
     textModulesData,
     ...(heroPublicUrl ? { heroImage: image(heroPublicUrl) } : {}),
   };

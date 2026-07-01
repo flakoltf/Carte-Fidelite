@@ -7,8 +7,10 @@ export async function POST(req: NextRequest) {
   const merchantId = await currentMerchantId();
   if (!merchantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const body = (await req.json()) as DashboardConfig;
-  const valid = Array.isArray(body?.widgets) &&
+  const body = (await req.json().catch(() => null)) as DashboardConfig | null;
+  if (!body) return NextResponse.json({ error: "bad config" }, { status: 400 });
+  const valid = Array.isArray(body.widgets) &&
+    body.widgets.length <= 50 &&
     body.widgets.every((w) => WIDGET_KEYS.includes(w.key) && typeof w.visible === "boolean" && typeof w.order === "number");
   if (!valid) return NextResponse.json({ error: "bad config" }, { status: 400 });
 

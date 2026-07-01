@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { resolveRange } from "./range";
 import { INACTIVE_DAYS, type RangeKey } from "./types";
-import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { fetchMerchantProgram } from "@/lib/loyalty/fetchProgram";
 
 export type KpisInput = {
   totalCustomers: number; newCustomers: number; visits: number;
@@ -18,14 +18,24 @@ export async function fetchKpis(merchantId: string, range: RangeKey): Promise<Kp
   const supabase = await createClient();
   const { from } = resolveRange(range);
   const activeSince = new Date(Date.now() - INACTIVE_DAYS * 86400000).toISOString();
-  const { stampGoal } = await fetchMerchantConfig(merchantId);
+  const program = await fetchMerchantProgram(merchantId);
+
+  // « Cartes complétées » = cartes au seuil de récompense selon le type de
+  // programme (stamp_card → stamps_count/goal ; amount_points →
+  // points_balance/rewardThreshold ; visit_based/tiered → aucune carte « pleine »).
+  const completedQuery =
+    program.type === "stamp_card"
+      ? supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("stamps_count", program.config.goal)
+      : program.type === "amount_points"
+        ? supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("points_balance", program.config.rewardThreshold)
+        : null;
 
   const [total, fresh, visits, active, completed] = await Promise.all([
     supabase.from("customers").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId),
     supabase.from("customers").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("created_at", from.toISOString()),
     supabase.from("scan_history").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("scanned_at", from.toISOString()),
     supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("last_scan", activeSince),
-    supabase.from("loyalty_cards").select("*", { count: "exact", head: true }).eq("merchant_id", merchantId).gte("stamps_count", stampGoal),
+    completedQuery ?? Promise.resolve({ count: 0 }),
   ]);
 
   return computeKpis({

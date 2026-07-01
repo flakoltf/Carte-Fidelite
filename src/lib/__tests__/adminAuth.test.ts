@@ -4,12 +4,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // marchand 403, un admin passe. Complète les tests statiques de
 // surfaceGuards.test.ts (qui garantissent que chaque route appelle ce gate).
 
-const state: { user: { id: string } | null; role: string | null } = { user: null, role: null };
+type Aal = { currentLevel: string | null; nextLevel: string | null } | "throw";
+const state: { user: { id: string } | null; role: string | null; aal: Aal } = {
+  user: null,
+  role: null,
+  // Défaut : pas de MFA enrôlée (aal1/aal1) → aucun step-up requis.
+  aal: { currentLevel: "aal1", nextLevel: "aal1" },
+};
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       getUser: async () => ({ data: { user: state.user } }),
+      mfa: {
+        getAuthenticatorAssuranceLevel: async () => {
+          if (state.aal === "throw") throw new Error("auth down");
+          return { data: state.aal };
+        },
+      },
     },
     from: () => ({
       select: () => ({
@@ -34,6 +46,7 @@ import { requireAdminApi, requireAdminPage, getSessionRole } from "../adminAuth"
 beforeEach(() => {
   state.user = null;
   state.role = null;
+  state.aal = { currentLevel: "aal1", nextLevel: "aal1" };
   redirectCalls.length = 0;
 });
 
@@ -57,10 +70,34 @@ describe("requireAdminApi (gate API fail-closed)", () => {
     expect(res?.status).toBe(403);
   });
 
-  it("null (accès accordé) si admin", async () => {
+  it("null (accès accordé) si admin sans MFA enrôlée (aal1/aal1)", async () => {
     state.user = { id: "u1" };
     state.role = "admin";
     expect(await requireAdminApi()).toBeNull();
+  });
+
+  it("null si admin pleinement authentifié MFA (aal2/aal2)", async () => {
+    state.user = { id: "u1" };
+    state.role = "admin";
+    state.aal = { currentLevel: "aal2", nextLevel: "aal2" };
+    expect(await requireAdminApi()).toBeNull();
+  });
+
+  it("403 mfa_required si admin avec MFA active mais step-up non fait (aal1/aal2)", async () => {
+    state.user = { id: "u1" };
+    state.role = "admin";
+    state.aal = { currentLevel: "aal1", nextLevel: "aal2" };
+    const res = await requireAdminApi();
+    expect(res?.status).toBe(403);
+    expect((await res?.json())?.code).toBe("mfa_required");
+  });
+
+  it("403 fail-closed si le niveau MFA est invérifiable (panne Auth)", async () => {
+    state.user = { id: "u1" };
+    state.role = "admin";
+    state.aal = "throw";
+    const res = await requireAdminApi();
+    expect(res?.status).toBe(403);
   });
 });
 

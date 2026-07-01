@@ -4,8 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { validateCustomerUpdate } from "@/lib/customers/validate";
 import { currentMerchantContext } from "@/lib/auth/currentMerchant";
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { UUID_RE } from "@/lib/validation/uuid";
 
 // Données personnelles d'un client final (suppression RGPD, modification PII) :
 // un admin en mode concierge ne doit PAS agir au nom du marchand sur ces
@@ -79,19 +78,6 @@ export async function DELETE(
       .eq("customer_id", id);
     const cardIds = cards?.map((c) => c.id as string) ?? [];
 
-    const meta = extractRequestMeta(req);
-    await logAuditEvent({
-      action: "CUSTOMER_DELETED",
-      merchant_id: merchantId,
-      user_id: userId,
-      details: {
-        customer_id: id,
-        card_ids: cardIds,
-        reason: "RGPD_ERASURE",
-      },
-      ...meta,
-    });
-
     // RGPD : purge des tables rattachées NON couvertes par le CASCADE DB
     // (wallet_device_registrations et campaign_sends n'ont pas de FK vers loyalty_cards).
     if (cardIds.length) {
@@ -106,6 +92,21 @@ export async function DELETE(
       .eq("id", id);
 
     if (delError) throw delError;
+
+    // Audit APRÈS le DELETE réussi : on ne trace jamais une suppression qui
+    // échouerait ensuite (l'audit doit refléter un fait accompli).
+    const meta = extractRequestMeta(req);
+    await logAuditEvent({
+      action: "CUSTOMER_DELETED",
+      merchant_id: merchantId,
+      user_id: userId,
+      details: {
+        customer_id: id,
+        card_ids: cardIds,
+        reason: "RGPD_ERASURE",
+      },
+      ...meta,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

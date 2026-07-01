@@ -13,7 +13,6 @@
 // `cardType: "points"` ; pas d'icône de tampon.
 
 import type {
-  LoyaltyType,
   LoyaltyProgram,
   StampCardConfig,
   VisitBasedConfig,
@@ -218,10 +217,3 @@ export function toLoyaltyProgram(template: LoyaltyTemplate): LoyaltyProgram {
   // Le couple (loyaltyType, config) est une union discriminée cohérente.
   return { type: template.loyaltyType, config: template.config } as LoyaltyProgram;
 }
-
-export const TEMPLATE_LOYALTY_TYPES: readonly LoyaltyType[] = [
-  "stamp_card",
-  "visit_based",
-  "tiered",
-  "amount_points",
-];
