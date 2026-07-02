@@ -20,3 +20,7 @@ export function contrastRatio(a: string, b: string): number {
   const [hi, lo] = la > lb ? [la, lb] : [lb, la];
   return (hi + 0.05) / (lo + 0.05);
 }
+// Couleur de texte lisible sur un fond arbitraire (seuil AA 4.5:1).
+export function readableTextOn(bg: string): '#000000' | '#FFFFFF' {
+  return contrastRatio(bg, '#000000') >= 4.5 ? '#000000' : '#FFFFFF';
+}

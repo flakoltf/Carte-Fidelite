@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, User, Mail, Store, Download, Smartphone, AlertCircle, Check } from "lucide-react";
+import { readableTextOn } from "@/lib/cardDesign/color";
 
 // Tant que le publishing access Google Wallet n'est pas approuvé, le bouton
 // mènerait à un échec opaque au comptoir. Le jour de l'approbation : passer
@@ -19,6 +20,9 @@ interface Props {
 }
 
 export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: Props) {
+  // Les designs publiés ont souvent des fonds sombres : le texte du CTA et
+  // l'icône de repli doivent rester lisibles quel que soit primaryColor.
+  const textOnPrimary = readableTextOn(primaryColor);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -70,7 +74,7 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
               style={{ backgroundColor: primaryColor }}
             >
-              <Store className="w-8 h-8 text-black" />
+              <Store className="w-8 h-8" style={{ color: textOnPrimary }} />
             </div>
           )}
           <h1 className="font-display text-2xl font-bold text-onyx">{shopName}</h1>
@@ -152,8 +156,8 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
               <button
                 type="submit"
                 disabled={loading}
-                style={{ backgroundColor: primaryColor }}
-                className="w-full text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: primaryColor, color: textOnPrimary }}
+                className="w-full font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
