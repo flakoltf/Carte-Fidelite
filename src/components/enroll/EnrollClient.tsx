@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, User, Mail, Store, Download, Smartphone, AlertCircle, Check } from "lucide-react";
 import { readableTextOn } from "@/lib/cardDesign/color";
@@ -29,6 +29,18 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cardId, setCardId] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+
+  // Détection de la plateforme APRÈS hydratation (jamais au rendu serveur, qui ne
+  // connaît pas l'appareil) : sur Android, un .pkpass est une impasse — on propose
+  // la carte web de repli ; sur iOS, Google Wallet n'a pas sa place.
+  const [platform, setPlatform] = useState<"android" | "ios" | "desktop">("desktop");
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    if (/android/i.test(ua)) setPlatform("android");
+    else if (/iphone|ipad|ipod/i.test(ua)) setPlatform("ios");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +67,36 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
 
   const appleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=apple` : "#";
   const googleUrl = cardId ? `/api/enroll/${cardId}?s=${encodeURIComponent(slug)}&wallet=google` : "#";
+  // Carte web de repli (Android sans Google Wallet) : même QR que le pass.
+  const webCardUrl = cardId ? `/c/${encodeURIComponent(slug)}/carte/${cardId}` : "#";
+
+  // Un simple <a href> naviguerait vers du JSON brut en cas d'échec (429/500) :
+  // on télécharge via fetch → blob et on affiche l'erreur dans la page.
+  const handleAppleDownload = async () => {
+    if (!cardId || downloading) return;
+    setDownloading(true);
+    setWalletError("");
+    try {
+      const res = await fetch(appleUrl);
+      if (!res.ok) {
+        setWalletError("Réessayez dans un instant.");
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "carte-fidelite.pkpass";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } catch {
+      setWalletError("Réessayez dans un instant.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-calcaire text-onyx flex items-center justify-center p-4">
@@ -182,15 +224,41 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
                 Carte créée. Ajoutez-la à votre téléphone :
               </div>
 
-              <a
-                href={appleUrl}
-                className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
-              >
-                <Download className="w-5 h-5" />
-                Ajouter à Apple Wallet
-              </a>
+              {platform === "android" ? (
+                <a
+                  href={webCardUrl}
+                  className="flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  Afficher ma carte
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleAppleDownload}
+                  disabled={downloading}
+                  className="w-full flex items-center justify-center gap-2 bg-surface border border-line-warm text-galet-ink py-4 rounded-2xl font-bold hover:bg-calcaire transition-all disabled:opacity-50"
+                >
+                  {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                  Ajouter à Apple Wallet
+                </button>
+              )}
 
-              {GOOGLE_WALLET_READY ? (
+              <AnimatePresence>
+                {walletError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-600 rounded-2xl px-4 py-3 text-sm"
+                  >
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {walletError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {platform === "ios" ? null : GOOGLE_WALLET_READY ? (
                 <a
                   href={googleUrl}
                   target="_blank"
