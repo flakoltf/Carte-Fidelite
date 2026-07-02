@@ -17,9 +17,10 @@ interface Props {
   shopName: string;
   primaryColor: string;
   logoUrl: string | null;
+  rewardLabel: string | null;
 }
 
-export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: Props) {
+export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, rewardLabel }: Props) {
   // Les designs publiés ont souvent des fonds sombres : le texte du CTA et
   // l'icône de repli doivent rester lisibles quel que soit primaryColor.
   const textOnPrimary = readableTextOn(primaryColor);
@@ -120,8 +121,11 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
             </div>
           )}
           <h1 className="font-display text-2xl font-bold text-onyx">{shopName}</h1>
+          {/* Le bénéfice AVANT l'effort : ce que le client y gagne, pas le formulaire. */}
           <p className="text-galet-ink text-sm mt-1">
-            {cardId ? "Votre carte est prête 🎉" : "Créez votre carte de fidélité"}
+            {cardId
+              ? "Votre carte est prête 🎉"
+              : `${rewardLabel?.trim() || "Vos passages récompensés"} — votre carte, direct dans votre téléphone.`}
           </p>
         </div>
 
@@ -143,6 +147,7 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
                     <input
                       required
                       type="text"
+                      autoComplete="given-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       maxLength={60}
@@ -154,12 +159,12 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-galet-ink ml-1">Nom</label>
                   <input
-                    required
                     type="text"
+                    autoComplete="family-name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     maxLength={60}
-                    placeholder="Dupont"
+                    placeholder="Nom (facultatif)"
                     className="w-full bg-surface border border-line-warm rounded-2xl py-3.5 px-4 focus:border-halo outline-none transition-all placeholder:text-galet"
                   />
                 </div>
@@ -172,6 +177,7 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
                   <input
                     required
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     maxLength={254}
@@ -209,7 +215,11 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl }: 
               </button>
 
               <p className="text-center text-xs text-galet">
-                En continuant, vous acceptez de recevoir votre carte de fidélité numérique.
+                Vos coordonnées sont utilisées par {shopName} pour gérer votre carte de
+                fidélité. HALO les traite pour son compte.{" "}
+                <a href="/confidentialite" className="underline hover:text-galet-ink transition-colors">
+                  Confidentialité
+                </a>
               </p>
             </motion.form>
           ) : (

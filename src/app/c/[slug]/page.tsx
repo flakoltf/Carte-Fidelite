@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 async function getMerchant(slug: string) {
   const { data } = await supabaseAdmin
     .from("merchants")
-    .select("shop_name, primary_color, logo_url, suspended_at")
+    .select("shop_name, primary_color, logo_url, suspended_at, reward_label")
     .eq("slug", slug)
     .maybeSingle();
   // Suspension administrative : la page publique disparaît (404 indistinct du
@@ -51,6 +51,7 @@ export default async function MerchantEnrollPage({
       shopName={merchant.shop_name}
       primaryColor={merchant.primary_color || "#10b981"}
       logoUrl={merchant.logo_url}
+      rewardLabel={merchant.reward_label}
     />
   );
 }
