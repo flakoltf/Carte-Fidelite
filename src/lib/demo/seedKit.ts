@@ -108,8 +108,11 @@ export function kitDesignFields(entry: DemoKitEntry): CardField[] {
         : { id: "primary", zone: "primary", label: primaryLabel(entry), value: "{points}", order: 2 };
 
   const fields: CardField[] = [
+    // UN SEUL champ header (comme la carte showcase du site) : sur un pass Apple,
+    // la ligne du haut est PARTAGÉE entre le logo, le nom du programme (logoText)
+    // et les headerFields — un 2e champ (« DEPUIS ») faisait s'entrechoquer les
+    // textes sur iPhone. L'info vit déjà en auxiliary (« MEMBRE DEPUIS »).
     { id: "h_statut", zone: "header", label: "STATUT", value: d.statut, order: 0 },
-    { id: "h_since", zone: "header", label: "DEPUIS", value: d.since, order: 1 },
     primary,
     { id: "s_prog", zone: "secondary", label: "PROGRESSION", value: d.progression, order: 3 },
     { id: "s_next", zone: "secondary", label: "PROCHAIN PALIER", value: d.nextStep, order: 4 },

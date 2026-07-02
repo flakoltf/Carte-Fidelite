@@ -57,7 +57,10 @@ describe("buildKitDesign — design showcase v4 (champs riches, bannière maîtr
     for (const entry of DEMO_KIT) {
       const d = buildKitDesign(entry, "m");
       const byZone = (z: string) => d.fields.filter((f) => f.zone === z).length;
-      expect(byZone("header"), entry.shopName).toBeLessThanOrEqual(3);
+      // 1 champ header MAX : la ligne du haut du pass Apple est partagée entre
+      // logo, logoText (programName) et headerFields — à 2 champs les textes
+      // s'entrechoquaient sur iPhone (bug constaté sur device, 2026-07-02).
+      expect(byZone("header"), entry.shopName).toBeLessThanOrEqual(1);
       expect(byZone("primary"), entry.shopName).toBe(1);
       // 3 secondary design (+ récompense ajoutée par applyIdentity = 4 ≤ limite).
       expect(byZone("secondary"), entry.shopName).toBe(3);
