@@ -35,7 +35,11 @@ export function SendForm() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error();
-      setResult(`Envoyé à ${json.pushed} appareil(s) (${json.reachable} client(s) joignable(s)).`);
+      setResult(
+        json.pushed === 0
+          ? "Aucun client ne peut encore recevoir de message : dès qu'ils ajoutent leur carte, ils le recevront."
+          : `Message envoyé à ${json.pushed} clients. (${json.reachable} ont la carte dans leur téléphone.)`
+      );
       setTitle(""); setBody("");
     } catch {
       setResult("Échec de l'envoi. Réessayez.");

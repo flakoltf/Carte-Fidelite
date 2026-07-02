@@ -292,7 +292,7 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, re
               )}
 
               <p className="text-center text-xs text-galet pt-2">
-                Présentez votre carte en caisse pour cumuler vos tampons.
+                Présentez votre carte en caisse à chaque passage.
               </p>
             </motion.div>
           )}

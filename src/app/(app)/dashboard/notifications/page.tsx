@@ -29,7 +29,7 @@ export default async function NotificationsPage() {
             <div key={n.id} className="bg-surface border border-line-warm shadow-sm rounded-3xl p-4">
               <div className="font-bold text-onyx">{n.title}</div>
               <div className="text-sm text-galet-ink">{n.body}</div>
-              <div className="text-xs text-galet-ink mt-1">{new Date(n.created_at).toLocaleString()} · {n.sent_count} envoyé(s) · {isAudienceKey(n.audience) ? audienceLabel(n.audience) : "Tous mes clients"}</div>
+              <div className="text-xs text-galet-ink mt-1">{new Date(n.created_at).toLocaleString("fr-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" })} · {n.sent_count} envoyé(s) · {isAudienceKey(n.audience) ? audienceLabel(n.audience) : "Tous mes clients"}</div>
             </div>
           )) : <p className="text-galet-ink text-sm">Rien d&apos;envoyé pour l&apos;instant. Un message bien placé (« Double tampon ce jeudi ! ») fait revenir vos clients — il s&apos;affiche directement sur leur téléphone.</p>}
         </div>

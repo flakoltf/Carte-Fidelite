@@ -4,6 +4,7 @@ import { ArrowLeft, Check, AlertCircle } from "lucide-react";
 import { HaloWordmark } from "@/components/halo/HaloMark";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { company } from "@/content/legal/company";
+import TryItQR from "@/components/site/TryItQR";
 import { submitLead } from "./actions";
 
 export const metadata: Metadata = {
@@ -169,6 +170,10 @@ export default async function Page({
                 </a>
               </p>
             </form>
+
+            <div className="mt-12 border-t border-line-warm pt-10">
+              <TryItQR />
+            </div>
           </>
         )}
       </main>

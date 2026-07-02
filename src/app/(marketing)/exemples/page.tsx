@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { HaloWordmark } from "@/components/halo/HaloMark";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
+import TryItQR from "@/components/site/TryItQR";
 
 export const metadata: Metadata = {
   title: "Exemples de cartes de fidélité — HALO",
@@ -60,6 +61,9 @@ export default function Page() {
             Créer ma carte
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
           </Link>
+          <div className="mt-10 border-t border-line-warm pt-10">
+            <TryItQR />
+          </div>
         </div>
       </main>
 
