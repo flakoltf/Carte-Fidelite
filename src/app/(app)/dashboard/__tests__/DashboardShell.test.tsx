@@ -68,12 +68,12 @@ describe("<DashboardShell>", () => {
     }
   });
 
-  it("met le Scanner en avant (gras) dans la zone Comptoir, vers /scan", () => {
+  it("met le Scanner en avant (gras) dans la zone Comptoir, vers /dashboard/scan", () => {
     render(<DashboardShell><div /></DashboardShell>);
     const scanLinks = screen.getAllByRole("link", { name: /^scanner$/i });
     expect(scanLinks.length).toBeGreaterThanOrEqual(1);
     const desktop = scanLinks[0];
-    expect(desktop.getAttribute("href")).toBe("/scan");
+    expect(desktop.getAttribute("href")).toBe("/dashboard/scan");
     // « mis en avant » = libellé en gras.
     expect(within(desktop).getByText("Scanner").className).toContain("font-bold");
   });

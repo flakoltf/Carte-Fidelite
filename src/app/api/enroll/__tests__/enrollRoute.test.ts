@@ -162,10 +162,16 @@ describe("POST /api/enroll — validation", () => {
     expect(calls.merchantSlugFilter).toHaveLength(0);
   });
 
-  it("prénom/nom manquant → 400", async () => {
-    const res = await POST(enrollReq({ ...VALID, lastName: "" }));
+  it("prénom manquant → 400", async () => {
+    const res = await POST(enrollReq({ ...VALID, firstName: "" }));
     expect(res.status).toBe(400);
     expect(calls.merchantSlugFilter).toHaveLength(0);
+  });
+
+  it("nom absent → 200, full_name = prénom seul", async () => {
+    const res = await POST(enrollReq({ ...VALID, lastName: "" }));
+    expect(res.status).toBe(200);
+    expect(calls.customerInserts[0].full_name).toBe("Nadia");
   });
 
   it("email invalide → 400", async () => {

@@ -99,7 +99,7 @@ export function computeStartupChecklist(input: ChecklistInput): {
       done: input.scansCount > 0,
       title: "Donnez votre premier tampon",
       hint: "Ouvrez le scanner et scannez une carte — 2 secondes, en caisse.",
-      href: "/scan",
+      href: "/dashboard/scan",
       cta: "Ouvrir le scanner",
     },
     {

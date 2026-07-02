@@ -39,8 +39,10 @@ export async function POST(req: Request) {
     if (!SLUG_RE.test(slug)) {
       return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 400 });
     }
-    if (!firstName || !lastName) {
-      return NextResponse.json({ error: "Prénom et nom requis (1 à 60 caractères)" }, { status: 400 });
+    // Le nom est facultatif (moins de friction au comptoir) : seul le prénom
+    // est exigé ; sans nom, full_name = prénom seul.
+    if (!firstName) {
+      return NextResponse.json({ error: "Prénom requis (1 à 60 caractères)" }, { status: 400 });
     }
     if (!EMAIL_RE.test(email) || email.length > 254) {
       return NextResponse.json({ error: "Email invalide" }, { status: 400 });
@@ -70,7 +72,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 404 });
     }
 
-    const fullName = `${firstName} ${lastName}`;
+    const fullName = lastName ? `${firstName} ${lastName}` : firstName;
 
     // find-or-create client (unicité (merchant_id, email))
     let customerId: string;

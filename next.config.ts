@@ -85,6 +85,15 @@ const nextConfig: NextConfig = {
       "./assets/demo-kit/*/google-*.png",
     ],
   },
+  // L'ancien scanner /scan est supprimé (il cassait les programmes points/CHF) :
+  // les favoris et QR imprimés doivent atterrir sur le scanner du dashboard.
+  redirects: async () => [
+    {
+      source: "/scan",
+      destination: "/dashboard/scan",
+      permanent: true,
+    },
+  ],
   headers: async () => [
     {
       source: "/(.*)",

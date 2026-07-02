@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { HaloSymbol } from "@/components/halo/HaloMark";
@@ -63,7 +62,7 @@ export default function Login() {
               <div className="relative group">
                 <Mail className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
                 <input
-                  required type="email" value={email}
+                  required type="email" autoComplete="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nom@entreprise.com"
                   className="w-full bg-calcaire border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:ring-2 focus:ring-halo/25 focus:border-halo outline-none transition-all placeholder:text-galet"
@@ -72,14 +71,22 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between items-baseline px-1">
+              <div className="flex justify-between items-baseline gap-3 px-1">
                 <label className="text-sm font-medium text-galet-ink">Mot de passe</label>
-                <Link href="#" className="text-xs text-galet hover:text-onyx transition-colors">Oublié ?</Link>
+                {/* Réinitialisation en libre-service dans un lot séparé — en
+                    attendant, un marchand bloqué a une porte de sortie réelle. */}
+                <a
+                  href="mailto:contact@halocard.ch?subject=Mot%20de%20passe%20oubli%C3%A9"
+                  className="text-xs text-galet hover:text-onyx transition-colors text-right"
+                >
+                  Oublié ? <span className="underline">Écrivez-nous</span>, on vous le renvoie dans la
+                  journée.
+                </a>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 top-3.5 w-5 h-5 text-galet group-focus-within:text-halo transition-colors" />
                 <input
-                  required type="password" value={password}
+                  required type="password" autoComplete="current-password" value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-calcaire border border-line-warm rounded-2xl py-3.5 pl-12 pr-4 text-onyx focus:ring-2 focus:ring-halo/25 focus:border-halo outline-none transition-all placeholder:text-galet"

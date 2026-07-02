@@ -62,7 +62,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     {
       title: "Comptoir",
       items: [
-        { name: "Scanner", icon: Scan, href: "/scan", featured: true },
+        { name: "Scanner", icon: Scan, href: "/dashboard/scan", featured: true },
         { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/dashboard" },
       ],
     },

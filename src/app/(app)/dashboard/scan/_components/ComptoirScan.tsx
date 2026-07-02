@@ -58,7 +58,11 @@ export default function ComptoirScan({
       }
       if (amountChf === undefined) {
         const name = data.card?.customers?.full_name as string | undefined;
-        setMessage(name ? `Tampon ajouté · ${name}` : "Tampon ajouté.");
+        // Le mot juste par mécanique : « tampon » n'existe que pour la carte à tampons.
+        const label =
+          programType === "visit_based" ? "Visite enregistrée" :
+          programType === "tiered" ? "Passage compté" : "Tampon ajouté";
+        setMessage(name ? `${label} · ${name}` : `${label}.`);
       } else {
         // amount_points : la réponse porte pointsEarned/currentValue (pas de carte).
         const pts = typeof data.pointsEarned === "number" ? data.pointsEarned : 0;
@@ -70,7 +74,7 @@ export default function ComptoirScan({
       setMode("error");
       setMessage("Erreur réseau. Réessayez.");
     }
-  }, []);
+  }, [programType]);
 
   // Carte décodée : amount_points → on passe par <AmountPad> avant de créditer ;
   // les autres types créditent directement (flux inchangé).
