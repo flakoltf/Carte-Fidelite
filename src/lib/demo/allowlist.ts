@@ -1,7 +1,7 @@
 // Allowlist STRICTE du kit de démonstration multi-marchand.
 //
 // La garde mono-compte (constants.ts / identity.ts → `assertDemoMerchant`)
-// protège l'unique « Boulangerie Démo ». Le kit de prospection pilote SIX
+// protège l'unique « Boulangerie Démo ». Le kit de prospection pilote SEPT
 // marchands démo : on étend donc la garde à une allowlist d'identités réservées
 // (slug + email @example.com), vérifiées présentes en prod (role=merchant,
 // managed_by_concierge). Toute ligne marchand HORS de cette liste → DemoGuardError,
@@ -11,7 +11,7 @@ import { DemoGuardError, type DemoMerchantRow } from "./identity";
 
 export type DemoIdentity = { slug: string; email: string };
 
-// Les 6 comptes démo réservés. Slugs = ceux réellement matérialisés en base
+// Les 7 comptes démo réservés. Slugs = ceux réellement matérialisés en base
 // (auto-générés depuis le nom : « salon-lumi-re », « boulangerie-des-p-quis »…).
 // L'email reste @example.com (jamais adressable) — double défense.
 export const DEMO_KIT_ALLOWLIST: readonly DemoIdentity[] = [
@@ -20,6 +20,7 @@ export const DEMO_KIT_ALLOWLIST: readonly DemoIdentity[] = [
   { slug: "pizzeria-molino", email: "demo-pizzeria@example.com" }, // Pizzeria Molino
   { slug: "salon-lumi-re", email: "demo-salon@example.com" }, // Salon Lumière
   { slug: "institut-belle-rive", email: "demo-institut@example.com" }, // Institut Belle Rive
+  { slug: "barbier-du-molard", email: "demo-barbier@example.com" }, // Barbier du Molard
   { slug: "boulangerie-demo", email: "boulangerie-demo@example.com" }, // Boulangerie Démo (compte garde existant)
 ] as const;
 

@@ -1,6 +1,6 @@
 // KIT DE DÉMONSTRATION — source de vérité de la flotte de prospection.
 //
-// Décrit, de façon PURE et testable, les 6 marchands démo que le fondateur
+// Décrit, de façon PURE et testable, les 7 marchands démo que le fondateur
 // « dégaine » sur le terrain à Genève. Un marchand par TYPE de mécanique (les 4
 // du moteur : stamp_card | visit_based | tiered | amount_points), pleinement
 // configuré : identité (adresse + horaires Genève crédibles), programme de
@@ -138,6 +138,17 @@ const HOURS_SALON: BusinessHours = {
   wed: { open: "09:00", close: "18:30" },
   thu: { open: "09:00", close: "20:00" },
   fri: { open: "09:00", close: "20:00" },
+  sat: { open: "09:00", close: "17:00" },
+  sun: null,
+};
+
+// Barbier : même rythme que le salon (fermé dim + lun) mais journées uniformes.
+const HOURS_BARBER: BusinessHours = {
+  mon: null,
+  tue: { open: "09:00", close: "19:00" },
+  wed: { open: "09:00", close: "19:00" },
+  thu: { open: "09:00", close: "19:00" },
+  fri: { open: "09:00", close: "19:00" },
   sat: { open: "09:00", close: "17:00" },
   sun: null,
 };
@@ -322,7 +333,39 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     },
   },
 
-  // ── 6. Boulangerie Démo — STAMP_CARD (compte garde existant) ────────────────
+  // ── 6. Barbier du Molard — STAMP_CARD rythme court (8, bienvenue) ───────────
+  {
+    slug: "barbier-du-molard",
+    email: "demo-barbier@example.com",
+    shopName: "Barbier du Molard",
+    motif: "hairlock",
+    artText: { wordmark: ["Barbier", "du Molard"] },
+    address: "Place du Molard 3, 1204 Genève",
+    latitude: 46.2044,
+    longitude: 6.147,
+    phone: "+41 22 310 45 67",
+    businessHours: HOURS_BARBER,
+    rewardLabel: "Une coupe offerte",
+    demo: {
+      progression: "Plus que 3 passages", nextStep: "3 passages", thisMonth: "2 passages",
+      memberSince: "Juin 2025", totalVisits: "18", lastVisit: "il y a 5 j", referrals: "1",
+      memberId: "BM-6120-4483",
+      howItWorks: "Un tampon à chaque passage. La 8ᵉ coupe vous est offerte.",
+      conditions: "Coupe classique offerte à la 8ᵉ visite. Non cumulable, non échangeable en espèces.",
+    },
+    demonstrates: "Carte à tampons rythme court : 8 passages, tampon de bienvenue — le parcours le plus simple à pitcher.",
+    loyaltyType: "stamp_card",
+    loyaltyConfig: { goal: 8, welcome_stamps: 1 },
+    design: {
+      colors: { background: "#1C2430", foreground: "#F5EFE4", label: "#C8B98F" },
+      accent: "#C9A86A",
+      programName: "coupe & barbe",
+      cardType: "points",
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Barbier du Molard" },
+    },
+  },
+
+  // ── 7. Boulangerie Démo — STAMP_CARD (compte garde existant) ────────────────
   {
     slug: "boulangerie-demo",
     email: "boulangerie-demo@example.com",
