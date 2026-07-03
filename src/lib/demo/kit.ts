@@ -42,7 +42,6 @@ export type DemoArtText = {
 // la carte de référence du site. Les champs vivants ({points}/{palier}) sont
 // gérés par le moteur ; ici uniquement des valeurs démo statiques.
 export type DemoFieldData = {
-  statut: string;        // header « STATUT » (Or / Argent / Membre…) — SEUL champ header : la ligne du haut du pass est partagée avec logo + logoText
   primaryValue?: string; // valeur primary STATIQUE (amount_points : seuil > 50, jeton inadapté)
   progression: string;   // secondary « PROGRESSION »
   nextStep: string;      // secondary « PROCHAIN PALIER »
@@ -164,7 +163,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     rewardLabel: "Un café offert",
     bannerPhoto: "pass-assets/banners/cafe.jpg",
     demo: {
-      statut: "Or",
       progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "14 cafés",
       memberSince: "Mars 2024", totalVisits: "87", lastVisit: "il y a 2 j", referrals: "3",
       memberId: "CR-4827-6391",
@@ -197,7 +195,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_BAKERY,
     rewardLabel: "Une viennoiserie offerte",
     demo: {
-      statut: "Argent",
       progression: "Plus que 2 achats", nextStep: "2 achats", thisMonth: "9 visites",
       memberSince: "Janv. 2025", totalVisits: "46", lastVisit: "hier", referrals: "1",
       memberId: "BP-3310-274",
@@ -231,7 +228,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     rewardLabel: "CHF 20 offerts",
     bannerPhoto: "pass-assets/banners/pizza.jpg",
     demo: {
-      statut: "Argent",
       primaryValue: "320 pts",
       progression: "Plus que 80 pts", nextStep: "200 pts", thisMonth: "240 pts",
       memberSince: "Sept. 2024", totalVisits: "23", lastVisit: "il y a 4 j", referrals: "2",
@@ -270,7 +266,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_SALON,
     rewardLabel: "Un soin offert",
     demo: {
-      statut: "Membre",
       progression: "Plus que 2 visites", nextStep: "5 visites", thisMonth: "2 visites",
       memberSince: "Févr. 2025", totalVisits: "12", lastVisit: "il y a 9 j", referrals: "0",
       memberId: "SL-7741-08",
@@ -303,7 +298,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_SALON,
     rewardLabel: "Avantages niveau Or",
     demo: {
-      statut: "Argent",
       progression: "Plus que 4 soins", nextStep: "Niveau Or", thisMonth: "1 soin",
       memberSince: "Avril 2024", totalVisits: "6", lastVisit: "il y a 21 j", referrals: "1",
       memberId: "BR-9920-44",
@@ -342,7 +336,6 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_DAILY,
     rewardLabel: "Un café offert",
     demo: {
-      statut: "Membre",
       progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "6 cafés",
       memberSince: "Mai 2025", totalVisits: "10", lastVisit: "hier", referrals: "0",
       memberId: "BD-1002-55",
