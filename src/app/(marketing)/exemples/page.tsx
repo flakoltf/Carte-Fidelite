@@ -5,6 +5,7 @@ import { HaloWordmark } from "@/components/halo/HaloMark";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { LoyaltyCard, SAMPLE_CARDS } from "@/components/landing/LoyaltyCard";
 import TryItQR from "@/components/site/TryItQR";
+import DemoWalletShowcase from "./DemoWalletShowcase";
 
 export const metadata: Metadata = {
   title: "Exemples de cartes de fidélité — HALO",
@@ -48,6 +49,25 @@ export default function Page() {
             <LoyaltyCard key={c.name} card={c} />
           ))}
         </div>
+
+        {/* Dans le vrai Wallet : les aperçus admin, pas des illustrations. */}
+        <section className="mt-20 border-t border-line-warm pt-16" aria-labelledby="wallet-demo-title">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2
+              id="wallet-demo-title"
+              className="text-balance font-display text-3xl font-light tracking-tight sm:text-4xl"
+            >
+              Quatre commerces, <em className="italic text-halo">dans le vrai Wallet.</em>
+            </h2>
+            <p className="mt-4 text-galet-ink">
+              Ces aperçus sont générés par le même moteur que les cartes publiées — choisissez
+              un commerce, comparez le rendu Apple et Google.
+            </p>
+          </div>
+          <div className="mt-10">
+            <DemoWalletShowcase />
+          </div>
+        </section>
 
         {/* CTA de bas de page */}
         <div className="mt-16 rounded-3xl border border-line-warm bg-surface px-6 py-12 text-center shadow-sm sm:px-12">
