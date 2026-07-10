@@ -203,6 +203,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 731 44 55",
     businessHours: HOURS_BAKERY,
     rewardLabel: "Une viennoiserie offerte",
+    bannerPhoto: "pass-assets/banners/boulangerie.jpg",
     demo: {
       progression: "Plus que 2 achats", nextStep: "2 achats",
       memberSince: "Janv. 2025", totalVisits: "46", referrals: "1",
@@ -274,6 +275,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 736 12 00",
     businessHours: HOURS_SALON,
     rewardLabel: "Un soin offert",
+    bannerPhoto: "pass-assets/banners/salon.jpg",
     demo: {
       progression: "Plus que 2 visites", nextStep: "5 visites",
       memberSince: "Févr. 2025", totalVisits: "12", referrals: "0",
@@ -306,6 +308,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 740 55 66",
     businessHours: HOURS_SALON,
     rewardLabel: "Avantages niveau Or",
+    bannerPhoto: "pass-assets/banners/spa.jpg",
     demo: {
       progression: "Plus que 4 soins", nextStep: "Niveau Or",
       memberSince: "Avril 2024", totalVisits: "6", referrals: "1",
@@ -344,6 +347,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 310 45 67",
     businessHours: HOURS_BARBER,
     rewardLabel: "Une coupe offerte",
+    bannerPhoto: "pass-assets/banners/barbier.jpg",
     demo: {
       progression: "Plus que 3 passages", nextStep: "3 passages",
       memberSince: "Juin 2025", totalVisits: "18", referrals: "1",
@@ -376,6 +380,7 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     phone: "+41 22 311 00 00",
     businessHours: HOURS_DAILY,
     rewardLabel: "Un café offert",
+    bannerPhoto: "pass-assets/banners/boulangerie-2.jpg",
     demo: {
       progression: "Plus que 3 cafés", nextStep: "3 cafés",
       memberSince: "Mai 2025", totalVisits: "10", referrals: "0",
