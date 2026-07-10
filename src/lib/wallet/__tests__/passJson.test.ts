@@ -217,6 +217,34 @@ describe("buildPassJson — design sans {points} (filet de sécurité)", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Message commerçant : le backField « message » (avec changeMessage) doit
+// survivre au chemin design — c'est lui qui déclenche la bannière iOS.
+// ---------------------------------------------------------------------------
+describe("buildPassJson — message commerçant avec design", () => {
+  it("conserve le backField message (valeur + changeMessage) quand un design est présent", () => {
+    const p = buildPassJson({ ...base, stampGoal: 10, design: stubDesign, message: "Promo -20%" });
+    const msg = p.storeCard.backFields.find((f) => f.key === "message");
+    expect(msg?.value).toBe("Promo -20%");
+    expect(msg?.changeMessage).toBe("%@");
+  });
+
+  it("le message survit au garde-fou backFields ≤ 10 (design chargé + identité)", () => {
+    const design: CardDesign = {
+      ...stubDesign,
+      fields: Array.from({ length: 12 }, (_, i) => ({
+        id: `f${i}`, zone: "back" as const, label: `L${i}`, value: `v${i}`, order: i,
+      })),
+    };
+    const p = buildPassJson({
+      ...base, design, message: "Promo -20%",
+      identity: { address: "A", phone: "P", todaysHours: "H", mapsUrl: "M" },
+    });
+    expect(p.storeCard.backFields.length).toBeLessThanOrEqual(10);
+    expect(p.storeCard.backFields.find((f) => f.key === "message")?.value).toBe("Promo -20%");
+  });
+});
+
 describe("buildPassJson — couche identité commerce (Feature 1)", () => {
   const base = {
     cardId: "c", customerName: "Alice", stamps: 3,
