@@ -147,12 +147,18 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       else auxiliaryFields.unshift(fallback);
     }
     // Replace the entire storeCard with design-driven field buckets.
+    // Le backField « message » (changeMessage) est réinjecté EN TÊTE : c'est lui
+    // qui porte le message commerçant et déclenche la bannière iOS — en tête pour
+    // survivre au garde-fou backFields ≤ 10 appliqué par applyIdentity.
     (pass as Record<string, unknown>).storeCard = {
       headerFields: m.headerFields,
       primaryFields,
       secondaryFields: m.secondaryFields,
       auxiliaryFields,
-      backFields: m.backFields,
+      backFields: [
+        { key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" },
+        ...m.backFields,
+      ],
     };
     // Code-barres piloté par le design : format + valeur (jeton ou custom) + texte alternatif.
     const bc = i.design.barcode;
