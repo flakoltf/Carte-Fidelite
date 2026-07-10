@@ -33,7 +33,7 @@ describe("buildKitLogoAssets — chemins Storage scoped au tenant", () => {
   });
 });
 
-describe("buildKitDesign — design showcase v4 (champs riches, bannière maîtrisée)", () => {
+describe("buildKitDesign — design sobre v5 (recto aéré, le détail au dos)", () => {
   it("carte à tampons : cardType points + primary {points} + assets scoped", () => {
     const d = buildKitDesign(cafe, "m-cafe");
     expect(d.cardType).toBe("points");
@@ -43,32 +43,48 @@ describe("buildKitDesign — design showcase v4 (champs riches, bannière maîtr
     expect(d.logo.assets?.apple?.strip3).toBe("m-cafe/apple/strip@3x.png");
   });
 
-  it("carte à niveaux : primary {palier} STATUT + {points} en auxiliary (progrès)", () => {
+  it("carte à niveaux : primary {palier} STATUT + {points} au DOS (progrès)", () => {
     const d = buildKitDesign(institut, "m-inst");
     expect(d.cardType).toBe("points");
     const palier = d.fields.find((f) => f.value === "{palier}");
     expect(palier?.zone).toBe("primary");
     expect(palier?.label).toBe("STATUT");
     // {points} doit exister quelque part (sinon fallback « carte morte » de passJson).
-    expect(d.fields.some((f) => f.value === "{points}")).toBe(true);
+    // v5 : il vit au DOS (l'auxiliary est réservé à DEPUIS + VISITES, recto sobre).
+    const prog = d.fields.find((f) => f.value === "{points}");
+    expect(prog?.zone).toBe("back");
   });
 
-  it("remplit les zones natives dans les limites Apple + ≥1 champ {points}", () => {
+  it("zones sobres (1 secondary, 2 auxiliary, dos fourni) + ≥1 champ {points}", () => {
     for (const entry of DEMO_KIT) {
       const d = buildKitDesign(entry, "m");
-      const byZone = (z: string) => d.fields.filter((f) => f.zone === z).length;
+      const byZone = (z: string) => d.fields.filter((f) => f.zone === z);
       // ZÉRO champ header : la ligne du haut du pass Apple est partagée entre le
       // logo (wordmark large) et logoText (devise) — même UN headerField touchait
       // encore la devise sur iPhone (constaté sur device les 2026-07-02 et 03).
       // Le haut du pass = logo + devise, rien d'autre.
-      expect(byZone("header"), entry.shopName).toBe(0);
-      expect(byZone("primary"), entry.shopName).toBe(1);
-      // 3 secondary design (+ récompense ajoutée par applyIdentity = 4 ≤ limite).
-      expect(byZone("secondary"), entry.shopName).toBe(3);
-      expect(byZone("auxiliary"), entry.shopName).toBeLessThanOrEqual(4);
-      expect(byZone("back"), entry.shopName).toBeGreaterThanOrEqual(3);
-      expect(d.fields.length, entry.shopName).toBeGreaterThanOrEqual(11);
+      expect(byZone("header").length, entry.shopName).toBe(0);
+      expect(byZone("primary").length, entry.shopName).toBe(1);
+      // 1 secondary (était 3) : applyIdentity ajoute RÉCOMPENSE sur la même ligne
+      // → 2 colonnes rendues. À 3+1, les textes se touchaient sur iPhone (2026-07-10).
+      expect(byZone("secondary").length, entry.shopName).toBe(1);
+      // 2 auxiliary (était ≤ 4) : 4 colonnes aux labels longs étaient illisibles.
+      expect(byZone("auxiliary").length, entry.shopName).toBe(2);
+      // Le dos accueille ce qui a quitté le recto (≥ 5, était ≥ 3)…
+      expect(byZone("back").length, entry.shopName).toBeGreaterThanOrEqual(5);
+      // …mais reste ≤ 6 : applyIdentity appende 4-5 champs identité et passJson
+      // tronque à MAX_BACK_FIELDS (10) — au-delà, le téléphone sauterait.
+      expect(byZone("back").length, entry.shopName).toBeLessThanOrEqual(6);
+      // Plancher total 9 (était 11) : 2 champs volatils supprimés (CE MOIS-CI,
+      // DERNIÈRE VISITE), le reste a changé de zone sans être perdu.
+      expect(d.fields.length, entry.shopName).toBeGreaterThanOrEqual(9);
       expect(d.fields.some((f) => f.value.includes("{points}")), entry.shopName).toBe(true);
+      // Verrou lisibilité : labels courts sur les lignes visibles du recto
+      // (secondary/auxiliary) — les labels longs (« MEMBRE DEPUIS », « DERNIÈRE
+      // VISITE ») provoquaient les collisions constatées sur iPhone.
+      for (const f of [...byZone("secondary"), ...byZone("auxiliary")]) {
+        expect(f.label.length, `${entry.shopName} · ${f.label}`).toBeLessThanOrEqual(14);
+      }
     }
   });
 });

@@ -43,13 +43,11 @@ export type DemoArtText = {
 // gérés par le moteur ; ici uniquement des valeurs démo statiques.
 export type DemoFieldData = {
   primaryValue?: string; // valeur primary STATIQUE (amount_points : seuil > 50, jeton inadapté)
-  progression: string;   // secondary « PROGRESSION »
-  nextStep: string;      // secondary « PROCHAIN PALIER »
-  thisMonth: string;     // secondary « CE MOIS-CI »
-  memberSince: string;   // auxiliary « MEMBRE DEPUIS »
+  progression: string;   // secondary « PROGRESSION » (seul secondary : RÉCOMPENSE est injectée à côté)
+  memberSince: string;   // auxiliary « DEPUIS »
   totalVisits: string;   // auxiliary « VISITES »
-  lastVisit: string;     // auxiliary « DERNIÈRE VISITE »
-  referrals: string;     // auxiliary « PARRAINAGES »
+  nextStep: string;      // back « PROCHAIN PALIER »
+  referrals: string;     // back « PARRAINAGES »
   memberId: string;      // back « VOTRE N° DE MEMBRE »
   howItWorks: string;    // back « COMMENT ÇA MARCHE »
   conditions: string;    // back « CONDITIONS »
@@ -174,8 +172,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     rewardLabel: "Un café offert",
     bannerPhoto: "pass-assets/banners/cafe.jpg",
     demo: {
-      progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "14 cafés",
-      memberSince: "Mars 2024", totalVisits: "87", lastVisit: "il y a 2 j", referrals: "3",
+      progression: "Plus que 3 cafés", nextStep: "3 cafés",
+      memberSince: "Mars 2024", totalVisits: "87", referrals: "3",
       memberId: "CR-4827-6391",
       howItWorks: "Un tampon offert à chaque café. Le 10ᵉ vous est offert.",
       conditions: "Un café offert par carte complétée. Non cumulable, non échangeable en espèces.",
@@ -206,8 +204,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_BAKERY,
     rewardLabel: "Une viennoiserie offerte",
     demo: {
-      progression: "Plus que 2 achats", nextStep: "2 achats", thisMonth: "9 visites",
-      memberSince: "Janv. 2025", totalVisits: "46", lastVisit: "hier", referrals: "1",
+      progression: "Plus que 2 achats", nextStep: "2 achats",
+      memberSince: "Janv. 2025", totalVisits: "46", referrals: "1",
       memberId: "BP-3310-274",
       howItWorks: "Un tampon par achat. Le 8ᵉ achat = une viennoiserie offerte.",
       conditions: "Viennoiserie au choix (hors pièces spéciales). Valable 30 jours.",
@@ -240,8 +238,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     bannerPhoto: "pass-assets/banners/pizza.jpg",
     demo: {
       primaryValue: "320 pts",
-      progression: "Plus que 80 pts", nextStep: "200 pts", thisMonth: "240 pts",
-      memberSince: "Sept. 2024", totalVisits: "23", lastVisit: "il y a 4 j", referrals: "2",
+      progression: "Plus que 80 pts", nextStep: "200 pts",
+      memberSince: "Sept. 2024", totalVisits: "23", referrals: "2",
       memberId: "PZ-5582-10",
       howItWorks: "1 point par franc dépensé. CHF 20 offerts dès 200 points.",
       conditions: "Récompense déduite au comptoir. Points valables 12 mois.",
@@ -277,8 +275,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_SALON,
     rewardLabel: "Un soin offert",
     demo: {
-      progression: "Plus que 2 visites", nextStep: "5 visites", thisMonth: "2 visites",
-      memberSince: "Févr. 2025", totalVisits: "12", lastVisit: "il y a 9 j", referrals: "0",
+      progression: "Plus que 2 visites", nextStep: "5 visites",
+      memberSince: "Févr. 2025", totalVisits: "12", referrals: "0",
       memberId: "SL-7741-08",
       howItWorks: "Une visite enregistrée à chaque passage. Récompenses à 5, 10 et 15 visites.",
       conditions: "Un soin offert à chaque palier atteint. Sur rendez-vous, non cumulable.",
@@ -309,8 +307,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_SALON,
     rewardLabel: "Avantages niveau Or",
     demo: {
-      progression: "Plus que 4 soins", nextStep: "Niveau Or", thisMonth: "1 soin",
-      memberSince: "Avril 2024", totalVisits: "6", lastVisit: "il y a 21 j", referrals: "1",
+      progression: "Plus que 4 soins", nextStep: "Niveau Or",
+      memberSince: "Avril 2024", totalVisits: "6", referrals: "1",
       memberId: "BR-9920-44",
       howItWorks: "Votre statut progresse avec vos soins : Bronze (3), Argent (6), Or (10).",
       conditions: "Avantages Or : −15 % permanents + un soin signature offert par an.",
@@ -347,8 +345,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_BARBER,
     rewardLabel: "Une coupe offerte",
     demo: {
-      progression: "Plus que 3 passages", nextStep: "3 passages", thisMonth: "2 passages",
-      memberSince: "Juin 2025", totalVisits: "18", lastVisit: "il y a 5 j", referrals: "1",
+      progression: "Plus que 3 passages", nextStep: "3 passages",
+      memberSince: "Juin 2025", totalVisits: "18", referrals: "1",
       memberId: "BM-6120-4483",
       howItWorks: "Un tampon à chaque passage. La 8ᵉ coupe vous est offerte.",
       conditions: "Coupe classique offerte à la 8ᵉ visite. Non cumulable, non échangeable en espèces.",
@@ -379,8 +377,8 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
     businessHours: HOURS_DAILY,
     rewardLabel: "Un café offert",
     demo: {
-      progression: "Plus que 3 cafés", nextStep: "3 cafés", thisMonth: "6 cafés",
-      memberSince: "Mai 2025", totalVisits: "10", lastVisit: "hier", referrals: "0",
+      progression: "Plus que 3 cafés", nextStep: "3 cafés",
+      memberSince: "Mai 2025", totalVisits: "10", referrals: "0",
       memberId: "BD-1002-55",
       howItWorks: "Un tampon par café. Le 10ᵉ vous est offert.",
       conditions: "Un café offert par carte complétée. Compte de démonstration.",

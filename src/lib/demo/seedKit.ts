@@ -92,10 +92,10 @@ export function goalForDisplay(entry: DemoKitEntry): number {
   return Math.max(1, Math.min(50, raw));
 }
 
-// Jeu de champs RICHE remplissant les zones natives (cf. carte showcase du site).
-// Toujours ≥ 1 champ porteur de {points} → évite le fallback « carte morte » de
-// passJson. Récompense/horaires/adresse/avis sont injectés AILLEURS par applyIdentity
-// (carte vivante F1) → on NE les duplique PAS ici.
+// Jeu de champs SOBRE (v5) : le recto respire (1 secondary + 2 auxiliary à labels
+// courts), le reste vit au DOS. Toujours ≥ 1 champ porteur de {points} → évite le
+// fallback « carte morte » de passJson. Récompense/horaires/adresse/avis sont
+// injectés AILLEURS par applyIdentity (carte vivante F1) → on NE les duplique PAS ici.
 export function kitDesignFields(entry: DemoKitEntry): CardField[] {
   const d = entry.demo;
   // primary : tiered → {palier} ; amount_points → valeur STATIQUE (seuil > 50,
@@ -114,24 +114,30 @@ export function kitDesignFields(entry: DemoKitEntry): CardField[] {
     // device 2026-07-03). Le haut = logo + devise, rien d'autre : collision
     // impossible. Le palier (tiered) vit en PRIMARY, bien plus visible.
     primary,
+    // UN seul secondary : applyIdentity ajoute « RÉCOMPENSE » sur la même ligne
+    // (passJson) → 2 colonnes au total. À 3 champs kit (+1 injecté = 4), les
+    // valeurs se touchaient sur iPhone (constaté 2026-07-10).
     { id: "s_prog", zone: "secondary", label: "PROGRESSION", value: d.progression, order: 3 },
-    { id: "s_next", zone: "secondary", label: "PROCHAIN PALIER", value: d.nextStep, order: 4 },
-    { id: "s_month", zone: "secondary", label: "CE MOIS-CI", value: d.thisMonth, order: 5 },
-    { id: "a_since", zone: "auxiliary", label: "MEMBRE DEPUIS", value: d.memberSince, order: 6 },
-    { id: "a_visits", zone: "auxiliary", label: "VISITES", value: d.totalVisits, order: 7 },
-    { id: "a_last", zone: "auxiliary", label: "DERNIÈRE VISITE", value: d.lastVisit, order: 8 },
-    // tiered n'a pas de {points} en primary → on le met en auxiliary (progrès vers le top).
-    entry.loyaltyType === "tiered"
-      ? { id: "a_prog", zone: "auxiliary", label: "PROGRÈS", value: "{points}", order: 9 }
-      : { id: "a_ref", zone: "auxiliary", label: "PARRAINAGES", value: d.referrals, order: 9 },
-    { id: "b_member", zone: "back", label: "VOTRE N° DE MEMBRE", value: d.memberId, order: 10 },
-    { id: "b_how", zone: "back", label: "COMMENT ÇA MARCHE", value: d.howItWorks, order: 11 },
-    { id: "b_cond", zone: "back", label: "CONDITIONS DE LA RÉCOMPENSE", value: d.conditions, order: 12 },
+    // DEUX auxiliary max, labels courts (≤ 12 car.) : 4 colonnes aux labels longs
+    // (« MEMBRE DEPUIS », « DERNIÈRE VISITE ») se touchaient sur iPhone.
+    { id: "a_since", zone: "auxiliary", label: "DEPUIS", value: d.memberSince, order: 4 },
+    { id: "a_visits", zone: "auxiliary", label: "VISITES", value: d.totalVisits, order: 5 },
+    // Le reste vit au DOS — l'info change de place, elle n'est pas perdue.
+    // Dos du kit ≤ 6 champs : applyIdentity en appende 4-5 (horaires/adresse/
+    // itinéraire/téléphone ± avis) et passJson tronque à MAX_BACK_FIELDS (10).
+    { id: "b_member", zone: "back", label: "VOTRE N° DE MEMBRE", value: d.memberId, order: 6 },
+    { id: "b_next", zone: "back", label: "PROCHAIN PALIER", value: d.nextStep, order: 7 },
+    { id: "b_ref", zone: "back", label: "PARRAINAGES", value: d.referrals, order: 8 },
+    { id: "b_how", zone: "back", label: "COMMENT ÇA MARCHE", value: d.howItWorks, order: 9 },
+    { id: "b_cond", zone: "back", label: "CONDITIONS DE LA RÉCOMPENSE", value: d.conditions, order: 10 },
   ];
-  // amount_points : primary statique → aucun {points} ailleurs. On en place un au
-  // DOS (discret) pour neutraliser le fallback « carte morte » de passJson.
+  // Pas de {points} en primary (amount_points : statique ; tiered : {palier}) →
+  // compteur vivant au DOS (discret) pour neutraliser le fallback « carte morte »
+  // de passJson. tiered : c'est aussi le progrès chiffré vers le dernier palier.
   if (entry.loyaltyType === "amount_points") {
-    fields.push({ id: "b_counter", zone: "back", label: "PROGRESSION", value: "{points}", order: 13 });
+    fields.push({ id: "b_counter", zone: "back", label: "PROGRESSION", value: "{points}", order: 11 });
+  } else if (entry.loyaltyType === "tiered") {
+    fields.push({ id: "b_prog", zone: "back", label: "PROGRÈS", value: "{points}", order: 11 });
   }
   return fields;
 }
