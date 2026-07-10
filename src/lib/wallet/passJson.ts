@@ -1,4 +1,5 @@
 import type { CardDesign } from '@/lib/cardDesign/types';
+import { APPLE_ZONE_LIMITS } from '@/lib/cardDesign/types';
 import { mapToAppleFields, appleBarcodeFormat } from '@/lib/cardDesign/mapApple';
 
 export interface PassJsonInput {
@@ -75,6 +76,41 @@ export function applyIdentity(store: StoreCardShape, identity?: PassIdentity): v
 }
 
 /**
+ * Message commerçant → champ AVANT (auxiliary) porteur de la BANNIÈRE iOS.
+ *
+ * POURQUOI un champ à l'AVANT et pas le backField « INFO » : sur device réel, un
+ * `changeMessage` posé sur un champ du DOS ne produit PAS de bannière sur l'écran
+ * verrouillé (confirmé 07/2026 : APNs 200 + valeur du champ réellement changée +
+ * pass reconstruit, mais AUCUNE bannière). Apple ne fiabilise la bannière que pour
+ * un champ VISIBLE À L'AVANT (header/primary/secondary/auxiliary) dont la valeur
+ * change. Doc + sources : docs/NOTIFICATIONS-WALLET.md.
+ *
+ * POURQUOI AUXILIARY (et pas les autres zones avant) :
+ *  - header  : ZÉRO champ voulu (collision device-prouvée avec le wordmark + la
+ *    devise sur la ligne du haut — cf. seedKit.ts). Exclu.
+ *  - primary : plein (compteur unique, limite Apple = 1).
+ *  - secondary : la « RÉCOMPENSE » (applyIdentity) y vit au moment magique ;
+ *    y ajouter le message risquerait une collision 3 colonnes pile quand ça compte.
+ *  - auxiliary : ligne basse, labels courts, place libre (kit : 2/4 ; legacy : 0/4).
+ *
+ * Présent UNIQUEMENT quand un message est actif → aucun champ vide permanent : le
+ * recto « sobre » (#54/#49) reste intact hors message. Le texte complet reste au
+ * DOS (champ « INFO », sans changeMessage) pour consultation. Placé EN TÊTE des
+ * auxiliaires (le plus visible) ; borné à la limite Apple (≤ 4) pour ne jamais
+ * créer une ligne surchargée — au pire un design custom déjà à 4 auxiliaires voit
+ * son dernier champ cédé au message LE TEMPS de l'alerte (compromis assumé : la
+ * bannière prime quand le commerçant vient d'agir).
+ */
+export function applyMerchantMessage(store: StoreCardShape, message?: string): void {
+  const msg = typeof message === "string" ? message.trim() : "";
+  if (!msg) return;
+  store.auxiliaryFields.unshift({ key: "passmsg", label: "MESSAGE", value: msg, changeMessage: "%@" });
+  if (store.auxiliaryFields.length > APPLE_ZONE_LIMITS.auxiliary) {
+    store.auxiliaryFields = store.auxiliaryFields.slice(0, APPLE_ZONE_LIMITS.auxiliary);
+  }
+}
+
+/**
  * Substitutes {token} placeholders in a string using the supplied context.
  * Unknown tokens are left verbatim (no crash).
  */
@@ -99,7 +135,9 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       primaryFields: [{ key: "stamps", label: "TAMPONS", value: `${i.stamps} / ${i.stampGoal ?? 10}`, textAlignment: "PKTextAlignmentRight" }],
       secondaryFields: [{ key: "customerName", label: "CLIENT", value: i.customerName }],
       auxiliaryFields: [] as unknown[],
-      backFields: [{ key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" }],
+      // Le message au DOS est purement CONSULTABLE (pas de changeMessage) : la
+      // bannière est portée par le champ AVANT posé par applyMerchantMessage.
+      backFields: [{ key: "message", label: "INFO", value: i.message ?? "" }],
     },
     barcodes: [{ message: i.barcodeMessage, format: "PKBarcodeFormatQR", messageEncoding: "iso-8859-1", altText: "Scannez pour valider vos tampons" }],
   } as unknown as PassJson;
@@ -147,16 +185,17 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       else auxiliaryFields.unshift(fallback);
     }
     // Replace the entire storeCard with design-driven field buckets.
-    // Le backField « message » (changeMessage) est réinjecté EN TÊTE : c'est lui
-    // qui porte le message commerçant et déclenche la bannière iOS — en tête pour
-    // survivre au garde-fou backFields ≤ 10 appliqué par applyIdentity.
+    // Le message commerçant est réinjecté EN TÊTE des backFields — mais SANS
+    // changeMessage : c'est un champ CONSULTABLE (le texte complet reste au dos).
+    // La BANNIÈRE est portée par le champ AVANT posé par applyMerchantMessage.
+    // En tête pour survivre au garde-fou backFields ≤ 10 appliqué par applyIdentity.
     (pass as Record<string, unknown>).storeCard = {
       headerFields: m.headerFields,
       primaryFields,
       secondaryFields: m.secondaryFields,
       auxiliaryFields,
       backFields: [
-        { key: "message", label: "INFO", value: i.message ?? "", changeMessage: "%@" },
+        { key: "message", label: "INFO", value: i.message ?? "" },
         ...m.backFields,
       ],
     };
@@ -175,6 +214,11 @@ export function buildPassJson(i: PassJsonInput): PassJson {
   // pour que l'adresse, le téléphone, les horaires et la récompense apparaissent
   // toujours, quel que soit le design choisi au studio.
   applyIdentity(pass.storeCard, i.identity);
+
+  // Message commerçant → champ AVANT (auxiliary) qui déclenche la bannière iOS.
+  // Appliqué APRÈS les deux chemins ET après l'identité, sur le storeCard final,
+  // pour que la bannière fonctionne quel que soit le design (legacy ou studio).
+  applyMerchantMessage(pass.storeCard, i.message);
 
   return pass;
 }

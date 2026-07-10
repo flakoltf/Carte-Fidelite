@@ -15,7 +15,12 @@ describe("buildPassJson", () => {
     expect(p.authenticationToken).toBe("tok");
     const msg = p.storeCard.backFields.find((f) => f.key === "message")!;
     expect(msg.value).toBe("Promo");
-    expect(msg.changeMessage).toBe("%@");
+    // Le dos est CONSULTABLE (pas de changeMessage) — la bannière est portée par
+    // le champ AVANT « passmsg ».
+    expect(msg.changeMessage).toBeUndefined();
+    const banner = p.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")!;
+    expect(banner.value).toBe("Promo");
+    expect(banner.changeMessage).toBe("%@");
     expect(p.serialNumber).toBe("card-1");
   });
   it("sans authToken : pas de webServiceURL (pass non push-ready)", () => {
@@ -218,15 +223,69 @@ describe("buildPassJson — design sans {points} (filet de sécurité)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Message commerçant : le backField « message » (avec changeMessage) doit
-// survivre au chemin design — c'est lui qui déclenche la bannière iOS.
+// Message commerçant : la BANNIÈRE iOS est portée par un champ AVANT (auxiliary
+// « passmsg », changeMessage) — pas par le backField (le dos ne notifie pas de
+// façon fiable sur l'écran verrouillé). Le dos garde le texte, consultable.
 // ---------------------------------------------------------------------------
-describe("buildPassJson — message commerçant avec design", () => {
-  it("conserve le backField message (valeur + changeMessage) quand un design est présent", () => {
+describe("buildPassJson — message commerçant : champ AVANT porteur de bannière", () => {
+  it("chemin LEGACY : champ auxiliary passmsg avec value + changeMessage %@", () => {
+    const p = buildPassJson({ ...base, stampGoal: 10, message: "Promo -20%" });
+    const banner = p.storeCard.auxiliaryFields.find((f) => f.key === "passmsg");
+    expect(banner?.value).toBe("Promo -20%");
+    expect(banner?.changeMessage).toBe("%@");
+    // Dos : texte conservé, SANS changeMessage.
+    const back = p.storeCard.backFields.find((f) => f.key === "message");
+    expect(back?.value).toBe("Promo -20%");
+    expect(back?.changeMessage).toBeUndefined();
+  });
+
+  it("chemin DESIGN : champ auxiliary passmsg avec value + changeMessage %@", () => {
     const p = buildPassJson({ ...base, stampGoal: 10, design: stubDesign, message: "Promo -20%" });
-    const msg = p.storeCard.backFields.find((f) => f.key === "message");
-    expect(msg?.value).toBe("Promo -20%");
-    expect(msg?.changeMessage).toBe("%@");
+    const banner = p.storeCard.auxiliaryFields.find((f) => f.key === "passmsg");
+    expect(banner?.value).toBe("Promo -20%");
+    expect(banner?.changeMessage).toBe("%@");
+    const back = p.storeCard.backFields.find((f) => f.key === "message");
+    expect(back?.value).toBe("Promo -20%");
+    expect(back?.changeMessage).toBeUndefined();
+  });
+
+  it("le champ passmsg est EN TÊTE des auxiliaires (le plus visible)", () => {
+    const design: CardDesign = {
+      ...stubDesign,
+      fields: [
+        { id: "a1", zone: "auxiliary", label: "DEPUIS", value: "2024", order: 0 },
+        { id: "a2", zone: "auxiliary", label: "VISITES", value: "12", order: 1 },
+      ],
+    };
+    const p = buildPassJson({ ...base, stampGoal: 10, design, message: "Ouvert dimanche" });
+    expect(p.storeCard.auxiliaryFields[0].key).toBe("passmsg");
+  });
+
+  it("SANS message : aucun champ passmsg (recto sobre intact) — legacy ET design", () => {
+    const legacy = buildPassJson({ ...base, stampGoal: 10 });
+    expect(legacy.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")).toBeUndefined();
+    const withDesign = buildPassJson({ ...base, stampGoal: 10, design: stubDesign });
+    expect(withDesign.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")).toBeUndefined();
+  });
+
+  it("message vide ou espaces : aucun champ passmsg (jamais de champ vide)", () => {
+    const empty = buildPassJson({ ...base, stampGoal: 10, message: "" });
+    expect(empty.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")).toBeUndefined();
+    const blank = buildPassJson({ ...base, stampGoal: 10, message: "   " });
+    expect(blank.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")).toBeUndefined();
+  });
+
+  it("borne la zone auxiliary à la limite Apple (≤ 4) même avec message", () => {
+    const design: CardDesign = {
+      ...stubDesign,
+      fields: Array.from({ length: 4 }, (_, i) => ({
+        id: `a${i}`, zone: "auxiliary" as const, label: `A${i}`, value: `v${i}`, order: i,
+      })),
+    };
+    const p = buildPassJson({ ...base, stampGoal: 10, design, message: "Alerte" });
+    expect(p.storeCard.auxiliaryFields.length).toBeLessThanOrEqual(4);
+    // Le message PRIME quand le commerçant vient d'agir : il reste présent.
+    expect(p.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")?.value).toBe("Alerte");
   });
 
   it("le message survit au garde-fou backFields ≤ 10 (design chargé + identité)", () => {
@@ -241,7 +300,8 @@ describe("buildPassJson — message commerçant avec design", () => {
       identity: { address: "A", phone: "P", todaysHours: "H", mapsUrl: "M" },
     });
     expect(p.storeCard.backFields.length).toBeLessThanOrEqual(10);
-    expect(p.storeCard.backFields.find((f) => f.key === "message")?.value).toBe("Promo -20%");
+    // La bannière (champ AVANT) survit indépendamment du garde-fou du dos.
+    expect(p.storeCard.auxiliaryFields.find((f) => f.key === "passmsg")?.value).toBe("Promo -20%");
   });
 });
 
