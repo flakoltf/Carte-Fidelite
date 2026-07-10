@@ -7,7 +7,11 @@ export function buildApnsRequest(pushToken: string, passTypeId: string): {
 } {
   return {
     path: `/3/device/${pushToken}`,
-    headers: { "apns-topic": passTypeId, "apns-push-type": "background", "apns-priority": "5" },
+    // "alert" + priorité 10 : le push doit produire une BANNIÈRE sur l'écran
+    // verrouillé (iOS l'affiche à partir du champ à changeMessage modifié).
+    // "background" + priorité 5 = mise à jour SILENCIEUSE, throttlable par iOS :
+    // la carte se rafraîchissait bien, mais aucune notification n'apparaissait.
+    headers: { "apns-topic": passTypeId, "apns-push-type": "alert", "apns-priority": "10" },
     body: "{}",
   };
 }
