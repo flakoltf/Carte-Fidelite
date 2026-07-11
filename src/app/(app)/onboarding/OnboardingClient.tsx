@@ -26,7 +26,6 @@ import {
   Clock,
   Printer,
 } from "lucide-react";
-import { HaloSymbol } from "@/components/halo/HaloMark";
 import EnrollmentQR from "@/app/(app)/admin/EnrollmentQR";
 import QrPosterButton from "@/components/halo/QrPosterButton";
 import type { OnboardingState } from "@/lib/signup/state";
@@ -35,7 +34,6 @@ import {
   SECTOR_CHOICES,
   PLAN_CHOICES,
   sectorPreset,
-  ONBOARDING_STEPS,
   type OnboardingStep,
   type SetupMode,
 } from "@/lib/signup/onboarding";
@@ -46,14 +44,9 @@ import {
   programSummaryLine,
   MARKETING_HOST,
 } from "@/lib/onboarding/wizardModel";
-
-const STEP_LABELS: Record<OnboardingStep, string> = {
-  profile: "Votre commerce",
-  program: "Votre programme",
-  design: "Votre carte",
-  plan: "Votre palier",
-  launch: "Mise en ligne",
-};
+import { ErrorBox, inputClass, primaryBtn } from "./_components/onboardingUi";
+import { ProgressBar } from "./_components/ProgressBar";
+import { OnboardingHeader } from "./_components/OnboardingHeader";
 
 // Wrapper client : lit window puis délègue à la logique pure (testée sans DOM).
 function enrollUrlFor(slug: string): string {
@@ -80,26 +73,6 @@ async function callApi(
   } catch {
     return { ok: false, data: {}, error: "Erreur de connexion. Vérifiez votre réseau et réessayez." };
   }
-}
-
-const inputClass =
-  "w-full bg-calcaire border border-line-warm rounded-2xl py-3.5 px-4 text-onyx focus:ring-2 focus:ring-halo/25 focus:border-halo outline-none transition-all placeholder:text-galet";
-
-const primaryBtn =
-  "inline-flex items-center justify-center gap-2 rounded-2xl bg-halo px-6 py-3.5 font-semibold text-white transition-all hover:bg-halo-600 active:scale-95 disabled:opacity-50 disabled:active:scale-100";
-
-function ErrorBox({ message }: { message: string }) {
-  if (!message) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600"
-      role="alert"
-    >
-      {message}
-    </motion.div>
-  );
 }
 
 export default function OnboardingClient({
@@ -154,8 +127,6 @@ export default function OnboardingClient({
 
   // Étape mise en ligne
   const [liveSlug, setLiveSlug] = useState<string | null>(null);
-
-  const stepIdx = ONBOARDING_STEPS.indexOf(step);
 
   function goTo(next: OnboardingStep) {
     setError("");
@@ -262,64 +233,10 @@ export default function OnboardingClient({
   // ── Rendu ─────────────────────────────────────────────────────────────────
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-      <header className="mb-8 flex flex-col items-center text-center">
-        <HaloSymbol size={36} className="mb-3 text-halo" />
-        {welcome && !liveSlug && (
-          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-halo/10 px-4 py-1.5 text-xs font-medium text-halo">
-            <Check className="h-3.5 w-3.5" aria-hidden /> Adresse confirmée — bienvenue !
-          </p>
-        )}
-        <h1 className="font-display text-2xl text-onyx sm:text-3xl">
-          {liveSlug
-            ? conciergeLive
-              ? "Votre carte est en ligne."
-              : "Votre programme est en ligne."
-            : mode === null
-              ? "Comment souhaitez-vous démarrer ?"
-              : mode === "concierge"
-                ? "On s'occupe de tout — ou presque"
-                : "Mettons votre carte en ligne"}
-        </h1>
-        {!liveSlug && (
-          <p className="mt-1 text-sm text-galet-ink">
-            {mode === null
-              ? "Deux parcours, le même résultat : vos clients fidélisés. Vous pourrez changer d'avis."
-              : mode === "concierge"
-                ? "Deux minutes : dites-nous qui vous êtes, votre QR sera prêt à imprimer."
-                : "Quelques minutes suffisent — tout est enregistré au fur et à mesure."}
-          </p>
-        )}
-      </header>
+      <OnboardingHeader welcome={welcome} liveSlug={liveSlug} mode={mode} conciergeLive={conciergeLive} />
 
       {/* Barre de progression — wizard autonome uniquement */}
-      {!liveSlug && mode === "self" && (
-        <nav aria-label="Progression" className="mb-8">
-          <ol className="flex items-center gap-1 sm:gap-2">
-            {ONBOARDING_STEPS.map((s, i) => {
-              const done = i < stepIdx;
-              const active = i === stepIdx;
-              return (
-                <li key={s} className="flex flex-1 flex-col items-center gap-1.5">
-                  <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                      done ? "bg-halo text-white" : active ? "border-2 border-halo bg-surface text-halo" : "border border-line-warm bg-surface text-galet"
-                    }`}
-                    aria-current={active ? "step" : undefined}
-                  >
-                    {done ? <Check className="h-3.5 w-3.5" aria-hidden /> : i + 1}
-                  </span>
-                  <span className={`hidden text-[11px] sm:block ${active ? "font-medium text-onyx" : "text-galet"}`}>
-                    {STEP_LABELS[s]}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-          <p className="mt-2 text-center text-xs font-medium text-galet-ink sm:hidden">
-            Étape {stepIdx + 1} / {ONBOARDING_STEPS.length} — {STEP_LABELS[step]}
-          </p>
-        </nav>
-      )}
+      {!liveSlug && mode === "self" && <ProgressBar step={step} />}
 
       <AnimatePresence mode="wait">
         <motion.div
