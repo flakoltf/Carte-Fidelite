@@ -39,6 +39,13 @@ import {
   type OnboardingStep,
   type SetupMode,
 } from "@/lib/signup/onboarding";
+import {
+  enrollUrl,
+  parseMilestones,
+  planPriceDisplay,
+  programSummaryLine,
+  MARKETING_HOST,
+} from "@/lib/onboarding/wizardModel";
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   profile: "Votre commerce",
@@ -48,15 +55,10 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   launch: "Mise en ligne",
 };
 
-const MARKETING_BASE = "https://halocard.ch";
-
-// Même convention que « Ma carte » (dashboard/card) : en dev/preview, le
-// domaine vitrine n'existe pas — on reste sur l'origine courante.
+// Wrapper client : lit window puis délègue à la logique pure (testée sans DOM).
 function enrollUrlFor(slug: string): string {
-  if (typeof window !== "undefined" && !window.location.hostname.endsWith("halocard.ch")) {
-    return `${window.location.origin}/c/${slug}`;
-  }
-  return `${MARKETING_BASE}/c/${slug}`;
+  if (typeof window === "undefined") return `https://halocard.ch/c/${slug}`;
+  return enrollUrl(slug, { hostname: window.location.hostname, origin: window.location.origin });
 }
 
 async function callApi(
@@ -217,13 +219,7 @@ export default function OnboardingClient({
     const body =
       programType === "stamp_card"
         ? { type: "stamp_card", goal }
-        : {
-            type: "visit_based",
-            milestones: milestonesText
-              .split(/[,;\s]+/)
-              .filter(Boolean)
-              .map((s) => Number(s)),
-          };
+        : { type: "visit_based", milestones: parseMilestones(milestonesText) };
     const res = await callApi("/api/onboarding/program", "PATCH", body);
     setSaving(false);
     if (!res.ok) return setError(res.error);
@@ -844,7 +840,9 @@ export default function OnboardingClient({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                {PLAN_CHOICES.map((p) => (
+                {PLAN_CHOICES.map((p) => {
+                  const price = planPriceDisplay(p.priceChf, cycle);
+                  return (
                   <button
                     type="button"
                     key={p.key}
@@ -858,11 +856,11 @@ export default function OnboardingClient({
                   >
                     <span className="block text-sm font-semibold text-onyx">{p.label}</span>
                     <span className="mt-1 block font-display text-2xl text-onyx">
-                      {cycle === "annual" ? p.priceChf * 10 : p.priceChf}
-                      <span className="text-sm font-normal text-galet-ink"> CHF/{cycle === "annual" ? "an" : "mois"}</span>
+                      {price.total}
+                      <span className="text-sm font-normal text-galet-ink"> CHF/{price.unit}</span>
                     </span>
-                    {cycle === "annual" && (
-                      <span className="block text-[11px] text-halo">soit {Math.round((p.priceChf * 10) / 12)} CHF/mois</span>
+                    {price.perMonth !== null && (
+                      <span className="block text-[11px] text-halo">soit {price.perMonth} CHF/mois</span>
                     )}
                     <span className="mt-2 block text-xs text-galet-ink">jusqu&apos;à {p.cap} cartes actives</span>
                     {p.key === "croissance" && (
@@ -871,7 +869,8 @@ export default function OnboardingClient({
                       </span>
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               <p className="text-center text-xs text-galet">
@@ -918,11 +917,7 @@ export default function OnboardingClient({
                 <li className="flex items-center gap-2"><Check className="h-4 w-4 text-halo" aria-hidden /> {shopName || initialState.shopName} — {preset.label.toLowerCase()}</li>
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-halo" aria-hidden />
-                  {isAmountPoints
-                    ? "Carte à points — 1 point par franc dépensé"
-                    : programType === "stamp_card"
-                      ? `Carte à tampons — récompense au ${goal}e passage`
-                      : `Paliers de visites — ${milestonesText}`}
+                  {programSummaryLine({ isAmountPoints, programType, goal, milestonesText })}
                 </li>
                 {sectorDraft && (
                   <li className="flex items-center gap-2">
@@ -1007,7 +1002,7 @@ export default function OnboardingClient({
 
       {!liveSlug && mode === "self" && slug && step !== "profile" && (
         <p className="mt-6 text-center text-xs text-galet">
-          Votre future page publique : {MARKETING_BASE.replace("https://", "")}/c/{slug}
+          Votre future page publique : {MARKETING_HOST}/c/{slug}
         </p>
       )}
     </main>
