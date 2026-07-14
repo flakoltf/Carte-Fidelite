@@ -1,12 +1,17 @@
 'use client';
 
-// Aperçus temps réel du studio marchand — Apple Wallet et Google Wallet côte
-// à côte, fidèles aux vrais passes (zones de champs, limites Apple, bandeau
-// Google). Le panneau « suivi des tampons » est rendu séparément (StampPanel) :
-// la grille n'apparaît PAS sur les passes actuels (voir manifeste).
+// Aperçus temps réel du studio — Apple & Google. FIDÉLITÉ : ils rendent la
+// SORTIE DES ADAPTERS (buildPassJson / mapToGoogleClass), pas le CardDesign brut.
+// Tout ce qu'iOS/Android font subir (débordement de zones vers le dos, filet
+// {points}, couche identité, bannière message, absence de zones côté Google)
+// apparaît donc ici. Voir src/lib/wallet/previewModel.ts + STUDIO.md.
 
+import { useState } from 'react';
 import type { CardDesign } from '@/lib/cardDesign/types';
+import { buildPreviewApplePass, buildPreviewGoogle, type PreviewContext } from '@/lib/wallet/previewModel';
 import BarcodeVisual from './BarcodeVisual';
+
+export type { PreviewContext };
 
 export type PreviewAssets = {
   appleLogo?: string;
@@ -15,17 +20,7 @@ export type PreviewAssets = {
   googleHero?: string;
 };
 
-export type SampleData = Record<string, string>;
-
-export const DEFAULT_SAMPLE: SampleData = {
-  points: '7',
-  nom: 'Sarah M.',
-  palier: 'Argent',
-};
-
-function resolve(template: string, sample: SampleData): string {
-  return template.replace(/\{([^}]+)\}/g, (_, key: string) => sample[key] ?? `{${key}}`);
-}
+type StoreField = { key: string; value: string; label?: string };
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -34,41 +29,44 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function byZone(design: CardDesign, zone: string) {
-  return design.fields.filter((f) => f.zone === zone).sort((a, b) => a.order - b.order);
-}
-
 // ─── Apple Wallet ─────────────────────────────────────────────────────────────
 
 export function AppleWalletPreview({
   design,
   assets,
-  sample = DEFAULT_SAMPLE,
+  context = {},
 }: {
   design: CardDesign;
   assets: PreviewAssets;
-  sample?: SampleData;
+  context?: PreviewContext;
 }) {
-  const { colors, programName } = design;
-  const headerFields = byZone(design, 'header');
-  const primaryField = byZone(design, 'primary')[0];
-  const secondaryFields = byZone(design, 'secondary').slice(0, 4);
-  const auxiliaryFields = byZone(design, 'auxiliary').slice(0, 4);
-  const barcode = design.barcode ?? { type: 'QR' as const, source: 'card_token' as const };
+  const [showBack, setShowBack] = useState(false);
+  const pass = buildPreviewApplePass(design, context);
+  const store = pass.storeCard;
+  const background = String(pass.backgroundColor);
+  const foreground = String(pass.foregroundColor);
+  const label = String(pass.labelColor);
+  const programName = design.programName || 'Nom du programme';
+  const header = store.headerFields as StoreField[];
+  const primary = (store.primaryFields as StoreField[])[0];
+  const secondary = store.secondaryFields as StoreField[];
+  const auxiliary = store.auxiliaryFields as StoreField[];
+  const back = store.backFields as StoreField[];
+  const barcodeType = design.barcode?.type ?? 'QR';
 
   return (
     <div
       className="rounded-[14px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)] select-none w-full"
       style={{
-        background: colors.background,
-        color: colors.foreground,
+        background,
+        color: foreground,
         maxWidth: 330,
         fontFamily: "'SF Pro Text', -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
       }}
       aria-label="Aperçu Apple Wallet"
     >
       <div style={{ padding: '14px 16px' }}>
-        {/* En-tête */}
+        {/* En-tête : logo + logoText + 1er header field */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             {assets.appleLogo ? (
@@ -82,72 +80,88 @@ export function AppleWalletPreview({
             ) : (
               <span
                 className="flex items-center justify-center rounded-[5px] font-bold text-[11px] shrink-0"
-                style={{ width: 22, height: 22, background: colors.foreground, color: colors.background }}
+                style={{ width: 22, height: 22, background: foreground, color: background }}
               >
-                {initials(programName || 'HALO')}
+                {initials(programName)}
               </span>
             )}
-            <b className="text-[13px] truncate">{programName || 'Nom du programme'}</b>
+            <b className="text-[13px] truncate">{programName}</b>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            {headerFields.slice(0, 1).map((f) => (
-              <span key={f.id} className="text-right">
-                <span className="block text-[8px] tracking-[0.08em] uppercase" style={{ color: colors.label }}>
+            {header.slice(0, 1).map((f) => (
+              <span key={f.key} className="text-right">
+                <span className="block text-[8px] tracking-[0.08em] uppercase" style={{ color: label }}>
                   {f.label}
                 </span>
-                <span className="block text-[12px] leading-tight">{resolve(f.value, sample)}</span>
+                <span className="block text-[12px] leading-tight">{f.value}</span>
               </span>
             ))}
-            <span className="text-[11px]" style={{ opacity: 0.65 }}>
-              ●●●
-            </span>
+            <button
+              type="button"
+              onClick={() => setShowBack((s) => !s)}
+              className="text-[11px] leading-none rounded-full w-[18px] h-[18px] flex items-center justify-center"
+              style={{ border: `1px solid ${foreground}`, opacity: 0.7 }}
+              aria-label={showBack ? 'Voir le recto' : 'Voir le dos'}
+              title={showBack ? 'Recto' : 'Dos (bouton « i »)'}
+            >
+              {showBack ? '×' : 'i'}
+            </button>
           </div>
         </div>
 
-        {/* Strip / bannière */}
-        {assets.appleStrip && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={assets.appleStrip}
-            alt="Bannière"
-            className="object-cover"
-            style={{ width: 'calc(100% + 32px)', margin: '12px -16px 0', height: 84, display: 'block' }}
-          />
-        )}
-
-        {/* Champ principal */}
-        {primaryField && (
-          <div className="mt-[18px]">
-            <div className="text-[10px] tracking-[0.08em] uppercase" style={{ color: colors.label }}>
-              {primaryField.label}
-            </div>
-            <div className="text-[30px] font-light leading-none mt-0.5">
-              {resolve(primaryField.value, sample)}
-            </div>
-          </div>
-        )}
-
-        {/* Champs secondaires / auxiliaires */}
-        {[secondaryFields, auxiliaryFields].map(
-          (group, gi) =>
-            group.length > 0 && (
-              <div key={gi} className={`flex flex-wrap gap-x-[24px] gap-y-1 ${gi === 0 ? 'mt-[14px]' : 'mt-[10px]'}`}>
-                {group.map((f) => (
-                  <div key={f.id} className="min-w-0">
-                    <div className="text-[9px] tracking-[0.08em] uppercase" style={{ color: colors.label }}>
-                      {f.label}
-                    </div>
-                    <div className="text-[13px] truncate">{resolve(f.value, sample)}</div>
-                  </div>
-                ))}
+        {showBack ? (
+          /* Verso : backFields (débordement de zones + couche identité y atterrissent) */
+          <div className="mt-4 space-y-3">
+            {back.length === 0 && <div className="text-[12px]" style={{ opacity: 0.6 }}>Aucun champ au dos.</div>}
+            {back.map((f) => (
+              <div key={f.key}>
+                <div className="text-[9px] tracking-[0.08em] uppercase" style={{ color: label }}>{f.label}</div>
+                <div className="text-[13px] break-words">{f.value || <span style={{ opacity: 0.4 }}>—</span>}</div>
               </div>
-            )
-        )}
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Strip */}
+            {assets.appleStrip && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={assets.appleStrip}
+                alt="Bannière"
+                className="object-cover"
+                style={{ width: 'calc(100% + 32px)', margin: '12px -16px 0', height: 84, display: 'block' }}
+              />
+            )}
 
-        {/* Code-barres */}
-        <div className="mt-[14px] flex justify-center rounded-lg p-2" style={{ background: '#ffffff' }}>
-          <BarcodeVisual format={barcode.type} altText={barcode.altText} size={84} />
-        </div>
+            {/* Champ principal */}
+            {primary && (
+              <div className="mt-[18px]">
+                <div className="text-[10px] tracking-[0.08em] uppercase" style={{ color: label }}>{primary.label}</div>
+                <div className="text-[30px] font-light leading-none mt-0.5">{primary.value}</div>
+              </div>
+            )}
+
+            {/* Secondaires / auxiliaires */}
+            {[secondary, auxiliary].map(
+              (group, gi) =>
+                group.length > 0 && (
+                  <div key={gi} className={`flex flex-wrap gap-x-[24px] gap-y-1 ${gi === 0 ? 'mt-[14px]' : 'mt-[10px]'}`}>
+                    {group.map((f) => (
+                      <div key={f.key} className="min-w-0">
+                        <div className="text-[9px] tracking-[0.08em] uppercase" style={{ color: label }}>{f.label}</div>
+                        <div className="text-[13px] truncate">{f.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )
+            )}
+
+            {/* Code-barres — toujours noir sur encart blanc (rendu iOS réel) */}
+            <div className="mt-[14px] flex justify-center rounded-lg p-2" style={{ background: '#ffffff' }}>
+              <BarcodeVisual format={barcodeType} altText={design.barcode?.altText} size={84} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -158,16 +172,15 @@ export function AppleWalletPreview({
 export function GoogleWalletPreview({
   design,
   assets,
-  sample = DEFAULT_SAMPLE,
+  context = {},
 }: {
   design: CardDesign;
   assets: PreviewAssets;
-  sample?: SampleData;
+  context?: PreviewContext;
 }) {
-  const { colors, programName } = design;
-  const primaryField = byZone(design, 'primary')[0];
-  const secondaryFields = byZone(design, 'secondary').slice(0, 3);
-  const barcode = design.barcode ?? { type: 'QR' as const, source: 'card_token' as const };
+  const g = buildPreviewGoogle(design, context);
+  const programName = g.programName || 'Nom du programme';
+  const barcodeType = design.barcode?.type ?? 'QR';
 
   return (
     <div
@@ -180,10 +193,10 @@ export function GoogleWalletPreview({
       }}
       aria-label="Aperçu Google Wallet"
     >
-      {/* Bandeau coloré */}
+      {/* Bandeau coloré (hexBackgroundColor) */}
       <div
         className="flex items-center gap-[10px]"
-        style={{ background: colors.background, color: colors.foreground, padding: '12px 16px' }}
+        style={{ background: g.hexBackgroundColor, color: design.colors.foreground, padding: '12px 16px' }}
       >
         {assets.googleLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -196,16 +209,13 @@ export function GoogleWalletPreview({
         ) : (
           <span
             className="flex items-center justify-center rounded-full font-bold text-[12px] shrink-0"
-            style={{ width: 34, height: 34, background: colors.foreground, color: colors.background }}
+            style={{ width: 34, height: 34, background: design.colors.foreground, color: g.hexBackgroundColor }}
           >
-            {initials(programName || 'HALO')}
+            {initials(programName)}
           </span>
         )}
         <div className="min-w-0">
-          <div className="text-[11px] truncate" style={{ opacity: 0.85 }}>
-            {programName || 'Nom du programme'}
-          </div>
-          <b className="text-[14px] leading-tight block">Carte de fidélité</b>
+          <b className="text-[14px] leading-tight block truncate">{programName}</b>
         </div>
       </div>
 
@@ -216,32 +226,26 @@ export function GoogleWalletPreview({
       )}
 
       <div style={{ padding: '14px 16px' }}>
-        {primaryField && (
-          <div>
-            <div className="text-[10px] tracking-[0.06em] font-medium uppercase" style={{ color: '#777' }}>
-              {primaryField.label}
-            </div>
-            <div className="text-[26px] font-medium leading-tight" style={{ color: colors.background }}>
-              {resolve(primaryField.value, sample)}
-            </div>
-          </div>
-        )}
+        {/* Module points (champ primary → loyaltyPoints) */}
+        <div>
+          <div className="text-[10px] tracking-[0.06em] font-medium uppercase" style={{ color: '#777' }}>{g.pointsLabel}</div>
+          <div className="text-[26px] font-medium leading-tight" style={{ color: g.hexBackgroundColor }}>{g.pointsValue}</div>
+        </div>
 
-        {secondaryFields.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-            {secondaryFields.map((f) => (
-              <div key={f.id} className="min-w-0">
-                <div className="text-[9px] tracking-[0.06em] uppercase font-medium" style={{ color: '#777' }}>
-                  {f.label}
-                </div>
-                <div className="text-[12px] font-medium text-[#1a1a1a] truncate">{resolve(f.value, sample)}</div>
+        {/* Modules texte (TOUS les champs non-primary — Google n'a pas de zones) */}
+        {g.textModules.length > 0 && (
+          <div className="flex flex-col gap-1.5 mt-2">
+            {g.textModules.map((m) => (
+              <div key={m.id} className="min-w-0">
+                <div className="text-[9px] tracking-[0.06em] uppercase font-medium" style={{ color: '#777' }}>{m.header}</div>
+                <div className="text-[12px] font-medium text-[#1a1a1a] break-words">{m.body}</div>
               </div>
             ))}
           </div>
         )}
 
         <div className="flex justify-center mt-[10px]">
-          <BarcodeVisual format={barcode.type} altText={barcode.altText} size={80} />
+          <BarcodeVisual format={barcodeType} altText={g.barcodeAltText || undefined} size={80} />
         </div>
       </div>
     </div>

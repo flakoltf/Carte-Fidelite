@@ -16,6 +16,7 @@ import { logAuditEvent, extractRequestMeta } from '@/lib/auditLog';
 import { validateStudioDesign } from '@/lib/cardDesign/studioValidation';
 import { signedUrl } from '@/lib/cardDesign/storage';
 import { ensureLoyaltyClass } from '@/lib/wallet/googleClass';
+import { refreshMerchantPasses } from '@/lib/wallet/refresh';
 import {
   parseCardDesign,
   enforceAssetOwnership,
@@ -72,6 +73,17 @@ export async function POST(req: Request) {
       });
     if (upsertError) throw new Error(upsertError.message);
 
+    // Historique versionné : instantané immuable du design publié (best-effort,
+    // ne doit pas faire échouer la publication ; card_designs.version reste la
+    // source de vérité du compteur). Table card_design_versions (RLS scoped).
+    try {
+      await supabaseAdmin
+        .from('card_design_versions')
+        .insert({ merchant_id: merchantId, version: nextVersion, snapshot: design, published_by: userId });
+    } catch (snapErr) {
+      console.error('snapshot card_design_versions:', snapErr instanceof Error ? snapErr.message : snapErr);
+    }
+
     // Aligne le moteur de fidélité (scan_increment lit merchants.stamp_goal).
     const goal = stampGoalForMerchant(design);
     if (goal !== null) {
@@ -106,6 +118,17 @@ export async function POST(req: Request) {
       details: { version: nextVersion },
       ...extractRequestMeta(req),
     });
+
+    // Propage le nouveau design aux cartes déjà installées : push APNs SILENCIEUX
+    // (comme un changement d'identité/photo, cf. refreshMerchantPasses) — iOS
+    // re-récupère le pass reconstruit. Pas de bannière : une refonte de design
+    // n'est pas un événement client, l'envoyer en alerte serait du spam.
+    // Best-effort : un échec de push ne doit jamais faire échouer la publication.
+    try {
+      await refreshMerchantPasses(merchantId);
+    } catch (pushErr) {
+      console.error('refresh passes après publish design:', pushErr instanceof Error ? pushErr.message : pushErr);
+    }
 
     // Synchro Google Wallet — best-effort, comme côté admin (207 si échec).
     try {

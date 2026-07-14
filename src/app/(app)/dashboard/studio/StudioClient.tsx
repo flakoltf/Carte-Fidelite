@@ -28,7 +28,8 @@ import {
 } from 'lucide-react';
 import type { CardDesign, LogoAssets, StampsConfig, CardTypeKey } from '@/lib/cardDesign/types';
 import { DEFAULT_CARD_DESIGN, DEFAULT_STAMPS_CONFIG, CARD_TYPE_LABELS } from '@/lib/cardDesign/types';
-import { validateStudioDesign } from '@/lib/cardDesign/studioValidation';
+import { validateTemplate, hasBlockingError } from '@/lib/cardDesign/validateTemplate';
+import { ValidationPanel } from './_components/ValidationPanel';
 import TemplateGallery from './_components/TemplateGallery';
 import ColorsSection from './_components/ColorsSection';
 import StampsSection from './_components/StampsSection';
@@ -40,7 +41,7 @@ import {
   AppleWalletPreview,
   GoogleWalletPreview,
   type PreviewAssets,
-  type SampleData,
+  type PreviewContext,
 } from './_components/WalletPreviews';
 
 // ─── Types API ────────────────────────────────────────────────────────────────
@@ -178,18 +179,21 @@ export default function StudioClient({ express = false }: { express?: boolean })
     };
   }, [express]);
 
-  const validation = useMemo(() => validateStudioDesign(design), [design]);
+  const issues = useMemo(() => validateTemplate(design), [design]);
+  const errorCount = issues.filter((i) => i.severity === 'error').length;
+  const warningCount = issues.filter((i) => i.severity === 'warning').length;
+  const focusField = useCallback((fieldId: string) => {
+    document.getElementById(`field-anchor-${fieldId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
   const dirty = JSON.stringify(design) !== lastPersisted.current;
   const cardType: CardTypeKey = design.cardType ?? 'stamps';
   const stamps: StampsConfig = design.stamps ?? DEFAULT_STAMPS_CONFIG;
 
-  const sample: SampleData = useMemo(
-    () => ({
-      points: cardType === 'stamps' ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}` : String(sampleStamps * 12),
-      nom: 'Sarah M.',
-      palier: 'Argent',
-    }),
-    [cardType, sampleStamps, stamps.goal]
+  // Contexte de simulation pour les aperçus. Les aperçus rendent la sortie de
+  // buildPassJson : {points} y est formaté « n / goal » comme à l'émission réelle.
+  const previewContext: PreviewContext = useMemo(
+    () => ({ stamps: Math.min(sampleStamps, stamps.goal), stampGoal: stamps.goal }),
+    [sampleStamps, stamps.goal]
   );
 
   // ── Mutations locales ───────────────────────────────────────────────────────
@@ -657,11 +661,11 @@ export default function StudioClient({ express = false }: { express?: boolean })
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
               <div className="shrink-0 w-[280px] snap-start">
                 <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2"> Apple Wallet</p>
-                <AppleWalletPreview design={design} assets={previewAssets} sample={sample} />
+                <AppleWalletPreview design={design} assets={previewAssets} context={previewContext} />
               </div>
               <div className="shrink-0 w-[280px] snap-start">
                 <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2">Google Wallet</p>
-                <GoogleWalletPreview design={design} assets={previewAssets} sample={sample} />
+                <GoogleWalletPreview design={design} assets={previewAssets} context={previewContext} />
               </div>
             </div>
 
@@ -686,23 +690,10 @@ export default function StudioClient({ express = false }: { express?: boolean })
             )}
           </div>
 
-          {/* Validation live */}
-          {(validation.errors.length > 0 || validation.warnings.length > 0) && (
-            <div className="space-y-2">
-              {validation.errors.map((msg, i) => (
-                <div key={`e${i}`} className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-700 rounded-xl px-3 py-2 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
-                  <span>{msg}</span>
-                </div>
-              ))}
-              {validation.warnings.map((msg, i) => (
-                <div key={`w${i}`} className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 text-amber-700 rounded-xl px-3 py-2 text-sm">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden />
-                  <span>{msg}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Validation live — panneau (pièce maîtresse) */}
+          <div className={sectionCls}>
+            <ValidationPanel issues={issues} onFocusField={focusField} />
+          </div>
 
           {/* Retour de sauvegarde / publication */}
           {feedback && (
@@ -740,13 +731,13 @@ export default function StudioClient({ express = false }: { express?: boolean })
       <div className="fixed bottom-0 left-0 right-0 lg:left-72 z-40 border-t border-line-warm bg-surface/95 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <div className="text-xs text-galet-ink">
-            {validation.errors.length > 0 ? (
+            {errorCount > 0 ? (
               <span className="text-red-700 font-medium">
-                {validation.errors.length} erreur{validation.errors.length > 1 ? 's' : ''} à corriger avant publication
+                {errorCount} erreur{errorCount > 1 ? 's' : ''} à corriger avant publication
               </span>
-            ) : validation.warnings.length > 0 ? (
+            ) : warningCount > 0 ? (
               <span className="text-amber-700">
-                Publiable — {validation.warnings.length} avertissement{validation.warnings.length > 1 ? 's' : ''}
+                Publiable — {warningCount} avertissement{warningCount > 1 ? 's' : ''}
               </span>
             ) : (
               <span className="text-halo font-medium">Prêt à publier ✓</span>
@@ -775,7 +766,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
             <button
               type="button"
               onClick={publish}
-              disabled={publishing || savingDraft || validation.errors.length > 0}
+              disabled={publishing || savingDraft || hasBlockingError(issues)}
               className="flex items-center gap-2 rounded-xl bg-halo px-5 py-2.5 text-sm font-semibold text-white hover:bg-halo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {publishing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <CloudUpload className="w-4 h-4" aria-hidden />}

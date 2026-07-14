@@ -39,6 +39,7 @@ const TABLE_REGISTRY: Record<string, Posture> = {
   wallet_notifications: "tenant",
   wallet_device_registrations: "tenant",
   billing_snapshots: "tenant",
+  card_design_versions: "tenant", // historique de design : le marchand lit SES versions (ou admin) ; écritures service-role
   // ── Le compte marchand lui-même ─────────────────────────────────────────
   merchants: "own-row",
   // ── Back-office : lecture réservée aux admins (is_admin) ────────────────
