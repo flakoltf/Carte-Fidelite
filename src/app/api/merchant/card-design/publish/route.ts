@@ -16,6 +16,7 @@ import { logAuditEvent, extractRequestMeta } from '@/lib/auditLog';
 import { validateStudioDesign } from '@/lib/cardDesign/studioValidation';
 import { signedUrl } from '@/lib/cardDesign/storage';
 import { ensureLoyaltyClass } from '@/lib/wallet/googleClass';
+import { refreshMerchantPasses } from '@/lib/wallet/refresh';
 import {
   parseCardDesign,
   enforceAssetOwnership,
@@ -106,6 +107,17 @@ export async function POST(req: Request) {
       details: { version: nextVersion },
       ...extractRequestMeta(req),
     });
+
+    // Propage le nouveau design aux cartes déjà installées : push APNs SILENCIEUX
+    // (comme un changement d'identité/photo, cf. refreshMerchantPasses) — iOS
+    // re-récupère le pass reconstruit. Pas de bannière : une refonte de design
+    // n'est pas un événement client, l'envoyer en alerte serait du spam.
+    // Best-effort : un échec de push ne doit jamais faire échouer la publication.
+    try {
+      await refreshMerchantPasses(merchantId);
+    } catch (pushErr) {
+      console.error('refresh passes après publish design:', pushErr instanceof Error ? pushErr.message : pushErr);
+    }
 
     // Synchro Google Wallet — best-effort, comme côté admin (207 si échec).
     try {

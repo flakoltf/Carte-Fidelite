@@ -50,6 +50,11 @@ export function designToRow(d: CardDesign) {
     logo_assets: d.logo.assets ?? {},
     fields: d.fields,
     barcode: d.barcode,
+    // Persistés comme le chemin studio (designToPublishRow) : sans eux, un save
+    // admin/photo écraserait le type de carte et la config tampons choisis au
+    // studio. card_type est NOT NULL (défaut 'stamps') ; stamps est jsonb nullable.
+    card_type: d.cardType ?? 'stamps',
+    stamps: d.stamps ?? null,
   };
 }
 

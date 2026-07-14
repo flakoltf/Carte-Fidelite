@@ -116,5 +116,12 @@ serveur : `POST publish` → 422).
   ⚠️ Changement de comportement : des designs qui débordaient (et basculaient au
   verso) ne sont plus publiables tels quels — le générateur garde toutefois son
   filet de débordement pour les cartes déjà en circulation.
-- Lots 3-6 : fixes persistance/push, complétude UI (panneau de validation,
-  onglets, crop), versionnement, récap final.
+- **Lot 3** ✅ : fixes des deux bugs d'exploration.
+  - `repository.designToRow` persiste désormais `card_type` + `stamps` (comme
+    `designToPublishRow`) → un save admin/photo ne peut plus diverger du studio.
+  - La route `publish` déclenche un `refreshMerchantPasses` (push APNs
+    **silencieux**, best-effort) → les cartes déjà installées reçoivent le
+    nouveau design. Choix assumé : pas de bannière (une refonte de design n'est
+    pas un événement client ; une alerte de masse serait du spam).
+- Lots 4-6 : complétude UI (panneau de validation, onglets recto/verso, crop),
+  versionnement + diff, récap final.
