@@ -40,7 +40,7 @@ import {
   AppleWalletPreview,
   GoogleWalletPreview,
   type PreviewAssets,
-  type SampleData,
+  type PreviewContext,
 } from './_components/WalletPreviews';
 
 // ─── Types API ────────────────────────────────────────────────────────────────
@@ -183,13 +183,11 @@ export default function StudioClient({ express = false }: { express?: boolean })
   const cardType: CardTypeKey = design.cardType ?? 'stamps';
   const stamps: StampsConfig = design.stamps ?? DEFAULT_STAMPS_CONFIG;
 
-  const sample: SampleData = useMemo(
-    () => ({
-      points: cardType === 'stamps' ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}` : String(sampleStamps * 12),
-      nom: 'Sarah M.',
-      palier: 'Argent',
-    }),
-    [cardType, sampleStamps, stamps.goal]
+  // Contexte de simulation pour les aperçus. Les aperçus rendent la sortie de
+  // buildPassJson : {points} y est formaté « n / goal » comme à l'émission réelle.
+  const previewContext: PreviewContext = useMemo(
+    () => ({ stamps: Math.min(sampleStamps, stamps.goal), stampGoal: stamps.goal }),
+    [sampleStamps, stamps.goal]
   );
 
   // ── Mutations locales ───────────────────────────────────────────────────────
@@ -657,11 +655,11 @@ export default function StudioClient({ express = false }: { express?: boolean })
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
               <div className="shrink-0 w-[280px] snap-start">
                 <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2"> Apple Wallet</p>
-                <AppleWalletPreview design={design} assets={previewAssets} sample={sample} />
+                <AppleWalletPreview design={design} assets={previewAssets} context={previewContext} />
               </div>
               <div className="shrink-0 w-[280px] snap-start">
                 <p className="text-[11px] uppercase tracking-wide text-galet-ink mb-2">Google Wallet</p>
-                <GoogleWalletPreview design={design} assets={previewAssets} sample={sample} />
+                <GoogleWalletPreview design={design} assets={previewAssets} context={previewContext} />
               </div>
             </div>
 

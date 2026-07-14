@@ -81,5 +81,11 @@ sans équivalent sur l'autre wallet, rappel police/casse imposées.
 
 ## 5. Journal des lots
 - **Lot 0** ✅ : constantes officielles sourcées (`constants.ts`) + ce document.
-- Lots 1-6 : voir plan (preview=adapter+golden, validation bloquante, fixes
-  persistance/push, complétude UI, versionnement, récap final).
+- **Lot 1** ✅ : le preview rend la SORTIE DES ADAPTERS (`src/lib/wallet/previewModel.ts`
+  → `buildPreviewApplePass` via `buildPassJson`, `buildPreviewGoogle` via
+  `mapToGoogleClass`). `WalletPreviews.tsx` reconstruit : débordement de zones
+  visible, filet {points}, bascule recto/verso, code-barres noir sur blanc,
+  sous-titre Google = `programName` (fin du libellé codé en dur). Tests golden
+  (`previewModel.test.ts`) + composant (`WalletPreviews.test.tsx`).
+- Lots 2-6 : validation bloquante, fixes persistance/push, complétude UI,
+  versionnement, récap final.
