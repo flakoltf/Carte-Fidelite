@@ -61,12 +61,34 @@ Chaque constante porte un `// source:` dans le fichier. Résumé :
 | wideProgramLogo | 1280×400, 16:5, PNG transparent | idem |
 | hexBackgroundColor | `#rrggbb`, éviter forte saturation | idem |
 
-## 3. Règles de validation (`validateTemplate` — à venir, Lot 2)
+## 3. Règles de validation (`src/lib/cardDesign/validateTemplate.ts`)
 
-À compléter. Sévérités : `error` (bloque la publication) / `warning` / `info`.
-Règles prévues : cardinalité de zone (dont la règle combinée storeCard),
-contraste WCAG label/valeur, ratio d'image, troncature de valeur, propriété
-sans équivalent sur l'autre wallet, rappel police/casse imposées.
+`validateTemplate(design) → Issue[]` ; `hasBlockingError(issues)`. Sévérités :
+`error` (bloque la publication) / `warning` / `info`. Chaque `Issue` porte un
+`message` FR actionnable et, si pertinent, le `fieldId` fautif. Le contrat
+historique `validateStudioDesign → {errors, warnings}` délègue à ce moteur (donc
+studio ET route publish deviennent plus stricts).
+
+| Règle | Sévérité |
+|---|---|
+| Zone avant qui déborde (header>3, primary>1) — le champ ne s'affichera pas | **error** |
+| storeCard + code-barres carré : secondary+auxiliary > 4 combinés | **error** |
+| secondary>4 / auxiliary>4 (code-barres non carré) | **error** |
+| carte tampons sans jeton `{points}` | **error** |
+| objectif de tampons hors 2–30 / icône absente | **error** |
+| champ vide (label+valeur) | **error** |
+| contraste < 3:1 (illisible) | **error** |
+| contraste 3:1–4.5:1 (sous WCAG AA) | warning |
+| valeur longue (>30 car., zone avant) → troncature | warning |
+| nom de programme long (>24) | warning |
+| champ avec libellé mais sans valeur | warning |
+| strip Apple sans hero Google | warning |
+| nom > 20 car. (abréviation Google) | info |
+| police/casse imposées par le système | info |
+| code-barres toujours noir sur blanc | info |
+
+**Publication bloquée tant qu'il reste une `error`** (UI : bouton désactivé ;
+serveur : `POST publish` → 422).
 
 ## 4. Fidélité imparfaite — points connus (honnêteté)
 
@@ -87,5 +109,12 @@ sans équivalent sur l'autre wallet, rappel police/casse imposées.
   visible, filet {points}, bascule recto/verso, code-barres noir sur blanc,
   sous-titre Google = `programName` (fin du libellé codé en dur). Tests golden
   (`previewModel.test.ts`) + composant (`WalletPreviews.test.tsx`).
-- Lots 2-6 : validation bloquante, fixes persistance/push, complétude UI,
-  versionnement, récap final.
+- **Lot 2** ✅ : moteur `validateTemplate → Issue[]` (sévérités, fieldId).
+  Applique la règle combinée storeCard (secondary+auxiliary ≤ 4), escalade le
+  débordement de zone avant et le contraste illisible en **erreurs bloquantes**.
+  `validateStudioDesign` délègue → studio + route publish plus stricts.
+  ⚠️ Changement de comportement : des designs qui débordaient (et basculaient au
+  verso) ne sont plus publiables tels quels — le générateur garde toutefois son
+  filet de débordement pour les cartes déjà en circulation.
+- Lots 3-6 : fixes persistance/push, complétude UI (panneau de validation,
+  onglets, crop), versionnement, récap final.

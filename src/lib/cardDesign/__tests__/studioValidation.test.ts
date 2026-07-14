@@ -25,16 +25,16 @@ describe('validateStudioDesign', () => {
     const d = base();
     d.fields.push({ id: 'x', zone: 'secondary', label: '', value: '', order: 1 });
     const { errors } = validateStudioDesign(d);
-    expect(errors.some((e) => e.includes('champ est vide'))).toBe(true);
+    expect(errors.some((e) => e.includes('Champ vide'))).toBe(true);
   });
 
-  it('avertit quand une zone Apple déborde (le surplus passe au verso)', () => {
+  it('bloque (erreur) le débordement d’une zone Apple avant — le champ ne s’affichera pas', () => {
     const d = base();
     for (let i = 0; i < 3; i++) {
       d.fields.push({ id: `p${i}`, zone: 'primary', label: `L${i}`, value: 'v', order: i + 1 });
     }
-    const { warnings } = validateStudioDesign(d);
-    expect(warnings.some((w) => w.includes('principale'))).toBe(true);
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('principale'))).toBe(true);
   });
 
   it('borne l’objectif de tampons', () => {
@@ -60,10 +60,10 @@ describe('validateStudioDesign', () => {
     expect(validateStudioDesign(d).errors).toEqual([]);
   });
 
-  it('bloque un contraste libellés/fond illisible (< 2:1)', () => {
+  it('bloque un contraste libellés/fond illisible', () => {
     const d = base({ colors: { background: '#FFFFFF', foreground: '#000000', label: '#F5F5F5' } });
     const { errors } = validateStudioDesign(d);
-    expect(errors.some((e) => e.includes('illisibles'))).toBe(true);
+    expect(errors.some((e) => e.includes('illisible'))).toBe(true);
   });
 
   it('avertit sur un nom de programme trop long', () => {
