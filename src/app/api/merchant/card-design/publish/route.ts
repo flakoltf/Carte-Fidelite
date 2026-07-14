@@ -73,6 +73,17 @@ export async function POST(req: Request) {
       });
     if (upsertError) throw new Error(upsertError.message);
 
+    // Historique versionné : instantané immuable du design publié (best-effort,
+    // ne doit pas faire échouer la publication ; card_designs.version reste la
+    // source de vérité du compteur). Table card_design_versions (RLS scoped).
+    try {
+      await supabaseAdmin
+        .from('card_design_versions')
+        .insert({ merchant_id: merchantId, version: nextVersion, snapshot: design, published_by: userId });
+    } catch (snapErr) {
+      console.error('snapshot card_design_versions:', snapErr instanceof Error ? snapErr.message : snapErr);
+    }
+
     // Aligne le moteur de fidélité (scan_increment lit merchants.stamp_goal).
     const goal = stampGoalForMerchant(design);
     if (goal !== null) {

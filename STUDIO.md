@@ -132,4 +132,13 @@ serveur : `POST publish` → 422).
   aucune lib ajoutée. Le preview recto/verso existe depuis le Lot 1.
   ⏳ Restent (honnêteté) : preview light/dark, vue « liste des cartes »
   compressée, onglets d'édition recto/verso côté éditeur — voir §4.
-- Lots 5-6 : versionnement + diff (migration), récap final.
+- **Lot 5** ✅ : versionnement historisé + diff.
+  - Migration `20260714_card_design_versions.sql` (table immuable, RLS tenant,
+    UNIQUE(merchant_id, version)) — **APPLIQUÉE en prod WalletCard** + déclarée
+    au registre RLS (`rlsPolicyGuard`).
+  - La route `publish` insère un snapshot du design à chaque publication
+    (best-effort ; `card_designs.version` reste le compteur de vérité).
+  - `src/lib/cardDesign/diff.ts` : `diffDesign(prev, next)` pur (couleurs, nom,
+    type, barcode, objectif, champs ajoutés/modifiés/supprimés) + tests.
+  - ⏳ Reste : brancher l'affichage du diff dans l'UI (données + fonction prêtes).
+- Lot 6 : récap final + honnêteté sur la fidélité résiduelle.
