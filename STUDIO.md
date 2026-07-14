@@ -123,5 +123,13 @@ serveur : `POST publish` → 422).
     **silencieux**, best-effort) → les cartes déjà installées reçoivent le
     nouveau design. Choix assumé : pas de bannière (une refonte de design n'est
     pas un événement client ; une alerte de masse serait du spam).
-- Lots 4-6 : complétude UI (panneau de validation, onglets recto/verso, crop),
-  versionnement + diff, récap final.
+- **Lot 4 (en partie)** ✅ : **panneau de validation** dédié
+  (`_components/ValidationPanel.tsx`) — la « pièce maîtresse ». Consomme
+  `validateTemplate` : erreurs/avertissements/info groupés, lien « Voir le champ »
+  (ancre `field-anchor-<id>` dans FieldsSection), publication gatée par
+  `hasBlockingError`. **Crop d'image** : déjà en place (`ImageUploadField` via
+  `react-image-crop`, ratios imposés logo/strip/hero/tampons + resize serveur) —
+  aucune lib ajoutée. Le preview recto/verso existe depuis le Lot 1.
+  ⏳ Restent (honnêteté) : preview light/dark, vue « liste des cartes »
+  compressée, onglets d'édition recto/verso côté éditeur — voir §4.
+- Lots 5-6 : versionnement + diff (migration), récap final.

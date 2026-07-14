@@ -71,7 +71,7 @@ function SortableRow({
     'flex-1 min-w-0 bg-calcaire border border-line-warm rounded-lg px-2 py-1.5 text-sm text-onyx focus:border-halo outline-none transition-colors placeholder:text-galet-ink';
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 bg-surface border border-line-warm rounded-xl px-2 py-2">
+    <div ref={setNodeRef} id={`field-anchor-${field.id}`} style={style} className="flex items-center gap-2 bg-surface border border-line-warm rounded-xl px-2 py-2 scroll-mt-24 transition-shadow target:ring-2 target:ring-halo">
       <button
         type="button"
         {...attributes}
