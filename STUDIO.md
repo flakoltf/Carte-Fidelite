@@ -90,16 +90,37 @@ studio ET route publish deviennent plus stricts).
 **Publication bloquée tant qu'il reste une `error`** (UI : bouton désactivé ;
 serveur : `POST publish` → 422).
 
-## 4. Fidélité imparfaite — points connus (honnêteté)
+## 4. Fidélité imparfaite — points connus (honnêteté, livrable #5)
 
-- **secondary+auxiliary combinés (storeCard)** : le code actuel
-  (`APPLE_ZONE_LIMITS`) traite secondary et auxiliary comme deux quotas de 4
-  indépendants ; la règle Apple réelle est **4 combinés**. Corrigé au Lot 2 (le
-  preview et la validation appliqueront la règle combinée).
-- **Dimensions d'images Google** : la référence REST n'expose pas de dimensions ;
-  les valeurs viennent des *brand guidelines* officielles (page distincte).
-- **Rendu exact iOS** (ajustements de contraste automatiques, compression de
-  texte) : approximé dans le preview ; seul un test sur device réel fait foi.
+Où la fidélité reste imparfaite, et pourquoi :
+
+1. **Règle combinée storeCard côté générateur** : la *validation* (Lot 2) bloque
+   désormais secondary+auxiliary > 4 combinés, mais le *mapper* `mapToAppleFields`
+   applique encore deux quotas de 4 indépendants (débordement par zone). Donc,
+   PENDANT l'édition, un design à 4 secondaires + 4 auxiliaires s'affiche 4+4 au
+   recto dans le preview, alors qu'iOS n'en montrerait que 4. La publication est
+   bloquée avant que ça n'atteigne une vraie carte. *Pourquoi non corrigé* : le
+   brief interdit de réécrire le générateur ; la validation est le point
+   d'application. Fermeture propre = porter la règle combinée dans `mapApple`.
+2. **Couche identité/message absente du preview réel** : `previewModel` SAIT
+   rendre la récompense/horaires/adresse/téléphone/bannière (paramètre
+   `identity`/`message`), mais `StudioClient` ne lui passe pas encore l'identité
+   RÉELLE du marchand. Le preview montre donc les champs du design + le filet
+   {points}, pas encore les champs que le générateur injecte à l'émission.
+   Fermeture = passer `previewContext.identity` depuis les données marchand.
+3. **Preview light/dark & vue « liste des cartes »** : non implémentés (le preview
+   rend le thème par défaut, carte ouverte). iOS varie le rendu selon le thème et
+   la carte est vue compressée 90 % du temps — approximation assumée.
+4. **Onglets d'édition recto/verso** : l'édition des `backFields` se fait via le
+   sélecteur de zone (`zone = verso`) ; pas d'onglet dédié. Le *preview* a bien
+   une bascule recto/verso (Lot 1).
+5. **Affichage du diff** : `diffDesign` + l'historique versionné existent
+   (données prêtes) mais le diff n'est pas encore rendu dans l'UI.
+6. **Dimensions d'images Google** : absentes de la référence REST ; tirées des
+   *brand guidelines* officielles (page distincte, citée).
+7. **Rendu exact iOS** (ajustements de contraste automatiques, compression de
+   texte, masque circulaire du logo Google) : approximé ; seul un test sur device
+   réel fait foi (cf. brief : « si incertain, générer un .pkpass et constater »).
 
 ## 5. Journal des lots
 - **Lot 0** ✅ : constantes officielles sourcées (`constants.ts`) + ce document.
@@ -141,4 +162,14 @@ serveur : `POST publish` → 422).
   - `src/lib/cardDesign/diff.ts` : `diffDesign(prev, next)` pur (couleurs, nom,
     type, barcode, objectif, champs ajoutés/modifiés/supprimés) + tests.
   - ⏳ Reste : brancher l'affichage du diff dans l'UI (données + fonction prêtes).
-- Lot 6 : récap final + honnêteté sur la fidélité résiduelle.
+- **Lot 6** ✅ : récap final + section « fidélité imparfaite » (§4) complétée.
+
+## 6. Critères d'acceptation — état
+| # | Critère | État |
+|---|---|---|
+| 1 | Rendu iPhone identique au preview | ✅ preview = sortie `buildPassJson` ; résiduels §4.1/§4.2 |
+| 2 | Idem Google, différences annoncées | ✅ preview = `mapToGoogleClass` ; avertissement cross-wallet |
+| 3 | 5 champs dans une zone de 3 → dit lesquels + refuse | ✅ panneau + erreur bloquante |
+| 4 | Fond clair + texte blanc → refuse | ✅ contraste < 3:1 = erreur |
+| 5 | Modif récompense publiée → notification | ✅ redeem (changeMessage) ; publish → refresh silencieux |
+| 6 | Tests golden : preview = sortie d'adapter | ✅ `previewModel.test.ts` + composant |
