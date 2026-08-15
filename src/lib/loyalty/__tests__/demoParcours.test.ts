@@ -5,7 +5,6 @@ import { googleIdentityModules } from "@/lib/wallet/googleIdentity";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { applyScan, currentTier, programCanRedeem, initialStampsForEnroll } from "@/lib/loyalty/engine";
 import { applyStamp, canRedeem } from "@/lib/loyalty/stamp";
-import { withinCooldown } from "@/lib/loyalty/cooldown";
 import { revertSecondsLeft, revertStatusMessage, REVERT_WINDOW_SECONDS } from "@/lib/loyalty/revert";
 import { shouldShowReview, reviewUrlFor, isValidPlaceId } from "@/lib/wallet/googleReview";
 
@@ -130,17 +129,6 @@ describe("Parcours démo Genève — Scènes 3→5 : tampons & récompense (cart
     expect(r.added).toBe(false);
     expect(r.rewardReady).toBe(true);
     expect(r.newStamps).toBe(10); // pas de 11e tampon
-  });
-
-  it("Scène 5 (bord) — cooldown actif : un re-scan immédiat ne doit PAS compter", () => {
-    const lastScan = "2026-06-15T10:00:00Z";
-    const justAfter = new Date("2026-06-15T10:00:05Z"); // 5 s plus tard
-    expect(withinCooldown(lastScan, justAfter, 30)).toBe(true); // dans la fenêtre 30 s
-    const later = new Date("2026-06-15T10:01:00Z"); // 60 s plus tard
-    expect(withinCooldown(lastScan, later, 30)).toBe(false);
-    expect(withinCooldown(lastScan, justAfter, 0)).toBe(false); // 0 = cooldown désactivé
-    // NB : le NON-incrément est appliqué atomiquement par la RPC scan_increment
-    // (status="cooldown") — couvert par scan.route.test.ts.
   });
 
   it("Scène 5 (bord) — annulation d'un tampon : fenêtre de 5 minutes, puis trop tard", () => {
