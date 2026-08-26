@@ -181,7 +181,7 @@ export default function PointsSection({
               }
               className={`${inputCls} w-20`}
             />
-            <span className="text-xs text-galet-ink">mois après le dernier point gagné.</span>
+            <span className="text-xs text-galet-ink">mois après le premier passage du cycle.</span>
           </div>
         )}
 

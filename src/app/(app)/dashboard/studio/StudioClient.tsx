@@ -609,18 +609,38 @@ export default function StudioClient({ express = false }: { express?: boolean })
               sub="Tampons à l'ancienne ou points cumulés — choisissez la mécanique de fidélité."
             />
             <div className="flex flex-wrap gap-2 mb-6">
-              {(['stamps', 'points'] as CardTypeKey[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => update({ cardType: t, ...(t === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) })}
-                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-                    cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-line-warm text-galet-ink hover:border-halo/60'
-                  }`}
-                >
-                  {CARD_TYPE_LABELS[t]}
-                </button>
-              ))}
+              {(['stamps', 'points'] as CardTypeKey[]).map((t) => {
+                // Le mode express ne persiste que reward_label/couleur + brouillon
+                // (validateAndContinue) : il n'appelle jamais /publish, seul chemin
+                // qui écrit merchants.loyalty_type/loyalty_config. Choisir « points »
+                // ici saisirait une config silencieusement jetée à la validation —
+                // on verrouille donc ce type en express, réglable dans le studio complet.
+                if (express && t === 'points') {
+                  return (
+                    <span
+                      key={t}
+                      title="Points par passage, paliers et expiration : à régler dans le studio complet"
+                      className={`rounded-xl border px-4 py-2 text-sm font-medium cursor-not-allowed select-none ${
+                        cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-dashed border-line-warm text-galet-ink'
+                      }`}
+                    >
+                      {CARD_TYPE_LABELS[t]} · studio complet
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => update({ cardType: t, ...(t === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) })}
+                    className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                      cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-line-warm text-galet-ink hover:border-halo/60'
+                    }`}
+                  >
+                    {CARD_TYPE_LABELS[t]}
+                  </button>
+                );
+              })}
               {(['cashback', 'subscription'] as CardTypeKey[]).map((t) => (
                 <span
                   key={t}
@@ -647,6 +667,16 @@ export default function StudioClient({ express = false }: { express?: boolean })
                   setAssets((a) => ({ ...a, stampEmpty: previewUrl }));
                 }}
               />
+            ) : express ? (
+              // Verrouillé en express (voir le gate du sélecteur ci-dessus) : ce cas ne
+              // se produit que si le design chargé était déjà « points » (config faite
+              // précédemment dans le studio complet) — jamais éditable ici, pour ne
+              // jamais laisser croire qu'une saisie express sera persistée.
+              <p className="text-sm text-galet-ink">
+                Cette carte utilise déjà un programme à points. Réglez les points par passage, les
+                paliers et l&apos;expiration dans le studio complet — ouvrez-le depuis le tableau de
+                bord une fois l&apos;essentiel validé ici.
+              </p>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-galet-ink">
