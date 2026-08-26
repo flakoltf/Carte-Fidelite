@@ -1,4 +1,4 @@
-export type LoyaltyType = "stamp_card" | "visit_based" | "tiered" | "amount_points";
+export type LoyaltyType = "stamp_card" | "visit_based" | "tiered" | "amount_points" | "points";
 
 export type StampCardConfig = {
   goal: number;
@@ -24,17 +24,32 @@ export type AmountPointsConfig = {
   maxPointsPerScan?: number;
 };
 
+// Carte à points (points FIXES par scan — distinct d'amount_points).
+// Paliers cumulatifs strictement croissants ; le DERNIER = maximum (cap + reset).
+export type PointsTier = { threshold: number; reward: string };
+export type PointsExpiration =
+  | { type: "none" }
+  | { type: "fixed_date"; month: number; day: number } // reset annuel récurrent
+  | { type: "rolling"; months: number }; // N mois après le 1er scan du cycle
+export type PointsConfig = {
+  pointsPerScan: number;
+  tiers: PointsTier[];
+  expiration?: PointsExpiration; // absent = aucune expiration
+};
+
 export type LoyaltyProgram =
   | { type: "stamp_card"; config: StampCardConfig }
   | { type: "visit_based"; config: VisitBasedConfig }
   | { type: "tiered"; config: TieredConfig }
-  | { type: "amount_points"; config: AmountPointsConfig };
+  | { type: "amount_points"; config: AmountPointsConfig }
+  | { type: "points"; config: PointsConfig };
 
 export type ScanEvent =
   | { kind: "reward_ready" }
   | { kind: "intermediate_reward_ready" }
   | { kind: "milestone_reached"; at: number }
-  | { kind: "tier_changed"; name: string };
+  | { kind: "tier_changed"; name: string }
+  | { kind: "points_tier_reached"; threshold: number; reward: string };
 
 export type ScanResult = {
   // Pour amount_points, `newCount` porte le NOUVEAU solde de points (la valeur
@@ -45,4 +60,4 @@ export type ScanResult = {
   events: ScanEvent[];
 };
 
-export const LOYALTY_TYPES: readonly LoyaltyType[] = ["stamp_card", "visit_based", "tiered", "amount_points"];
+export const LOYALTY_TYPES: readonly LoyaltyType[] = ["stamp_card", "visit_based", "tiered", "amount_points", "points"];

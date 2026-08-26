@@ -20,6 +20,7 @@
 import type { BusinessHours } from "@/lib/merchant-config/hours";
 import type {
   AmountPointsConfig,
+  PointsConfig,
   StampCardConfig,
   TieredConfig,
   VisitBasedConfig,
@@ -71,7 +72,8 @@ type DemoKitProgram =
   | { loyaltyType: "stamp_card"; loyaltyConfig: StampCardConfig }
   | { loyaltyType: "visit_based"; loyaltyConfig: VisitBasedConfig }
   | { loyaltyType: "tiered"; loyaltyConfig: TieredConfig }
-  | { loyaltyType: "amount_points"; loyaltyConfig: AmountPointsConfig };
+  | { loyaltyType: "amount_points"; loyaltyConfig: AmountPointsConfig }
+  | { loyaltyType: "points"; loyaltyConfig: PointsConfig };
 
 export type DemoKitEntry = {
   /** Identité réservée (doit appartenir à l'allowlist). */
@@ -397,6 +399,45 @@ export const DEMO_KIT: readonly DemoKitEntry[] = [
       programName: "maison de pain",
       cardType: "points",
       barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Boulangerie Démo" },
+    },
+  },
+
+  // ── 8. Caviste Cologny — POINTS (points fixes par scan, paliers cumulatifs) ──
+  {
+    slug: "caviste-cologny",
+    email: "demo-caviste@example.com",
+    shopName: "Caviste Cologny",
+    motif: "waves",
+    artText: { wordmark: ["Caviste", "Cologny"] },
+    address: "Rue de Cologny 123, 1223 Genève",
+    latitude: 46.2250,
+    longitude: 6.1650,
+    phone: "+41 22 301 44 88",
+    businessHours: HOURS_DAILY,
+    rewardLabel: "CHF 15 de bon d'achat",
+    demo: {
+      progression: "Plus que 10 points", nextStep: "50 points",
+      memberSince: "Juil. 2024", totalVisits: "28", referrals: "4",
+      memberId: "CV-2847-11",
+      howItWorks: "5 points par achat. Bon d'achat CHF 15 à 50 pts, CHF 30 à 100 pts.",
+      conditions: "Points non transférables, valables 2 ans. Bons d'achat non cumulables.",
+    },
+    demonstrates: "Carte à POINTS : 5 points fixes par scan, paliers 50 (CHF 15) et 100 (CHF 30).",
+    loyaltyType: "points",
+    loyaltyConfig: {
+      pointsPerScan: 5,
+      tiers: [
+        { threshold: 50, reward: "CHF 15 de bon d'achat" },
+        { threshold: 100, reward: "CHF 30 de bon d'achat" },
+      ],
+      expiration: { type: "rolling", months: 24 },
+    },
+    design: {
+      colors: { background: "#3D2E47", foreground: "#F7F2FA", label: "#D4A574" },
+      accent: "#D4A574",
+      programName: "le sens du vin",
+      cardType: "points",
+      barcode: { type: "QR", source: "card_token", altText: "Présentez cette carte — Caviste Cologny" },
     },
   },
 ];

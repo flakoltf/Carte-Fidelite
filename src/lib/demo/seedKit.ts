@@ -74,6 +74,7 @@ function primaryLabel(entry: DemoKitEntry): string {
     case "visit_based": return "VISITES";
     case "tiered": return "STATUT";
     case "stamp_card": return "TAMPONS";
+    case "points": return "POINTS";
   }
 }
 
@@ -88,6 +89,7 @@ export function goalForDisplay(entry: DemoKitEntry): number {
     case "visit_based": raw = Math.max(...entry.loyaltyConfig.milestones); break;
     case "tiered": raw = Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at)); break;
     case "amount_points": raw = entry.loyaltyConfig.rewardThreshold; break;
+    case "points": raw = Math.max(...entry.loyaltyConfig.tiers.map((t) => t.threshold)); break;
   }
   return Math.max(1, Math.min(50, raw));
 }
@@ -198,6 +200,7 @@ export function rewardReadyValue(entry: DemoKitEntry): number {
     case "visit_based": return Math.max(...entry.loyaltyConfig.milestones);
     case "tiered": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at));
     case "amount_points": return entry.loyaltyConfig.rewardThreshold;
+    case "points": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.threshold));
   }
 }
 
@@ -210,6 +213,10 @@ function midValue(entry: DemoKitEntry): number {
       return ats[Math.floor(ats.length / 2)] ?? ats[0];
     }
     case "amount_points": return Math.floor(entry.loyaltyConfig.rewardThreshold * 0.55);
+    case "points": {
+      const thresholds = entry.loyaltyConfig.tiers.map((t) => t.threshold).sort((a, b) => a - b);
+      return thresholds[Math.floor(thresholds.length / 2)] ?? thresholds[0];
+    }
   }
 }
 
