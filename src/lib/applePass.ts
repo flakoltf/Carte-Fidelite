@@ -227,6 +227,20 @@ export async function buildApplePassBuffer({
     }
   }
 
+  // {visites} : nombre total de scans de la carte (compteur à vie, indépendant
+  // des resets de points) — COUNT bon marché sur idx_scan_history_card_id.
+  // Best-effort : un échec ne doit jamais empêcher l'émission du pass.
+  let visites: number | undefined;
+  try {
+    const { count } = await supabaseAdmin
+      .from("scan_history")
+      .select("id", { count: "exact", head: true })
+      .eq("card_id", cardId);
+    visites = count ?? 0;
+  } catch {
+    visites = 0;
+  }
+
   const passJson = buildPassJson({
     cardId,
     customerName,
@@ -243,6 +257,7 @@ export async function buildApplePassBuffer({
     locations,
     design,
     palier,
+    visites,
     identity,
   });
 

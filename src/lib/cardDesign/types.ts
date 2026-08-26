@@ -4,7 +4,7 @@ export type CardField = {
   id: string;
   zone: CardZone;
   label: string;
-  value: string; // peut contenir des jetons : {nom}, {points}, {palier}
+  value: string; // peut contenir des jetons : {nom}, {points}, {palier}, {visites}
   order: number;
 };
 
