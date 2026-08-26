@@ -81,6 +81,10 @@ export function applyScan(program: LoyaltyProgram, currentValue: number, scanAmo
         events: crossed ? [{ kind: "reward_ready" }] : [],
       };
     }
+    // NOTE: "points" type (Task 2+) not yet implemented in applyScan.
+    // This case should never be reached in production.
+    default:
+      throw new Error(`applyScan not implemented for type: ${(program as any).type}`);
   }
 }
 
