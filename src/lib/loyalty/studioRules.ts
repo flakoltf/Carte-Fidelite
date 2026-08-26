@@ -10,12 +10,12 @@ import { validateLoyaltyProgram } from "./validate";
 // le filtre tenant (.eq('id', merchantId), invariant 3).
 
 export type StudioRulesInput = {
-  type: unknown; // "stamp_card" | "visit_based" | "tiered"
+  type: unknown; // "stamp_card" | "visit_based" | "tiered" | "points"
   goal?: unknown; // stamp_card
   reward_label?: unknown; // libellé récompense (TEXT 1-80, ou vide → null)
   welcome_stamps?: unknown; // 0 | 1
   intermediate_milestone?: unknown; // null | number
-  config?: { milestones?: unknown; tiers?: unknown }; // visit_based / tiered
+  config?: { milestones?: unknown; tiers?: unknown; pointsPerScan?: unknown; expiration?: unknown }; // visit_based / tiered / points
 };
 
 export type LoyaltyMerchantUpdate = {
@@ -39,6 +39,14 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
   }
   if (input.type === "visit_based") return { milestones: input.config?.milestones };
   if (input.type === "tiered") return { tiers: input.config?.tiers };
+  if (input.type === "points") {
+    const cfg: Record<string, unknown> = {
+      pointsPerScan: input.config?.pointsPerScan,
+      tiers: input.config?.tiers,
+    };
+    if (input.config?.expiration !== undefined) cfg.expiration = input.config.expiration;
+    return cfg;
+  }
   return {};
 }
 
