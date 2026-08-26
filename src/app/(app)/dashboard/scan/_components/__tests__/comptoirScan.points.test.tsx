@@ -106,7 +106,7 @@ describe("<ComptoirScan> — flux points", () => {
 
     const toast = screen.getByRole("status");
     expect(toast.textContent).toContain("+4 points · 8 / 20");
-    expect(screen.queryByRole("dialog", { name: /offrir la récompense/i })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("palier franchi (rewardReady) : ouvre RedeemFullScreen avec un bouton par palier, le max marqué « remet la carte à zéro »", async () => {
@@ -127,7 +127,7 @@ describe("<ComptoirScan> — flux points", () => {
     render(<ComptoirScan programType="points" rewardLabel="🎁 Récompense offerte" />);
     await scanCard("QR-POINTS");
 
-    expect(await screen.findByRole("dialog", { name: /offrir la récompense/i })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: /choisissez la récompense/i })).toBeTruthy();
     const cafe = screen.getByRole("button", { name: /☕ Café offert/ });
     expect(cafe.textContent).not.toContain("remet la carte à zéro");
     const petitDej = screen.getByRole("button", { name: /🥐 Petit-déjeuner offert/ });
@@ -148,6 +148,6 @@ describe("<ComptoirScan> — flux points", () => {
 
     render(<ComptoirScan programType="points" rewardLabel="🎁 Récompense offerte" />);
     await scanCard("QR-POINTS");
-    expect(await screen.findByRole("dialog", { name: /offrir la récompense/i })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: /choisissez la récompense/i })).toBeTruthy();
   });
 });

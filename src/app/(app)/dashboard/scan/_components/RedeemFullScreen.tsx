@@ -156,7 +156,7 @@ export default function RedeemFullScreen({
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label="Offrir la récompense"
+      aria-label={hasTiers ? "Choisissez la récompense" : "Offrir la récompense"}
       // Entrée plein écran : modal (non ancrée à un déclencheur) → origin centre,
       // léger scale + fondu en courbe forte. Jamais scale(0).
       initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
@@ -165,15 +165,12 @@ export default function RedeemFullScreen({
       className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center text-onyx"
       style={{ background: "var(--color-gold-grad)" }}
     >
-      {/* Région d'annonce pour lecteurs d'écran (succès / erreur / palier intermédiaire). */}
+      {/* Région d'annonce pour lecteurs d'écran (succès / erreur). La validation
+          d'un palier intermédiaire (mode tiers) a SA PROPRE région live
+          (role="status" plus bas) : on ne la duplique pas ici, sous peine de
+          double annonce au même événement. */}
       <p aria-live="assertive" className="sr-only">
-        {done
-          ? `${doneHeadline}.`
-          : phase === "error"
-            ? error
-            : hasTiers && redeemedNote
-              ? `${redeemedNote} offert.`
-              : ""}
+        {done ? `${doneHeadline}.` : phase === "error" ? error : ""}
       </p>
 
       {/* Confettis + halo au succès — sautés en mode silencieux. */}
@@ -229,7 +226,7 @@ export default function RedeemFullScreen({
         <div className="relative z-10 mt-12 flex w-full max-w-md flex-col items-center gap-4">
           {redeemedNote && (
             <p role="status" aria-live="polite" className="text-sm font-semibold text-onyx/80">
-              {redeemedNote} offert. Vous pouvez valider un autre palier ou terminer.
+              Validé : {redeemedNote}. Vous pouvez valider un autre palier ou terminer.
             </p>
           )}
 

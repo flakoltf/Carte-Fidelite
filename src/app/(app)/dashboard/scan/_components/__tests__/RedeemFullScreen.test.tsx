@@ -169,6 +169,19 @@ describe("<RedeemFullScreen> — paliers points (tiers)", () => {
     expect(petitDej.textContent).toContain("remet la carte à zéro");
   });
 
+  it("l'aria-label de la modale reflète le titre visible « Choisissez la récompense »", () => {
+    render(
+      <RedeemFullScreen
+        cardId="QR"
+        rewardLabel="🎁 Récompense offerte"
+        tiers={tiers}
+        maxThreshold={20}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.getByRole("dialog", { name: /choisissez la récompense/i })).toBeTruthy();
+  });
+
   it("palier intermédiaire : POST { cardId, tierThreshold }, retire le palier validé, propose Terminer sans rediriger", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -177,7 +190,7 @@ describe("<RedeemFullScreen> — paliers points (tiers)", () => {
     vi.stubGlobal("fetch", fetchMock);
     const onRedeemed = vi.fn();
 
-    render(
+    const { container } = render(
       <RedeemFullScreen
         cardId="QR"
         rewardLabel="🎁 Récompense offerte"
@@ -202,6 +215,16 @@ describe("<RedeemFullScreen> — paliers points (tiers)", () => {
     expect(screen.getByRole("button", { name: /^terminer$/i })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^annuler$/i })).toBeNull();
     expect(onRedeemed).not.toHaveBeenCalled();
+
+    // Copy correcte (pas de « offert offert » : le libellé de la récompense
+    // porte déjà « offert »/« offerte ») et annoncée par UNE SEULE région live
+    // : la région sr-only (assertive, dédiée succès/erreur) reste vide ici,
+    // seule la note visible (role=status, polite) porte le message.
+    const note = screen.getByRole("status");
+    expect(note.textContent).toBe("Validé : ☕ Café offert. Vous pouvez valider un autre palier ou terminer.");
+    expect(note.textContent).not.toMatch(/offert offert/i);
+    const srOnly = container.querySelector('[aria-live="assertive"]');
+    expect(srOnly?.textContent).toBe("");
   });
 
   it("palier max (cycleReset) : célébration « Carte remise à zéro » puis redirection", async () => {
