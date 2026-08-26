@@ -5,6 +5,7 @@ import { verifyQRCode } from "@/lib/qrSignature";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { UUID_RE } from "@/lib/validation/uuid";
+import { maxPointsThreshold } from "@/lib/loyalty/points";
 
 // Encaissement « Offrir la récompense » — logique partagée par /api/redeem et
 // /api/scan/redeem (le comptoir poste sur le second ; la fiche Clients sur le
@@ -22,7 +23,8 @@ export async function redeemReward(req: NextRequest): Promise<NextResponse> {
   const rl = await rateLimit(`redeem:${user.id}`, 60, 60000);
   if (!rl.success) return NextResponse.json({ error: "Trop de demandes. Réessayez." }, { status: 429 });
 
-  const { cardId } = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({}));
+  const { cardId, tierThreshold } = body;
   if (!cardId || typeof cardId !== "string" || cardId.length > 200)
     return NextResponse.json({ error: "ID de carte invalide" }, { status: 400 });
 
@@ -45,6 +47,47 @@ export async function redeemReward(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Cette carte appartient à un autre établissement" }, { status: 403 });
 
   const program = resolveLoyaltyProgram(merchant);
+
+  // Programme points : validation d'UN palier précis (cumulatif — spec 2026-08-26).
+  if (program.type === "points") {
+    const tier = Number.isInteger(tierThreshold)
+      ? program.config.tiers.find((t) => t.threshold === tierThreshold)
+      : undefined;
+    if (!tier) return NextResponse.json({ error: "Palier inconnu pour ce programme." }, { status: 400 });
+    const maxThreshold = maxPointsThreshold(program.config);
+
+    const { data: outcome, error: rpcError } = await supabaseAdmin.rpc("points_redeem_tier", {
+      p_card_id: actualCardId, p_merchant_id: merchant.id,
+      p_threshold: tier.threshold, p_max_threshold: maxThreshold,
+    });
+    if (rpcError) {
+      console.error("[redeem] RPC points_redeem_tier échec:", rpcError.message);
+      return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    }
+    if (outcome === "notfound") return NextResponse.json({ error: "Carte introuvable" }, { status: 404 });
+    if (outcome === "not_reached") return NextResponse.json({ error: "Palier non atteint." }, { status: 409 });
+    if (outcome === "already") return NextResponse.json({ error: "Palier déjà validé sur ce cycle." }, { status: 409 });
+    const cycleReset = outcome === "reset";
+
+    await logAuditEvent({
+      action: "REWARD_REDEEMED",
+      merchant_id: merchant.id, user_id: user.id, card_id: actualCardId,
+      details: { tier_threshold: tier.threshold, reward: tier.reward, cycle_reset: cycleReset, loyalty_type: "points" },
+      ...extractRequestMeta(req),
+    });
+
+    try {
+      const { getChannels } = await import("@/lib/wallet/channel");
+      const msgBody = cycleReset
+        ? "Merci 🎉 Votre carte repart à zéro."
+        : `${tier.reward} — vos points continuent de cumuler.`;
+      for (const ch of getChannels()) await ch.notify([actualCardId], { title: "Récompense utilisée", body: msgBody });
+    } catch (e) {
+      console.error("[redeem] push failed:", e instanceof Error ? e.message : e);
+    }
+
+    return NextResponse.json({ success: true, tier, cycleReset });
+  }
 
   // Encaissement selon le type. Deux chemins ATOMIQUES et CONDITIONNELS (anti
   // double-encaissement) ; visit_based / tiered n'ont pas de notion d'encaissement.
