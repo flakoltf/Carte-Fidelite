@@ -21,6 +21,7 @@ export const DEFAULT_SAMPLE: SampleData = {
   points: '7',
   nom: 'Sarah M.',
   palier: 'Argent',
+  visites: '12',
 };
 
 function resolve(template: string, sample: SampleData): string {

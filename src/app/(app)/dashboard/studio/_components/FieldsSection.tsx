@@ -46,6 +46,7 @@ const TOKENS: { token: string; hint: string }[] = [
   { token: '{points}', hint: 'tampons / points du client' },
   { token: '{nom}', hint: 'nom du client' },
   { token: '{palier}', hint: 'palier de fidélité' },
+  { token: '{visites}', hint: 'Nombre total de passages' },
 ];
 
 function SortableRow({

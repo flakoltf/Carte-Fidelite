@@ -7,6 +7,7 @@ const DEMO_SAMPLE: Record<string, string> = {
   points: '7',
   nom: 'Sarah M.',
   palier: 'Argent',
+  visites: '12',
 };
 
 function resolve(template: string, sample: Record<string, string>): string {

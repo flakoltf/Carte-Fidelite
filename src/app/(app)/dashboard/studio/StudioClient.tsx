@@ -188,6 +188,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
       points: cardType === 'stamps' ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}` : String(sampleStamps * 12),
       nom: 'Sarah M.',
       palier: 'Argent',
+      visites: '12',
     }),
     [cardType, sampleStamps, stamps.goal]
   );
