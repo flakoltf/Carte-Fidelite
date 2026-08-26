@@ -21,7 +21,13 @@ export type StudioRulesInput = {
 export type LoyaltyMerchantUpdate = {
   loyalty_type: string;
   loyalty_config: Record<string, unknown>;
-  reward_label: string | null;
+  // Optionnel : absent (clé non posée) → la route DOIT omettre la colonne
+  // reward_label de l'UPDATE merchants (préserve la valeur existante — Important 2,
+  // revue finale). Présent avec null/"" → effacement VOLONTAIRE. Présent avec une
+  // chaîne → nouvelle valeur. Ce n'est PAS la même chose que `reward_label:
+  // undefined` en JS : voir buildLoyaltyUpdate ci-dessous pour la distinction
+  // (clé absente du body vs clé présente et vide).
+  reward_label?: string | null;
 };
 
 export type BuildResult =
@@ -51,10 +57,20 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
 }
 
 export function buildLoyaltyUpdate(input: StudioRulesInput): BuildResult {
-  // reward_label : optionnel, TEXT 1-80 (vide/absent → null).
-  let reward_label: string | null = null;
+  // reward_label : optionnel. Distinction cruciale (Important 2, revue finale
+  // cartes-à-points) entre « clé absente » (le client n'a rien à dire sur la
+  // récompense — p. ex. le prefetch /api/merchant/me n'a pas encore résolu au
+  // moment du Publier) et « clé présente mais vide » (le marchand efface
+  // volontairement sa récompense) : seul le second cas doit écrire null.
+  // Absent → reward_label n'apparaît PAS dans `update` (voir LoyaltyMerchantUpdate) ;
+  // la route DOIT alors omettre la colonne de l'UPDATE pour préserver l'existant.
+  let reward_label: string | null | undefined;
   const rl = input.reward_label;
-  if (rl !== undefined && rl !== null && rl !== "") {
+  if (rl === undefined) {
+    reward_label = undefined;
+  } else if (rl === null || rl === "") {
+    reward_label = null;
+  } else {
     if (typeof rl !== "string" || rl.trim().length < 1 || rl.trim().length > 80) {
       return { ok: false, error: "Libellé de récompense : 1 à 80 caractères." };
     }
@@ -69,7 +85,7 @@ export function buildLoyaltyUpdate(input: StudioRulesInput): BuildResult {
     update: {
       loyalty_type: v.program.type,
       loyalty_config: v.program.config as Record<string, unknown>,
-      reward_label,
+      ...(reward_label !== undefined ? { reward_label } : {}),
     },
   };
 }

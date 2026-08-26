@@ -81,13 +81,16 @@ export async function POST(req: Request) {
     // B — Persiste les règles du programme (loyalty_type/config + reward_label).
     // Tenant strict (.eq('id', merchantId), invariant 3) ; pas de migration (jsonb
     // + colonne reward_label existante) ; action d'audit existante (#1 respecté).
+    // reward_label : OMIS de l'UPDATE si absent de loyaltyUpdate (Important 2, revue
+    // finale) — sinon un prefetch /api/merchant/me pas encore résolu au moment du
+    // Publier écrirait null et effacerait silencieusement la récompense existante.
     if (loyaltyUpdate) {
       await supabaseAdmin
         .from('merchants')
         .update({
           loyalty_type: loyaltyUpdate.loyalty_type,
           loyalty_config: loyaltyUpdate.loyalty_config,
-          reward_label: loyaltyUpdate.reward_label,
+          ...('reward_label' in loyaltyUpdate ? { reward_label: loyaltyUpdate.reward_label } : {}),
         })
         .eq('id', merchantId);
       await logAuditEvent({
