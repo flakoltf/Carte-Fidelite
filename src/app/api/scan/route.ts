@@ -246,8 +246,10 @@ export async function POST(req: Request) {
       try {
         const { getChannels } = await import("@/lib/wallet/channel");
         const top = crossed[crossed.length - 1];
+        // Titre sans emoji (Minor 7, revue finale) : cohérent avec "Récompense
+        // utilisée" (redeem.ts) — les emojis restent réservés aux corps de message.
         const message = top
-          ? { title: "Récompense disponible 🎁", body: `${top.reward} — présentez votre carte au comptoir pour en profiter.` }
+          ? { title: "Récompense disponible", body: `${top.reward} — présentez votre carte au comptoir pour en profiter.` }
           : undefined;
         for (const ch of getChannels()) await ch.notify([actualCardId], message);
       } catch (e) {

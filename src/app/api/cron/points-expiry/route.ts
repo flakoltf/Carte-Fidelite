@@ -16,6 +16,12 @@ async function run(): Promise<NextResponse> {
   const startedAt = new Date();
   let reset = 0;
   try {
+    // TODO(pagination) : PostgREST plafonne les SELECT à 1000 lignes par défaut.
+    // Au-delà de 1000 marchands en programme points (ce select) — ou de 1000
+    // cartes à cycle en cours par marchand (select ci-dessous) — cette requête ne
+    // verrait qu'une partie des lignes et laisserait des cycles expirés non
+    // réinitialisés en silence. Piste : paginer avec `.range(offset, offset +
+    // 999)` et boucler jusqu'à une page incomplète, pour les deux selects.
     const { data: merchants } = await supabaseAdmin
       .from("merchants")
       .select("id, loyalty_type, loyalty_config, stamp_goal")

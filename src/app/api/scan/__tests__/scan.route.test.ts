@@ -65,7 +65,20 @@ vi.mock("@/lib/auditLog", () => ({
   logAuditEvent: async () => {},
   extractRequestMeta: () => ({ ip_address: "203.0.113.7", user_agent: "vitest" }),
 }));
-vi.mock("@/lib/wallet/channel", () => ({ getChannels: () => [] }));
+// Un faux canal qui ENREGISTRE les notify() (au lieu d'un mock vide) : nécessaire
+// pour vérifier le TITRE du push envoyé au franchissement d'un palier de points
+// (Minor 7, revue finale — cohérence avec "Récompense utilisée" de redeem.ts,
+// sans emoji dans le titre).
+const channelCalls = { notify: [] as { cardIds: string[]; message?: { title: string; body: string } }[] };
+vi.mock("@/lib/wallet/channel", () => ({
+  getChannels: () => [
+    {
+      notify: async (cardIds: string[], message?: { title: string; body: string }) => {
+        channelCalls.notify.push({ cardIds, message });
+      },
+    },
+  ],
+}));
 
 import { POST } from "@/app/api/scan/route";
 
@@ -92,6 +105,7 @@ beforeEach(() => {
   state.cooldownSeconds = 30;
   state.stampGoal = 10;
   calls.rpc = [];
+  channelCalls.notify = [];
 });
 
 describe("POST /api/scan — câblage RPC scan_increment", () => {
@@ -134,6 +148,47 @@ describe("POST /api/scan — câblage RPC scan_increment", () => {
     state.rpcError = { message: "lock timeout" };
     const res = await POST(scanReq());
     expect(res.status).toBe(500);
+  });
+});
+
+describe("POST /api/scan — programme à points : push au franchissement d'un palier (Minor 7)", () => {
+  it("titre du push SANS emoji (cohérence avec « Récompense utilisée » de redeem.ts)", async () => {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "points",
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "card-1", merchant_id: "merchant-1", points_balance: 25, redeemed_tiers: [], customers: { full_name: "Nadia" } };
+    // scan_increment_points : franchit le palier 30 (before=25, after=30).
+    state.rpcData = [{ new_count: 30, points_added: 5, status: "incremented" }];
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.rewardReady).toBe(true);
+
+    expect(channelCalls.notify).toHaveLength(1);
+    expect(channelCalls.notify[0].message?.title).toBe("Récompense disponible");
+    expect(channelCalls.notify[0].message?.body).toContain("Café offert");
+  });
+
+  it("pas de franchissement de palier → push silencieux (sans message)", async () => {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "points",
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "card-1", merchant_id: "merchant-1", points_balance: 10, redeemed_tiers: [], customers: { full_name: "Nadia" } };
+    state.rpcData = [{ new_count: 15, points_added: 5, status: "incremented" }];
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify).toHaveLength(1);
+    expect(channelCalls.notify[0].message).toBeUndefined();
   });
 });
 
