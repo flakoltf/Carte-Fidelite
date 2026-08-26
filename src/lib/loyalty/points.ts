@@ -1,4 +1,5 @@
-import type { PointsConfig, PointsExpiration, PointsTier } from "./types";
+import { canRedeem } from "./stamp";
+import type { LoyaltyProgram, PointsConfig, PointsExpiration, PointsTier } from "./types";
 
 // Le dernier palier (validation : strictement croissants) = maximum du programme.
 export function maxPointsThreshold(config: PointsConfig): number {
@@ -38,6 +39,25 @@ export function redeemablePointsTiers(config: PointsConfig, balance: number, red
 export function parseRedeemedTiers(raw: unknown): number[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((v): v is number => typeof v === "number" && Number.isInteger(v));
+}
+
+// rewardReady pour la couche IDENTITÉ du pass (F2 — lien avis Google, halo « reward
+// ready ») : DOIT être dérivé du programme RÉEL du marchand, jamais d'un
+// stamps_count résiduel pour une carte à POINTS (Important 3, revue finale
+// cartes-à-points — applePass.ts / googlePass.ts appelaient canRedeem(stamps,
+// stamp_goal) AVANT même de résoudre le programme, donnant un état faux — voire
+// faussement "prêt" via un compteur de tampons sans rapport). Pur → testable sans
+// certs/DB ; les appelants DOIVENT résoudre `program` avant d'appeler ce helper.
+export function rewardReadyForIdentity(
+  program: LoyaltyProgram,
+  input: { stamps: number; stampGoal: number; pointsBalance: number; redeemedTiers: number[] }
+): boolean {
+  if (program.type === "points") {
+    return redeemablePointsTiers(program.config, input.pointsBalance, input.redeemedTiers).length > 0;
+  }
+  // Types inchangés (stamp_card / visit_based / tiered / amount_points) : même
+  // règle qu'avant ce fix.
+  return canRedeem(input.stamps, input.stampGoal);
 }
 
 // Expiration du CYCLE (carte entière) : l'ancre est points_cycle_started_at (posée au

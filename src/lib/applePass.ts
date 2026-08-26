@@ -94,7 +94,7 @@ export async function buildApplePassBuffer({
   let identity: import("@/lib/wallet/passJson").PassIdentity | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
-    .select("merchant_id, points_balance")
+    .select("merchant_id, points_balance, redeemed_tiers")
     .eq("id", cardId)
     .single();
   if (cardRow?.merchant_id) {
@@ -106,24 +106,35 @@ export async function buildApplePassBuffer({
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
     passStampGoal = stampGoal;
+    // Résout le programme réel du marchand AVANT l'identité (Important 3, revue
+    // finale) : pilote le solde affiché ({points} = solde / max) et {palier} pour
+    // les cartes à POINTS ; comportement inchangé pour tous les autres types
+    // (dont "tiered" ci-dessous). rewardReady (F2, lien avis Google) EN DÉPEND —
+    // calculer rewardReady avant de résoudre program donnait un état faux pour
+    // les cartes à points (canRedeem tournait sur `stamps`, sans rapport avec
+    // points_balance, voire faussement "prêt" via un stamps_count résiduel).
+    const { resolveLoyaltyProgram } = await import("@/lib/loyalty/resolveProgram");
+    const program = resolveLoyaltyProgram(mRow);
+    const pointsBalance = cardRow.points_balance ?? 0;
+
     // Couche identité commerce (F1) + lien avis Google si reward-ready (F2),
     // calculés ICI pour que TOUT chemin d'émission (enrôlement + régénération
     // web-service après scan) les porte.
     const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
-    const { canRedeem } = await import("@/lib/loyalty/stamp");
-    identity = identityFromMerchant(mRow, new Date(), { rewardReady: canRedeem(stamps, stampGoal) });
+    const { rewardReadyForIdentity, parseRedeemedTiers } = await import("@/lib/loyalty/points");
+    const rewardReady = rewardReadyForIdentity(program, {
+      stamps,
+      stampGoal,
+      pointsBalance,
+      redeemedTiers: parseRedeemedTiers(cardRow.redeemed_tiers),
+    });
+    identity = identityFromMerchant(mRow, new Date(), { rewardReady });
     if (mRow?.latitude != null && mRow?.longitude != null) {
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
     }
-    // Résout le programme réel du marchand : pilote le solde affiché ({points} =
-    // solde / max) et {palier} pour les cartes à POINTS ; comportement inchangé
-    // pour tous les autres types (dont "tiered" ci-dessous).
-    const { resolveLoyaltyProgram } = await import("@/lib/loyalty/resolveProgram");
-    const program = resolveLoyaltyProgram(mRow);
     if (program.type === "points") {
       const { resolvePointsPassState } = await import("@/lib/loyalty/points");
-      const pointsBalance = cardRow.points_balance ?? 0;
       const state = resolvePointsPassState(program.config, pointsBalance);
       passStamps = state.stamps;
       passStampGoal = state.stampGoal;
@@ -229,13 +240,19 @@ export async function buildApplePassBuffer({
 
   // {visites} : nombre total de scans de la carte (compteur à vie, indépendant
   // des resets de points) — COUNT bon marché sur idx_scan_history_card_id.
+  // .gte("points_added", 0) exclut les lignes de COMPENSATION du revert
+  // (points_added: -1, scan/revert/route.ts) — sans ce filtre, un scan annulé
+  // comptait 2 passages (Minor 4, revue finale). PAS .gt : un scan amount_points
+  // peut légitimement créditer 0 point (montant sous le seuil d'arrondi) et reste
+  // un passage réel — seule une valeur strictement négative signale une compensation.
   // Best-effort : un échec ne doit jamais empêcher l'émission du pass.
   let visites: number | undefined;
   try {
     const { count } = await supabaseAdmin
       .from("scan_history")
       .select("id", { count: "exact", head: true })
-      .eq("card_id", cardId);
+      .eq("card_id", cardId)
+      .gte("points_added", 0);
     visites = count ?? 0;
   } catch {
     visites = 0;

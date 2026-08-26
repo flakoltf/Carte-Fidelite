@@ -67,7 +67,7 @@ export async function buildGoogleSaveUrl({
   // programmes à POINTS, où seul points_balance (état RÉEL de la carte) fait sens.
   let pointsBalance = stamps;
   const { data: cardRow } = await supabaseAdmin
-    .from("loyalty_cards").select("merchant_id, points_balance").eq("id", cardId).single();
+    .from("loyalty_cards").select("merchant_id, points_balance, redeemed_tiers").eq("id", cardId).single();
   if (cardRow?.merchant_id) {
     merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
@@ -78,23 +78,33 @@ export async function buildGoogleSaveUrl({
     if (mRow?.latitude != null && mRow?.longitude != null) {
       geoLocations = [{ latitude: mRow.latitude as number, longitude: mRow.longitude as number }];
     }
-    // Couche identité commerce (F1) + lien avis Google si reward-ready (F2) :
-    // récompense + horaires (textModules), itinéraire + appel + avis (linksModule).
-    const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
-    const { googleIdentityModules } = await import("@/lib/wallet/googleIdentity");
-    const { canRedeem } = await import("@/lib/loyalty/stamp");
-    const rewardReady = canRedeem(stamps, (mRow?.stamp_goal as number) ?? 10);
-    identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date(), { rewardReady }));
 
-    // Programme à points : loyaltyPoints.balance doit refléter points_balance
-    // (état RÉEL de la carte), pas `stamps` (sans rapport pour ce type de
-    // programme). Comportement inchangé pour tous les autres types — et
-    // AUCUNE modification de la classe Google (invariant 2 : jamais d'UPDATE/PUT).
+    // Résout le programme réel du marchand AVANT l'identité (Important 3, revue
+    // finale) : loyaltyPoints.balance doit refléter points_balance (état RÉEL de
+    // la carte) pour les programmes à POINTS, pas `stamps` (sans rapport pour ce
+    // type). rewardReady (F2, lien avis Google) EN DÉPEND aussi — le calculer
+    // avant de résoudre `program` donnait un état faux pour les cartes à points
+    // (canRedeem tournait sur `stamps`, voire faussement "prêt" via un compteur
+    // résiduel). Comportement inchangé pour tous les autres types — et AUCUNE
+    // modification de la classe Google (invariant 2 : jamais d'UPDATE/PUT).
     const { resolveLoyaltyProgram } = await import("@/lib/loyalty/resolveProgram");
     const program = resolveLoyaltyProgram(mRow);
     if (program.type === "points") {
       pointsBalance = (cardRow.points_balance as number) ?? 0;
     }
+
+    // Couche identité commerce (F1) + lien avis Google si reward-ready (F2) :
+    // récompense + horaires (textModules), itinéraire + appel + avis (linksModule).
+    const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
+    const { googleIdentityModules } = await import("@/lib/wallet/googleIdentity");
+    const { rewardReadyForIdentity, parseRedeemedTiers } = await import("@/lib/loyalty/points");
+    const rewardReady = rewardReadyForIdentity(program, {
+      stamps,
+      stampGoal: (mRow?.stamp_goal as number) ?? 10,
+      pointsBalance,
+      redeemedTiers: parseRedeemedTiers(cardRow.redeemed_tiers),
+    });
+    identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date(), { rewardReady }));
   }
 
   // Garantit la classe Google à l'émission (GET -> PATCH / 404 -> INSERT, jamais

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, redeemablePointsTiers, resolvePointsPassState } from "../points";
+import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, redeemablePointsTiers, resolvePointsPassState, rewardReadyForIdentity } from "../points";
 import { applyScan } from "../engine";
-import type { PointsConfig } from "../types";
+import type { LoyaltyProgram, PointsConfig } from "../types";
 
 const config: PointsConfig = {
   pointsPerScan: 5,
@@ -41,6 +41,23 @@ describe("helpers points", () => {
     const single: PointsConfig = { pointsPerScan: 5, tiers: [{ threshold: 20, reward: "Café offert" }] };
     expect(resolvePointsPassState(single, 19)).toEqual({ stamps: 19, stampGoal: 20, palier: undefined });
     expect(resolvePointsPassState(single, 20)).toEqual({ stamps: 20, stampGoal: 20, palier: "Café offert" });
+  });
+});
+
+describe("rewardReadyForIdentity (Important 3 — revue finale : rewardReady lien avis Google)", () => {
+  const pointsProgram: LoyaltyProgram = { type: "points", config };
+  it("programme points : dérivé du solde de points (redeemablePointsTiers), PAS de stamps_count", () => {
+    // stamps_count résiduel élevé (30) mais solde de points sous le 1er palier → pas prêt.
+    expect(rewardReadyForIdentity(pointsProgram, { stamps: 30, stampGoal: 10, pointsBalance: 5, redeemedTiers: [] })).toBe(false);
+    // Solde de points au 1er palier, jamais validé → prêt (même si stamps=0).
+    expect(rewardReadyForIdentity(pointsProgram, { stamps: 0, stampGoal: 10, pointsBalance: 30, redeemedTiers: [] })).toBe(true);
+    // Palier atteint mais déjà validé dans le cycle → plus prêt tant qu'aucun autre palier n'est atteint.
+    expect(rewardReadyForIdentity(pointsProgram, { stamps: 0, stampGoal: 10, pointsBalance: 30, redeemedTiers: [30] })).toBe(false);
+  });
+  it("stamp_card (et autres types) : comportement inchangé — canRedeem(stamps, stampGoal)", () => {
+    const stampCard: LoyaltyProgram = { type: "stamp_card", config: { goal: 10 } };
+    expect(rewardReadyForIdentity(stampCard, { stamps: 9, stampGoal: 10, pointsBalance: 999, redeemedTiers: [] })).toBe(false);
+    expect(rewardReadyForIdentity(stampCard, { stamps: 10, stampGoal: 10, pointsBalance: 0, redeemedTiers: [] })).toBe(true);
   });
 });
 
