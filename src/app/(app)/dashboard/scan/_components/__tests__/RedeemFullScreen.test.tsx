@@ -134,3 +134,117 @@ describe("<RedeemFullScreen>", () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+// Task 12 : carte à points — props `tiers`/`maxThreshold` remplacent le bouton
+// OFFRIR unique par un bouton par palier. Sans `tiers`, comportement ci-dessus
+// strictement inchangé (couvert par les tests précédents).
+describe("<RedeemFullScreen> — paliers points (tiers)", () => {
+  const tiers = [
+    { threshold: 10, reward: "☕ Café offert" },
+    { threshold: 20, reward: "🥐 Petit-déjeuner offert" },
+  ];
+
+  beforeEach(() => push.mockReset());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("rend un bouton par palier, le max marqué « remet la carte à zéro », pas de bouton OFFRIR", () => {
+    render(
+      <RedeemFullScreen
+        cardId="QR"
+        rewardLabel="🎁 Récompense offerte"
+        tiers={tiers}
+        maxThreshold={20}
+        onCancel={() => {}}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /offrir · valider/i })).toBeNull();
+    const cafe = screen.getByRole("button", { name: /☕ Café offert/ });
+    expect(cafe.textContent).toContain("10 points");
+    expect(cafe.textContent).not.toContain("remet la carte à zéro");
+    const petitDej = screen.getByRole("button", { name: /🥐 Petit-déjeuner offert/ });
+    expect(petitDej.textContent).toContain("remet la carte à zéro");
+  });
+
+  it("palier intermédiaire : POST { cardId, tierThreshold }, retire le palier validé, propose Terminer sans rediriger", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, tier: { threshold: 10, reward: "☕ Café offert" }, cycleReset: false }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const onRedeemed = vi.fn();
+
+    render(
+      <RedeemFullScreen
+        cardId="QR"
+        rewardLabel="🎁 Récompense offerte"
+        tiers={tiers}
+        maxThreshold={20}
+        onCancel={() => {}}
+        onRedeemed={onRedeemed}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /☕ Café offert/ }));
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/scan/redeem");
+    expect(JSON.parse(init.body)).toEqual({ cardId: "QR", tierThreshold: 10 });
+
+    // Palier validé retiré ; le palier max reste validable ; pas de redirection.
+    expect(screen.queryByRole("button", { name: /☕ Café offert/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /🥐 Petit-déjeuner offert/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^terminer$/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^annuler$/i })).toBeNull();
+    expect(onRedeemed).not.toHaveBeenCalled();
+  });
+
+  it("palier max (cycleReset) : célébration « Carte remise à zéro » puis redirection", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, tier: { threshold: 20, reward: "🥐 Petit-déjeuner offert" }, cycleReset: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const onRedeemed = vi.fn();
+
+    render(
+      <RedeemFullScreen
+        cardId="QR"
+        rewardLabel="🎁 Récompense offerte"
+        tiers={tiers}
+        maxThreshold={20}
+        onCancel={() => {}}
+        onRedeemed={onRedeemed}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /🥐 Petit-déjeuner offert/ }));
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(screen.getByText("Carte remise à zéro")).toBeTruthy();
+    expect(onRedeemed).toHaveBeenCalledTimes(1);
+  });
+
+  it("erreur serveur (palier déjà validé) : affiche l'alerte, le bouton reste, pas de redirection", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: false, json: async () => ({ error: "Palier déjà validé sur ce cycle." }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <RedeemFullScreen cardId="QR" rewardLabel="🎁 Récompense offerte" tiers={tiers} maxThreshold={20} onCancel={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /☕ Café offert/ }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Palier déjà validé");
+    expect(push).not.toHaveBeenCalled();
+  });
+});

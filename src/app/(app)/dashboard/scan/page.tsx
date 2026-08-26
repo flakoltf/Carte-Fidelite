@@ -15,7 +15,7 @@ import ComptoirScan from "./_components/ComptoirScan";
 export function e2eProgramOverride(raw: string | string[] | undefined): LoyaltyType | null {
   if (process.env.NEXT_PUBLIC_E2E !== "1") return null;
   const v = Array.isArray(raw) ? raw[0] : raw;
-  return v === "stamp_card" || v === "visit_based" || v === "tiered" || v === "amount_points" ? v : null;
+  return v === "stamp_card" || v === "visit_based" || v === "tiered" || v === "amount_points" || v === "points" ? v : null;
 }
 
 // Page Scanner du comptoir (destination du bouton géant de la home). Server
