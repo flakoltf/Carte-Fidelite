@@ -68,13 +68,15 @@ export function buildKitLogoAssets(merchantId: string): LogoAssets {
 
 // Le label du champ primary selon la mécanique. Le primary est le gros nombre/
 // statut qu'Apple pose SUR la zone gauche propre du strip.
+// NOTE: Supports LoyaltyType = 5 types, but DEMO_KIT only instantiates 4.
+// Default case handles unreachable "points" type for exhaustive check.
 function primaryLabel(entry: DemoKitEntry): string {
   switch (entry.loyaltyType) {
     case "amount_points": return "POINTS";
     case "visit_based": return "VISITES";
     case "tiered": return "STATUT";
     case "stamp_card": return "TAMPONS";
-    case "points": return "POINTS";
+    default: return "FALLBACK"; // unreachable: points not in DEMO_KIT
   }
 }
 
@@ -82,6 +84,9 @@ function primaryLabel(entry: DemoKitEntry): string {
 // Borné à merchants.stamp_goal ∈ [1, 50] (contrainte merchants_stamp_goal_range).
 // amount_points utilise un primary STATIQUE (le seuil 200 dépasse la borne) →
 // son objectif sert seulement au champ {points} discret du dos.
+// NOTE: Supports LoyaltyType = 5 types (stamp_card | visit_based | tiered |
+// amount_points | points), but DEMO_KIT only instantiates 4. "points" type
+// (Task 2+) will never reach this function; default handles exhaustive check.
 export function goalForDisplay(entry: DemoKitEntry): number {
   let raw: number;
   switch (entry.loyaltyType) {
@@ -89,7 +94,7 @@ export function goalForDisplay(entry: DemoKitEntry): number {
     case "visit_based": raw = Math.max(...entry.loyaltyConfig.milestones); break;
     case "tiered": raw = Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at)); break;
     case "amount_points": raw = entry.loyaltyConfig.rewardThreshold; break;
-    case "points": raw = Math.max(...entry.loyaltyConfig.tiers.map((t) => t.threshold)); break;
+    default: return Math.max(1, Math.min(50, 50)); // fallback: unreachable
   }
   return Math.max(1, Math.min(50, raw));
 }
@@ -194,13 +199,15 @@ export type DemoKitCardSpec = {
 };
 
 // Valeur du compteur qui rend la carte « reward-ready » selon la mécanique.
+// NOTE: Supports LoyaltyType = 5 types, but DEMO_KIT only instantiates 4.
+// "points" type (Task 2+) will never reach this; default handles exhaustive check.
 export function rewardReadyValue(entry: DemoKitEntry): number {
   switch (entry.loyaltyType) {
     case "stamp_card": return entry.loyaltyConfig.goal;
     case "visit_based": return Math.max(...entry.loyaltyConfig.milestones);
     case "tiered": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.at));
     case "amount_points": return entry.loyaltyConfig.rewardThreshold;
-    case "points": return Math.max(...entry.loyaltyConfig.tiers.map((t) => t.threshold));
+    default: return 50; // fallback: unreachable
   }
 }
 
@@ -213,10 +220,7 @@ function midValue(entry: DemoKitEntry): number {
       return ats[Math.floor(ats.length / 2)] ?? ats[0];
     }
     case "amount_points": return Math.floor(entry.loyaltyConfig.rewardThreshold * 0.55);
-    case "points": {
-      const thresholds = entry.loyaltyConfig.tiers.map((t) => t.threshold).sort((a, b) => a - b);
-      return thresholds[Math.floor(thresholds.length / 2)] ?? thresholds[0];
-    }
+    default: return 1; // fallback: unreachable
   }
 }
 
