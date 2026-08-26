@@ -62,13 +62,17 @@ export async function buildGoogleSaveUrl({
   let shopName: string | undefined;
   let geoLocations: { latitude: number; longitude: number }[] | undefined;
   let identityModules: import("@/lib/wallet/googleIdentity").GoogleIdentityModules = {};
+  // Solde effectivement transmis à loyaltyPoints.balance : par défaut le compteur
+  // générique reçu de l'appelant (stamps_count) ; écrasé plus bas pour les
+  // programmes à POINTS, où seul points_balance (état RÉEL de la carte) fait sens.
+  let pointsBalance = stamps;
   const { data: cardRow } = await supabaseAdmin
-    .from("loyalty_cards").select("merchant_id").eq("id", cardId).single();
+    .from("loyalty_cards").select("merchant_id, points_balance").eq("id", cardId).single();
   if (cardRow?.merchant_id) {
     merchantId = cardRow.merchant_id as string;
     const { data: mRow } = await supabaseAdmin
       .from("merchants")
-      .select("shop_name, latitude, longitude, reward_label, address, phone, business_hours, google_place_id, stamp_goal")
+      .select("shop_name, latitude, longitude, reward_label, address, phone, business_hours, google_place_id, stamp_goal, loyalty_type, loyalty_config")
       .eq("id", merchantId).single();
     if (mRow?.shop_name) shopName = mRow.shop_name as string;
     if (mRow?.latitude != null && mRow?.longitude != null) {
@@ -81,6 +85,16 @@ export async function buildGoogleSaveUrl({
     const { canRedeem } = await import("@/lib/loyalty/stamp");
     const rewardReady = canRedeem(stamps, (mRow?.stamp_goal as number) ?? 10);
     identityModules = googleIdentityModules(identityFromMerchant(mRow, new Date(), { rewardReady }));
+
+    // Programme à points : loyaltyPoints.balance doit refléter points_balance
+    // (état RÉEL de la carte), pas `stamps` (sans rapport pour ce type de
+    // programme). Comportement inchangé pour tous les autres types — et
+    // AUCUNE modification de la classe Google (invariant 2 : jamais d'UPDATE/PUT).
+    const { resolveLoyaltyProgram } = await import("@/lib/loyalty/resolveProgram");
+    const program = resolveLoyaltyProgram(mRow);
+    if (program.type === "points") {
+      pointsBalance = (cardRow.points_balance as number) ?? 0;
+    }
   }
 
   // Garantit la classe Google à l'émission (GET -> PATCH / 404 -> INSERT, jamais
@@ -122,7 +136,7 @@ export async function buildGoogleSaveUrl({
     accountId: cardId,
     accountName: customerName,
     loyaltyPoints: {
-      balance: { int: stamps },
+      balance: { int: pointsBalance },
       label: pointsLabel,
     },
     barcode: {

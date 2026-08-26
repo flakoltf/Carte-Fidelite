@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, redeemablePointsTiers } from "../points";
+import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, redeemablePointsTiers, resolvePointsPassState } from "../points";
 import { applyScan } from "../engine";
 import type { PointsConfig } from "../types";
 
@@ -24,6 +24,23 @@ describe("helpers points", () => {
     expect(parseRedeemedTiers([30, "x", 40.5, 50])).toEqual([30, 50]);
     expect(parseRedeemedTiers(null)).toEqual([]);
     expect(parseRedeemedTiers("[30]")).toEqual([]);
+  });
+  it("resolvePointsPassState : solde/max + palier atteint (Task 8 — pass Apple/Google)", () => {
+    // Aucun palier franchi → stamps/stampGoal renseignés, palier undefined (jeton littéral).
+    expect(resolvePointsPassState(config, 0)).toEqual({ stamps: 0, stampGoal: 50, palier: undefined });
+    expect(resolvePointsPassState(config, 29)).toEqual({ stamps: 29, stampGoal: 50, palier: undefined });
+    // Pile sur le seuil → inclusif (threshold <= balance).
+    expect(resolvePointsPassState(config, 30)).toEqual({ stamps: 30, stampGoal: 50, palier: "10% de réduction" });
+    // Entre deux paliers → le plus haut ATTEINT (pas le suivant).
+    expect(resolvePointsPassState(config, 45)).toEqual({ stamps: 45, stampGoal: 50, palier: "Boisson offerte" });
+    // Au max ou au-delà (plafonné en amont par le moteur, mais fonction pure défensive) →
+    // le dernier palier reste le plus haut atteint.
+    expect(resolvePointsPassState(config, 50)).toEqual({ stamps: 50, stampGoal: 50, palier: "Menu offert" });
+    expect(resolvePointsPassState(config, 999)).toEqual({ stamps: 999, stampGoal: 50, palier: "Menu offert" });
+    // Un seul palier : stampGoal = ce palier, atteint dès le seuil.
+    const single: PointsConfig = { pointsPerScan: 5, tiers: [{ threshold: 20, reward: "Café offert" }] };
+    expect(resolvePointsPassState(single, 19)).toEqual({ stamps: 19, stampGoal: 20, palier: undefined });
+    expect(resolvePointsPassState(single, 20)).toEqual({ stamps: 20, stampGoal: 20, palier: "Café offert" });
   });
 });
 

@@ -82,13 +82,19 @@ export async function buildApplePassBuffer({
 
   const { supabaseAdmin } = await import("@/lib/supabaseAdmin");
   let stampGoal = 10;
+  // Valeurs effectivement transmises à buildPassJson (jeton {points} = solde/max) :
+  // par défaut les tampons/objectif classiques ; écrasées ci-dessous pour les
+  // programmes à POINTS, où `stamps` (compteur générique reçu de l'appelant, en
+  // pratique stamps_count) n'a aucun sens — le solde réel vit dans points_balance.
+  let passStamps = stamps;
+  let passStampGoal = stampGoal;
   let locations;
   let merchantId: string | undefined;
   let palier: string | undefined;
   let identity: import("@/lib/wallet/passJson").PassIdentity | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
-    .select("merchant_id")
+    .select("merchant_id, points_balance")
     .eq("id", cardId)
     .single();
   if (cardRow?.merchant_id) {
@@ -99,6 +105,7 @@ export async function buildApplePassBuffer({
       .eq("id", merchantId)
       .single();
     stampGoal = mRow?.stamp_goal ?? 10;
+    passStampGoal = stampGoal;
     // Couche identité commerce (F1) + lien avis Google si reward-ready (F2),
     // calculés ICI pour que TOUT chemin d'émission (enrôlement + régénération
     // web-service après scan) les porte.
@@ -109,17 +116,29 @@ export async function buildApplePassBuffer({
       const { proximityText } = await import("@/lib/geo/geocode");
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
     }
-    // Resolve the customer's current tier name for {palier} token substitution.
-    // Only applies to tiered loyalty programs; for all other types the token stays literal.
-    if (mRow?.loyalty_type === "tiered") {
+    // Résout le programme réel du marchand : pilote le solde affiché ({points} =
+    // solde / max) et {palier} pour les cartes à POINTS ; comportement inchangé
+    // pour tous les autres types (dont "tiered" ci-dessous).
+    const { resolveLoyaltyProgram } = await import("@/lib/loyalty/resolveProgram");
+    const program = resolveLoyaltyProgram(mRow);
+    if (program.type === "points") {
+      const { resolvePointsPassState } = await import("@/lib/loyalty/points");
+      const pointsBalance = cardRow.points_balance ?? 0;
+      const state = resolvePointsPassState(program.config, pointsBalance);
+      passStamps = state.stamps;
+      passStampGoal = state.stampGoal;
+      palier = state.palier;
+    } else if (mRow?.loyalty_type === "tiered") {
+      // Resolve the customer's current tier name for {palier} token substitution.
+      // Only applies to tiered loyalty programs; for all other types the token stays literal.
       const rawTiers = (mRow.loyalty_config as Record<string, unknown> | null)?.tiers;
       if (Array.isArray(rawTiers) && rawTiers.length > 0) {
         const { currentTier } = await import("@/lib/loyalty/engine");
         palier = currentTier(rawTiers as { name: string; at: number }[], stamps)?.name;
       }
     }
-    // If not tiered or tier data unavailable, palier remains undefined →
-    // buildPassJson passes it through as undefined → resolveTokens keeps {palier} literal.
+    // Sinon (ni points ni tiered, ou données de palier indisponibles), palier reste
+    // undefined → buildPassJson le transmet tel quel → resolveTokens garde {palier} littéral.
   }
 
   // Load the merchant's saved card design (null = no design row → legacy behavior preserved).
@@ -211,8 +230,8 @@ export async function buildApplePassBuffer({
   const passJson = buildPassJson({
     cardId,
     customerName,
-    stamps,
-    stampGoal,
+    stamps: passStamps,
+    stampGoal: passStampGoal,
     orgName,
     backgroundColor,
     passTypeIdentifier,

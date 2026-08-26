@@ -10,6 +10,25 @@ export function crossedPointsTiers(config: PointsConfig, before: number, after: 
   return config.tiers.filter((t) => before < t.threshold && after >= t.threshold);
 }
 
+// État d'affichage du pass Wallet (Apple {points}/{palier}, Google loyaltyPoints.balance)
+// pour une carte à POINTS : `stamps`/`stampGoal` alimentent le jeton "solde / max" (les
+// noms restent génériques — mêmes clés que buildPassJson, qui sert aussi les tampons) ;
+// `palier` = récompense du plus haut palier ATTEINT (threshold ≤ solde), sinon undefined
+// (aucun palier franchi → le jeton {palier} reste littéral côté pass). Les tiers sont
+// strictement croissants (validate) : le dernier élément filtré est donc le plus haut.
+// Fonction pure → testable sans DB/certs, appelée par applePass.ts et googlePass.ts.
+export function resolvePointsPassState(
+  config: PointsConfig,
+  balance: number
+): { stamps: number; stampGoal: number; palier?: string } {
+  const reached = config.tiers.filter((t) => t.threshold <= balance);
+  return {
+    stamps: balance,
+    stampGoal: maxPointsThreshold(config),
+    palier: reached.length > 0 ? reached[reached.length - 1].reward : undefined,
+  };
+}
+
 // Paliers atteints ET pas encore validés dans le cycle (modèle cumulatif validé en spec).
 export function redeemablePointsTiers(config: PointsConfig, balance: number, redeemedTiers: number[]): PointsTier[] {
   return config.tiers.filter((t) => balance >= t.threshold && !redeemedTiers.includes(t.threshold));
