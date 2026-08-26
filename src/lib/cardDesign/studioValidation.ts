@@ -64,11 +64,14 @@ export function validateStudioDesign(design: CardDesign): ValidationResult {
   }
 
   const cardType = design.cardType ?? 'stamps';
-  // Une carte à tampons sans compteur visible est cassée au comptoir : le pass
-  // n'affiche plus la progression. Le jeton {points} doit survivre à l'édition.
-  if (cardType === 'stamps' && !design.fields.some((f) => f.value.includes('{points}'))) {
+  // Une carte à tampons OU à points sans compteur visible est cassée au
+  // comptoir : le pass n'affiche plus la progression. Le jeton {points} doit
+  // survivre à l'édition, quel que soit le type de programme.
+  if ((cardType === 'stamps' || cardType === 'points') && !design.fields.some((f) => f.value.includes('{points}'))) {
     errors.push(
-      'Votre carte n’affiche plus le compteur de tampons : gardez un champ contenant le jeton {points} (ex. « TAMPONS » en zone principale).'
+      cardType === 'points'
+        ? 'Votre carte n’affiche plus le solde de points : gardez un champ contenant le jeton {points} (ex. « POINTS » en zone principale).'
+        : 'Votre carte n’affiche plus le compteur de tampons : gardez un champ contenant le jeton {points} (ex. « TAMPONS » en zone principale).'
     );
   }
   if (cardType === 'stamps' && design.stamps) {
