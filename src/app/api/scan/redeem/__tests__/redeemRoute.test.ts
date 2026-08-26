@@ -11,7 +11,9 @@ const state = {
   card: null as Record<string, unknown> | null,
   updatedRows: [] as unknown[],
   updateError: null as { message: string } | null,
-  rpcResult: null as Record<string, unknown> | null,
+  // amount_points renvoie un objet ({ ok, currentValue }) ; points_redeem_tier
+  // renvoie directement un texte ('reset' | 'redeemed' | 'already' | ...).
+  rpcResult: null as Record<string, unknown> | string | null,
   rpcError: null as { message: string } | null,
 };
 const calls = {
@@ -88,6 +90,29 @@ function redeemReq(cardId: string | undefined = "550e8400-e29b-41d4-a716-4466554
     body: JSON.stringify({ cardId }),
   }) as unknown as NextRequest;
 }
+
+function redeemPointsReq(tierThreshold: number | undefined, cardId = "550e8400-e29b-41d4-a716-446655440000") {
+  return new Request("https://app.halocard.ch/api/scan/redeem", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cardId, tierThreshold }),
+  }) as unknown as NextRequest;
+}
+
+// Marchand programme points : 2 paliers configurés (50 → café offert, 100 → menu offert).
+const POINTS_MERCHANT = {
+  id: "merchant-1",
+  loyalty_type: "points",
+  loyalty_config: {
+    pointsPerScan: 5,
+    tiers: [
+      { threshold: 50, reward: "Café offert" },
+      { threshold: 100, reward: "Menu offert" },
+    ],
+  },
+  stamp_goal: 10,
+  suspended_at: null,
+};
 
 beforeEach(() => {
   state.user = { id: "user-merchant-1" };
@@ -189,5 +214,71 @@ describe("POST /api/scan/redeem", () => {
     const res = await POST(redeemReq());
     expect(res.status).toBe(409);
     expect(calls.audit).toHaveLength(0);
+  });
+
+  describe("points : validation staff par palier", () => {
+    beforeEach(() => {
+      state.merchant = { ...POINTS_MERCHANT };
+      state.card = { id: "550e8400-e29b-41d4-a716-446655440000", merchant_id: "merchant-1", points_balance: 120, customers: { full_name: "Nadia" } };
+    });
+
+    it("tierThreshold absent → 400", async () => {
+      const res = await POST(redeemPointsReq(undefined));
+      expect(res.status).toBe(400);
+      expect(calls.audit).toHaveLength(0);
+    });
+
+    it("tierThreshold ne correspondant à aucun palier configuré → 400", async () => {
+      const res = await POST(redeemPointsReq(75));
+      expect(res.status).toBe(400);
+      expect(calls.audit).toHaveLength(0);
+    });
+
+    it("RPC renvoie not_reached → 409", async () => {
+      state.rpcResult = "not_reached";
+      const res = await POST(redeemPointsReq(50));
+      expect(res.status).toBe(409);
+      expect(calls.audit).toHaveLength(0);
+    });
+
+    it("RPC renvoie already → 409", async () => {
+      state.rpcResult = "already";
+      const res = await POST(redeemPointsReq(50));
+      expect(res.status).toBe(409);
+      expect(calls.audit).toHaveLength(0);
+    });
+
+    it("RPC renvoie notfound → 404", async () => {
+      state.rpcResult = "notfound";
+      const res = await POST(redeemPointsReq(50));
+      expect(res.status).toBe(404);
+      expect(calls.audit).toHaveLength(0);
+    });
+
+    it("RPC renvoie redeemed (palier intermédiaire) → 200, cycleReset: false", async () => {
+      state.rpcResult = "redeemed";
+      const res = await POST(redeemPointsReq(50));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.tier).toEqual({ threshold: 50, reward: "Café offert" });
+      expect(body.cycleReset).toBe(false);
+      expect(calls.audit[0].action).toBe("REWARD_REDEEMED");
+      const details = calls.audit[0].details as Record<string, unknown>;
+      expect(details).toEqual({ tier_threshold: 50, reward: "Café offert", cycle_reset: false, loyalty_type: "points" });
+    });
+
+    it("RPC renvoie reset (palier max) → 200, cycleReset: true + audit cycle_reset: true", async () => {
+      state.rpcResult = "reset";
+      const res = await POST(redeemPointsReq(100));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.tier).toEqual({ threshold: 100, reward: "Menu offert" });
+      expect(body.cycleReset).toBe(true);
+      expect(calls.audit[0].action).toBe("REWARD_REDEEMED");
+      const details = calls.audit[0].details as Record<string, unknown>;
+      expect(details).toEqual({ tier_threshold: 100, reward: "Menu offert", cycle_reset: true, loyalty_type: "points" });
+    });
   });
 });
