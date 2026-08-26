@@ -44,6 +44,11 @@ describe("pointsCycleExpired", () => {
     expect(pointsCycleExpired(exp, new Date("2025-12-30T00:00:00Z"), now)).toBe(true);
     expect(pointsCycleExpired(exp, new Date("2026-01-02T00:00:00Z"), now)).toBe(false);
   });
+  it("rolling : clamp au dernier jour du mois visé (31 mai − 1 mois = 30 avril)", () => {
+    const eom = new Date("2026-05-31T10:00:00Z");
+    expect(pointsCycleExpired({ type: "rolling", months: 1 }, new Date("2026-04-29T00:00:00Z"), eom)).toBe(true);
+    expect(pointsCycleExpired({ type: "rolling", months: 1 }, new Date("2026-05-01T00:00:00Z"), eom)).toBe(false);
+  });
 });
 
 describe("applyScan — points", () => {

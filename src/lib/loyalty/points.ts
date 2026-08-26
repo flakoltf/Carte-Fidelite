@@ -28,7 +28,11 @@ export function pointsCycleExpired(expiration: PointsExpiration | undefined, cyc
   if (!expiration || expiration.type === "none" || !cycleStartedAt) return false;
   if (expiration.type === "rolling") {
     const boundary = new Date(now);
+    const day = boundary.getUTCDate();
     boundary.setUTCMonth(boundary.getUTCMonth() - expiration.months);
+    // Normalisation JS : si le jour n'existe pas dans le mois cible (ex. 31 mai − 1 mois),
+    // Date roule au mois suivant — on recule alors au dernier jour du mois visé.
+    if (boundary.getUTCDate() !== day) boundary.setUTCDate(0);
     return cycleStartedAt < boundary;
   }
   const thisYear = new Date(Date.UTC(now.getUTCFullYear(), expiration.month - 1, expiration.day, 23, 59, 59));
