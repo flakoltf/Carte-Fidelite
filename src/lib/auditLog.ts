@@ -63,6 +63,9 @@ export const AUDIT_ACTIONS = [
   // supabase/migrations/20260618_audit_actions_demo.sql
   'DEMO_ACCOUNT_SEEDED',
   'DEMO_ACCOUNT_RESET',
+  // Carte à points — expiration de cycle (cron quotidien) — migration jumelle :
+  // supabase/migrations/20260826_audit_actions_points.sql
+  'POINTS_EXPIRED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
