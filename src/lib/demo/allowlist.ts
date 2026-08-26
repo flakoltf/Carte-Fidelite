@@ -11,7 +11,7 @@ import { DemoGuardError, type DemoMerchantRow } from "./identity";
 
 export type DemoIdentity = { slug: string; email: string };
 
-// Les 8 comptes démo réservés. Slugs = ceux réellement matérialisés en base
+// Les 7 comptes démo réservés. Slugs = ceux réellement matérialisés en base
 // (auto-générés depuis le nom : « salon-lumi-re », « boulangerie-des-p-quis »…).
 // L'email reste @example.com (jamais adressable) — double défense.
 export const DEMO_KIT_ALLOWLIST: readonly DemoIdentity[] = [
@@ -22,7 +22,6 @@ export const DEMO_KIT_ALLOWLIST: readonly DemoIdentity[] = [
   { slug: "institut-belle-rive", email: "demo-institut@example.com" }, // Institut Belle Rive
   { slug: "barbier-du-molard", email: "demo-barbier@example.com" }, // Barbier du Molard
   { slug: "boulangerie-demo", email: "boulangerie-demo@example.com" }, // Boulangerie Démo (compte garde existant)
-  { slug: "caviste-cologny", email: "demo-caviste@example.com" }, // Caviste Cologny
 ] as const;
 
 export function isExampleEmail(email: string | null | undefined): boolean {

@@ -81,10 +81,12 @@ export function applyScan(program: LoyaltyProgram, currentValue: number, scanAmo
         events: crossed ? [{ kind: "reward_ready" }] : [],
       };
     }
-    // NOTE: "points" type (Task 2+) not yet implemented in applyScan.
-    // This case should never be reached in production.
+    // Stub compilation — remplacé par la Task 2. LoyaltyProgram (types.ts, livrable
+    // approuvé) inclut déjà "points", mais resolveProgram ne le résout pas encore ⇒
+    // ce cas est inatteignable au runtime actuel. Nécessaire pour l'exhaustivité du
+    // switch (sinon TS2366 : "Function lacks ending return statement").
     default:
-      throw new Error(`applyScan not implemented for type: ${(program as any).type}`);
+      throw new Error(`applyScan not implemented for type: ${(program as { type: string }).type}`);
   }
 }
 
