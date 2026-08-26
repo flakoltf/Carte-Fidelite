@@ -94,6 +94,17 @@ function pointsRulesFromLoyaltyConfig(config: Record<string, unknown> | null | u
   };
 }
 
+// Aperçu fidèle du jeton {points} d'une carte à POINTS (Minor 6, revue finale) :
+// le vrai pass affiche « solde / dernier palier » (resolvePointsPassState) —
+// jamais un nombre brut comme l'ancien `sampleStamps * 12`. On affiche une
+// valeur représentative (mi-parcours du dernier palier) plutôt que de coupler
+// ce jeton au curseur « Client fictif », qui n'a pas d'échelle liée aux paliers.
+function pointsSampleLabel(rules: PointsRulesState): string {
+  const maxThreshold = rules.tiers.length > 0 ? rules.tiers[rules.tiers.length - 1].threshold : 0;
+  const mid = Math.round(maxThreshold / 2);
+  return `${mid} / ${maxThreshold}`;
+}
+
 type Feedback = { kind: 'ok' | 'partial' | 'error'; messages: string[] };
 
 const sectionCls = 'bg-surface border border-line-warm rounded-3xl p-6 shadow-sm';
@@ -229,12 +240,17 @@ export default function StudioClient({ express = false }: { express?: boolean })
 
   const sample: SampleData = useMemo(
     () => ({
-      points: cardType === 'stamps' ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}` : String(sampleStamps * 12),
+      points:
+        cardType === 'stamps'
+          ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}`
+          : cardType === 'points'
+            ? pointsSampleLabel(pointsRules)
+            : String(sampleStamps * 12),
       nom: 'Sarah M.',
       palier: 'Argent',
       visites: '12',
     }),
-    [cardType, sampleStamps, stamps.goal]
+    [cardType, sampleStamps, stamps.goal, pointsRules]
   );
 
   // ── Mutations locales ───────────────────────────────────────────────────────
@@ -288,9 +304,21 @@ export default function StudioClient({ express = false }: { express?: boolean })
     setPublishing(true);
     setFeedback(null);
     try {
-      // B — Règles du programme : envoyées seulement pour une carte à points
+      // B — Règles du programme : envoyées pour une carte à points
       // (buildLoyaltyUpdate, Task 4). reward_label reprend la valeur existante
-      // (pré-remplie ci-dessus) pour ne jamais l'écraser silencieusement.
+      // (pré-remplie ci-dessus) pour ne jamais l'écraser silencieusement — et,
+      // depuis Important 2 (revue finale), son ABSENCE dans le body préserve la
+      // valeur en base côté serveur (plus besoin que le prefetch ait résolu).
+      //
+      // Porte points→stamps (Important 1, revue finale) : si le marchand publie
+      // un design TAMPONS alors que merchants.loyalty_type vaut encore "points"
+      // (comptoir + pass restés sur l'ancien programme), on envoie explicitement
+      // un programme stamp_card pour refermer la bascule — sinon l'incohérence
+      // reste invisible et sans retour self-serve (comptoir points, pass tampons).
+      // On n'envoie CE programme QUE dans ce cas précis de bascule : ne JAMAIS
+      // toucher au programme d'un marchand déjà stamp_card/visit_based/tiered,
+      // sous peine d'écraser welcome_stamps/intermediate_milestone/milestones
+      // existants (buildLoyaltyUpdate reconstruit la config, il ne la fusionne pas).
       const program =
         cardType === 'points'
           ? {
@@ -298,7 +326,9 @@ export default function StudioClient({ express = false }: { express?: boolean })
               config: pointsRules,
               ...(reward.trim() !== '' ? { reward_label: reward.trim() } : {}),
             }
-          : undefined;
+          : cardType === 'stamps' && merchant?.loyaltyType === 'points'
+            ? { type: 'stamp_card' as const, goal: stamps.goal }
+            : undefined;
       const res = await fetch('/api/merchant/card-design/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
