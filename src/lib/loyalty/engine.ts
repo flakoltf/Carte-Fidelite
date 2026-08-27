@@ -1,3 +1,4 @@
+import { crossedPointsTiers, maxPointsThreshold } from "./points";
 import { applyStamp, canRedeem } from "./stamp";
 import type { LoyaltyProgram, ScanEvent, ScanResult, Tier } from "./types";
 
@@ -81,12 +82,25 @@ export function applyScan(program: LoyaltyProgram, currentValue: number, scanAmo
         events: crossed ? [{ kind: "reward_ready" }] : [],
       };
     }
+    case "points": {
+      const cap = maxPointsThreshold(program.config);
+      if (currentValue >= cap) return { newCount: currentValue, added: false, rewardReady: true, events: [] };
+      const newValue = Math.min(currentValue + program.config.pointsPerScan, cap);
+      const crossed = crossedPointsTiers(program.config, currentValue, newValue);
+      return {
+        newCount: newValue,
+        added: true,
+        rewardReady: crossed.length > 0,
+        events: crossed.map((t) => ({ kind: "points_tier_reached" as const, threshold: t.threshold, reward: t.reward })),
+      };
+    }
   }
 }
 
 export function programCanRedeem(program: LoyaltyProgram, currentValue: number): boolean {
   if (program.type === "stamp_card") return canRedeem(currentValue, program.config.goal);
   if (program.type === "amount_points") return currentValue >= program.config.rewardThreshold;
+  if (program.type === "points") return currentValue >= program.config.tiers[0].threshold;
   return false;
 }
 

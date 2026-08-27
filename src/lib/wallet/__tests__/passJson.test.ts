@@ -165,6 +165,15 @@ describe("buildPassJson — avec design", () => {
     const p = buildPassJson({ ...input, design: designWithPalier, palier: undefined });
     expect(p.storeCard.secondaryFields[0].value).toBe("{palier}");
   });
+
+  it("résout {visites} depuis l'input", () => {
+    const withVisits: CardDesign = {
+      ...stubDesign,
+      fields: [{ ...stubDesign.fields[0], value: "{visites} visites" }],
+    };
+    const p = buildPassJson({ ...input, design: withVisits, visites: 17 });
+    expect(p.storeCard.primaryFields[0].value).toBe("17 visites");
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -20,6 +20,13 @@ export const CRON_JOBS = [
     scheduleLabel: "le 1er du mois à 05:00 UTC",
     maxSilenceHours: 24 * 32,
   },
+  {
+    job: "points-expiry" as const,
+    label: "Expiration cycles de points",
+    schedule: "0 4 * * *",
+    scheduleLabel: "tous les jours à 04:00 UTC",
+    maxSilenceHours: 26,
+  },
 ];
 
 export type CronJobName = (typeof CRON_JOBS)[number]["job"];

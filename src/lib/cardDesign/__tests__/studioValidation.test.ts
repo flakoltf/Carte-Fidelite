@@ -82,10 +82,19 @@ describe('validateStudioDesign — compteur de tampons obligatoire', () => {
     expect(errors.some((e) => e.includes('{points}'))).toBe(true);
   });
 
-  it("n'exige pas {points} pour une carte à points (non-stamps)", () => {
+  it('exige aussi {points} pour une carte à points (solde affiché au comptoir)', () => {
     const d = base({
       cardType: 'points',
       fields: [{ id: 'p1', zone: 'primary', label: 'STATUT', value: '{palier}', order: 0 }],
+    });
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(true);
+  });
+
+  it('accepte une carte à points dont un champ contient {points}', () => {
+    const d = base({
+      cardType: 'points',
+      fields: [{ id: 'p1', zone: 'primary', label: 'POINTS', value: '{points}', order: 0 }],
     });
     const { errors } = validateStudioDesign(d);
     expect(errors.some((e) => e.includes('{points}'))).toBe(false);

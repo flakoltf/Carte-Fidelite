@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/campaigns", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/billing-snapshot", "schedule": "0 5 1 * *" }
+    { "path": "/api/cron/billing-snapshot", "schedule": "0 5 1 * *" },
+    { "path": "/api/cron/points-expiry", "schedule": "0 4 * * *" }
   ]
 }

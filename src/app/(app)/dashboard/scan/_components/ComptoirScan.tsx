@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
-import type { LoyaltyType } from "@/lib/loyalty/types";
+import type { LoyaltyType, PointsTier } from "@/lib/loyalty/types";
 import { EASE_OUT } from "@/lib/motion";
 import RedeemFullScreen from "./RedeemFullScreen";
 import AmountPad from "./AmountPad";
@@ -34,6 +34,12 @@ export default function ComptoirScan({
   const [mode, setMode] = useState<Mode>("idle");
   const [message, setMessage] = useState("");
   const [scanned, setScanned] = useState<string | null>(null);
+  // points : paliers validables (redeemableTiers) + seuil max, portés jusqu'à
+  // <RedeemFullScreen> quand rewardReady. Toujours (re)posés au même moment que
+  // `mode = "reward"`/"added" pour ne jamais laisser trainer une valeur d'un
+  // scan précédent (ex. un autre type de carte).
+  const [tiers, setTiers] = useState<PointsTier[] | undefined>(undefined);
+  const [maxThreshold, setMaxThreshold] = useState<number | undefined>(undefined);
 
   // amountChf : présent UNIQUEMENT pour amount_points (envoyé dans le body) ;
   // absent → comportement actuel (tampon/visite) strictement inchangé.
@@ -52,7 +58,31 @@ export default function ComptoirScan({
         setMessage(data?.error || "Scan refusé.");
         return;
       }
+
+      // points : solde FIXE par scan, paliers cumulatifs (Task 5/6). Un scan
+      // reste UNE action : sans palier validable, on affiche juste le solde
+      // puis on reprend le scan continu — comme pour les tampons.
+      if (data.loyaltyType === "points") {
+        if (data.rewardReady) {
+          setTiers(Array.isArray(data.redeemableTiers) ? data.redeemableTiers : []);
+          setMaxThreshold(typeof data.maxThreshold === "number" ? data.maxThreshold : undefined);
+          setMode("reward");
+          return;
+        }
+        setTiers(undefined);
+        setMaxThreshold(undefined);
+        const added = typeof data.pointsAdded === "number" ? data.pointsAdded : 0;
+        const current = typeof data.currentValue === "number" ? data.currentValue : 0;
+        const max = typeof data.maxThreshold === "number" ? data.maxThreshold : 0;
+        setMessage(`+${added} points · ${current} / ${max}`);
+        setMode("added");
+        if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(120);
+        return;
+      }
+
       if (data.rewardReady) {
+        setTiers(undefined);
+        setMaxThreshold(undefined);
         setMode("reward");
         return;
       }
@@ -183,8 +213,12 @@ export default function ComptoirScan({
       <RedeemFullScreen
         cardId={scanned}
         rewardLabel={rewardLabel}
+        tiers={tiers}
+        maxThreshold={maxThreshold}
         onCancel={() => {
           setScanned(null);
+          setTiers(undefined);
+          setMaxThreshold(undefined);
           setMode("scanning");
         }}
         onRedeemed={() => router.push("/dashboard")}

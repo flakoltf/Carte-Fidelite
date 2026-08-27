@@ -54,4 +54,41 @@ describe("buildLoyaltyUpdate — règles du Studio → update merchants", () => 
   it("type inconnu → erreur", () => {
     expect(buildLoyaltyUpdate({ type: "bidon", goal: 10 }).ok).toBe(false);
   });
+
+  // Important 2 (revue finale cartes-à-points) : reward_label absent du body
+  // (p. ex. prefetch /api/merchant/me pas encore résolu au moment du Publier)
+  // ne doit JAMAIS écraser silencieusement la récompense existante en base.
+  // La route s'appuie sur l'ABSENCE de la clé dans `update` pour omettre la
+  // colonne reward_label de l'UPDATE merchants (préservation).
+  describe("reward_label — absence vs effacement volontaire (Important 2)", () => {
+    it("clé absente → omise de l'update (préservation côté route)", () => {
+      const r = buildLoyaltyUpdate({ type: "stamp_card", goal: 10 });
+      expect(r.ok).toBe(true);
+      if (r.ok) expect("reward_label" in r.update).toBe(false);
+    });
+
+    it("chaîne vide explicite → null (effacement volontaire)", () => {
+      const r = buildLoyaltyUpdate({ type: "stamp_card", goal: 10, reward_label: "" });
+      expect(r.ok).toBe(true);
+      if (r.ok) {
+        expect("reward_label" in r.update).toBe(true);
+        expect(r.update.reward_label).toBe(null);
+      }
+    });
+
+    it("null explicite → null (effacement volontaire)", () => {
+      const r = buildLoyaltyUpdate({ type: "stamp_card", goal: 10, reward_label: null });
+      expect(r.ok).toBe(true);
+      if (r.ok) {
+        expect("reward_label" in r.update).toBe(true);
+        expect(r.update.reward_label).toBe(null);
+      }
+    });
+
+    it("chaîne non vide → écrite telle quelle (trim)", () => {
+      const r = buildLoyaltyUpdate({ type: "stamp_card", goal: 10, reward_label: "  Un café offert  " });
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.update.reward_label).toBe("Un café offert");
+    });
+  });
 });

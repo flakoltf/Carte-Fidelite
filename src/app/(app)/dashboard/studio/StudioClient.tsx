@@ -32,6 +32,7 @@ import { validateStudioDesign } from '@/lib/cardDesign/studioValidation';
 import TemplateGallery from './_components/TemplateGallery';
 import ColorsSection from './_components/ColorsSection';
 import StampsSection from './_components/StampsSection';
+import PointsSection, { DEFAULT_POINTS_RULES, type PointsRulesState } from './_components/PointsSection';
 import FieldsSection from './_components/FieldsSection';
 import BarcodeSection from './_components/BarcodeSection';
 import ImageUploadField from './_components/ImageUploadField';
@@ -52,8 +53,57 @@ type StudioPayload = {
   publishedAt: string | null;
   draftSavedAt: string | null;
   assetUrls: PreviewAssets & { stampFilled?: string; stampEmpty?: string };
-  merchant: { shopName: string; businessType: string | null; stampGoal: number; slug: string | null } | null;
+  merchant: {
+    shopName: string;
+    businessType: string | null;
+    stampGoal: number;
+    slug: string | null;
+    loyaltyType: string | null;
+    loyaltyConfig: Record<string, unknown> | null;
+  } | null;
 };
+
+// Reconstruit un PointsRulesState valide depuis merchants.loyalty_config —
+// tolérant à une config absente/incomplète (repli sur les défauts studio).
+function pointsRulesFromLoyaltyConfig(config: Record<string, unknown> | null | undefined): PointsRulesState {
+  if (!config) return DEFAULT_POINTS_RULES;
+  const pointsPerScan =
+    typeof config.pointsPerScan === 'number' && Number.isInteger(config.pointsPerScan)
+      ? config.pointsPerScan
+      : DEFAULT_POINTS_RULES.pointsPerScan;
+  const rawTiers = Array.isArray(config.tiers) ? config.tiers : [];
+  const tiers = rawTiers
+    .map((t) => {
+      const threshold = (t as Record<string, unknown>)?.threshold;
+      const reward = (t as Record<string, unknown>)?.reward;
+      if (typeof threshold !== 'number' || typeof reward !== 'string') return null;
+      return { threshold, reward };
+    })
+    .filter((t): t is { threshold: number; reward: string } => t !== null);
+  const exp = config.expiration as Record<string, unknown> | undefined;
+  let expiration: PointsRulesState['expiration'] = { type: 'none' };
+  if (exp?.type === 'rolling' && typeof exp.months === 'number') {
+    expiration = { type: 'rolling', months: exp.months };
+  } else if (exp?.type === 'fixed_date' && typeof exp.month === 'number' && typeof exp.day === 'number') {
+    expiration = { type: 'fixed_date', month: exp.month, day: exp.day };
+  }
+  return {
+    pointsPerScan,
+    tiers: tiers.length > 0 ? tiers : DEFAULT_POINTS_RULES.tiers,
+    expiration,
+  };
+}
+
+// Aperçu fidèle du jeton {points} d'une carte à POINTS (Minor 6, revue finale) :
+// le vrai pass affiche « solde / dernier palier » (resolvePointsPassState) —
+// jamais un nombre brut comme l'ancien `sampleStamps * 12`. On affiche une
+// valeur représentative (mi-parcours du dernier palier) plutôt que de coupler
+// ce jeton au curseur « Client fictif », qui n'a pas d'échelle liée aux paliers.
+function pointsSampleLabel(rules: PointsRulesState): string {
+  const maxThreshold = rules.tiers.length > 0 ? rules.tiers[rules.tiers.length - 1].threshold : 0;
+  const mid = Math.round(maxThreshold / 2);
+  return `${mid} / ${maxThreshold}`;
+}
 
 type Feedback = { kind: 'ok' | 'partial' | 'error'; messages: string[] };
 
@@ -120,6 +170,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [sampleStamps, setSampleStamps] = useState(7);
+  const [pointsRules, setPointsRules] = useState<PointsRulesState>(DEFAULT_POINTS_RULES);
   // Référence du dernier état persisté (brouillon ou publication) pour le dirty-tracking.
   const lastPersisted = useRef<string>(JSON.stringify(DEFAULT_CARD_DESIGN));
   // Mode express : récompense (merchants.reward_label, hors design), repli de
@@ -153,6 +204,9 @@ export default function StudioClient({ express = false }: { express?: boolean })
         setMerchant(payload.merchant);
         setAssets(payload.assetUrls ?? {});
         setSampleStamps(Math.min(7, (initial.stamps?.goal ?? 10) - 1));
+        if (payload.merchant?.loyaltyType === 'points') {
+          setPointsRules(pointsRulesFromLoyaltyConfig(payload.merchant.loyaltyConfig));
+        }
       })
       .catch(() => !cancelled && setLoadError(true))
       .finally(() => !cancelled && setLoading(false));
@@ -161,9 +215,10 @@ export default function StudioClient({ express = false }: { express?: boolean })
     };
   }, []);
 
-  // Mode express : pré-remplit la récompense depuis l'identité marchand existante.
+  // Pré-remplit `reward` depuis merchants.reward_label existant — utilisé pour
+  // l'édition en mode express ET pour ne jamais l'écraser silencieusement à la
+  // publication d'une carte à points (voir publish()).
   useEffect(() => {
-    if (!express) return;
     let cancelled = false;
     fetch('/api/merchant/me')
       .then((r) => (r.ok ? r.json() : null))
@@ -176,7 +231,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
     return () => {
       cancelled = true;
     };
-  }, [express]);
+  }, []);
 
   const validation = useMemo(() => validateStudioDesign(design), [design]);
   const dirty = JSON.stringify(design) !== lastPersisted.current;
@@ -185,11 +240,17 @@ export default function StudioClient({ express = false }: { express?: boolean })
 
   const sample: SampleData = useMemo(
     () => ({
-      points: cardType === 'stamps' ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}` : String(sampleStamps * 12),
+      points:
+        cardType === 'stamps'
+          ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}`
+          : cardType === 'points'
+            ? pointsSampleLabel(pointsRules)
+            : String(sampleStamps * 12),
       nom: 'Sarah M.',
       palier: 'Argent',
+      visites: '12',
     }),
-    [cardType, sampleStamps, stamps.goal]
+    [cardType, sampleStamps, stamps.goal, pointsRules]
   );
 
   // ── Mutations locales ───────────────────────────────────────────────────────
@@ -243,10 +304,35 @@ export default function StudioClient({ express = false }: { express?: boolean })
     setPublishing(true);
     setFeedback(null);
     try {
+      // B — Règles du programme : envoyées pour une carte à points
+      // (buildLoyaltyUpdate, Task 4). reward_label reprend la valeur existante
+      // (pré-remplie ci-dessus) pour ne jamais l'écraser silencieusement — et,
+      // depuis Important 2 (revue finale), son ABSENCE dans le body préserve la
+      // valeur en base côté serveur (plus besoin que le prefetch ait résolu).
+      //
+      // Porte points→stamps (Important 1, revue finale) : si le marchand publie
+      // un design TAMPONS alors que merchants.loyalty_type vaut encore "points"
+      // (comptoir + pass restés sur l'ancien programme), on envoie explicitement
+      // un programme stamp_card pour refermer la bascule — sinon l'incohérence
+      // reste invisible et sans retour self-serve (comptoir points, pass tampons).
+      // On n'envoie CE programme QUE dans ce cas précis de bascule : ne JAMAIS
+      // toucher au programme d'un marchand déjà stamp_card/visit_based/tiered,
+      // sous peine d'écraser welcome_stamps/intermediate_milestone/milestones
+      // existants (buildLoyaltyUpdate reconstruit la config, il ne la fusionne pas).
+      const program =
+        cardType === 'points'
+          ? {
+              type: 'points' as const,
+              config: pointsRules,
+              ...(reward.trim() !== '' ? { reward_label: reward.trim() } : {}),
+            }
+          : cardType === 'stamps' && merchant?.loyaltyType === 'points'
+            ? { type: 'stamp_card' as const, goal: stamps.goal }
+            : undefined;
       const res = await fetch('/api/merchant/card-design/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ design }),
+        body: JSON.stringify({ design, ...(program ? { program } : {}) }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         version?: number;
@@ -553,18 +639,38 @@ export default function StudioClient({ express = false }: { express?: boolean })
               sub="Tampons à l'ancienne ou points cumulés — choisissez la mécanique de fidélité."
             />
             <div className="flex flex-wrap gap-2 mb-6">
-              {(['stamps', 'points'] as CardTypeKey[]).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => update({ cardType: t, ...(t === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) })}
-                  className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-                    cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-line-warm text-galet-ink hover:border-halo/60'
-                  }`}
-                >
-                  {CARD_TYPE_LABELS[t]}
-                </button>
-              ))}
+              {(['stamps', 'points'] as CardTypeKey[]).map((t) => {
+                // Le mode express ne persiste que reward_label/couleur + brouillon
+                // (validateAndContinue) : il n'appelle jamais /publish, seul chemin
+                // qui écrit merchants.loyalty_type/loyalty_config. Choisir « points »
+                // ici saisirait une config silencieusement jetée à la validation —
+                // on verrouille donc ce type en express, réglable dans le studio complet.
+                if (express && t === 'points') {
+                  return (
+                    <span
+                      key={t}
+                      title="Points par passage, paliers et expiration : à régler dans le studio complet"
+                      className={`rounded-xl border px-4 py-2 text-sm font-medium cursor-not-allowed select-none ${
+                        cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-dashed border-line-warm text-galet-ink'
+                      }`}
+                    >
+                      {CARD_TYPE_LABELS[t]} · studio complet
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => update({ cardType: t, ...(t === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) })}
+                    className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                      cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-line-warm text-galet-ink hover:border-halo/60'
+                    }`}
+                  >
+                    {CARD_TYPE_LABELS[t]}
+                  </button>
+                );
+              })}
               {(['cashback', 'subscription'] as CardTypeKey[]).map((t) => (
                 <span
                   key={t}
@@ -591,11 +697,24 @@ export default function StudioClient({ express = false }: { express?: boolean })
                   setAssets((a) => ({ ...a, stampEmpty: previewUrl }));
                 }}
               />
-            ) : (
+            ) : express ? (
+              // Verrouillé en express (voir le gate du sélecteur ci-dessus) : ce cas ne
+              // se produit que si le design chargé était déjà « points » (config faite
+              // précédemment dans le studio complet) — jamais éditable ici, pour ne
+              // jamais laisser croire qu'une saisie express sera persistée.
               <p className="text-sm text-galet-ink">
-                Carte à points : le champ principal affiche le solde de points du client (jeton{' '}
-                <code className="rounded bg-calcaire px-1.5 py-0.5 text-onyx">{'{points}'}</code>).
+                Cette carte utilise déjà un programme à points. Réglez les points par passage, les
+                paliers et l&apos;expiration dans le studio complet — ouvrez-le depuis le tableau de
+                bord une fois l&apos;essentiel validé ici.
               </p>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-galet-ink">
+                  Carte à points : le champ principal affiche le solde de points du client (jeton{' '}
+                  <code className="rounded bg-calcaire px-1.5 py-0.5 text-onyx">{'{points}'}</code>).
+                </p>
+                <PointsSection value={pointsRules} onChange={setPointsRules} />
+              </div>
             )}
           </section>
 

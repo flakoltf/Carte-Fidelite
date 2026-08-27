@@ -1,4 +1,4 @@
-import type { AmountPointsConfig, LoyaltyProgram, StampCardConfig } from "./types";
+import type { AmountPointsConfig, LoyaltyProgram, PointsConfig, PointsTier, StampCardConfig } from "./types";
 
 export type ValidateResult = { ok: true; program: LoyaltyProgram } | { ok: false; error: string };
 
@@ -80,6 +80,44 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
     }
 
     return { ok: true, program: { type: "amount_points", config } };
+  }
+
+  if (type === "points") {
+    const pps = cfg.pointsPerScan;
+    if (!isInt(pps) || pps < 1 || pps > 1000) return { ok: false, error: "Points par scan : un entier de 1 à 1000." };
+
+    const rawTiers = cfg.tiers;
+    if (!Array.isArray(rawTiers) || rawTiers.length === 0 || rawTiers.length > 6) return { ok: false, error: "Paliers : 1 à 6." };
+    const tiers: PointsTier[] = [];
+    for (const t of rawTiers) {
+      const threshold = (t as Record<string, unknown>)?.threshold;
+      const reward = (t as Record<string, unknown>)?.reward;
+      if (!isInt(threshold) || threshold < 1) return { ok: false, error: "Seuil de palier invalide (entier > 0)." };
+      if (typeof reward !== "string" || reward.trim().length < 1 || reward.trim().length > 80)
+        return { ok: false, error: "Offre de palier : 1 à 80 caractères." };
+      tiers.push({ threshold, reward: reward.trim() });
+    }
+    if (!strictAsc(tiers.map((t) => t.threshold))) return { ok: false, error: "Seuils de paliers strictement croissants et distincts." };
+
+    const config: PointsConfig = { pointsPerScan: pps, tiers };
+
+    const exp = cfg.expiration as Record<string, unknown> | undefined;
+    if (exp !== undefined && exp !== null && (exp as { type?: unknown }).type !== "none") {
+      if (exp.type === "rolling") {
+        if (!isInt(exp.months) || (exp.months as number) < 1 || (exp.months as number) > 60)
+          return { ok: false, error: "Expiration glissante : 1 à 60 mois." };
+        config.expiration = { type: "rolling", months: exp.months as number };
+      } else if (exp.type === "fixed_date") {
+        const DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // année non bissextile : 29/02 refusé
+        const m = exp.month, d = exp.day;
+        if (!isInt(m) || m < 1 || m > 12 || !isInt(d) || d < 1 || d > DAYS[(m as number) - 1])
+          return { ok: false, error: "Expiration à date fixe : jour/mois invalides." };
+        config.expiration = { type: "fixed_date", month: m as number, day: d as number };
+      } else {
+        return { ok: false, error: "Type d'expiration inconnu." };
+      }
+    }
+    return { ok: true, program: { type: "points", config } };
   }
 
   return { ok: false, error: "Type de programme inconnu." };

@@ -74,7 +74,7 @@ export async function GET() {
         .maybeSingle<StudioRow>(),
       supabaseAdmin
         .from('merchants')
-        .select('id, shop_name, business_type, stamp_goal, slug')
+        .select('id, shop_name, business_type, stamp_goal, slug, loyalty_type, loyalty_config')
         .eq('id', merchantId)
         .maybeSingle(),
     ]);
@@ -103,6 +103,8 @@ export async function GET() {
             businessType: (merchant.business_type as string | null) ?? null,
             stampGoal: (merchant.stamp_goal as number | null) ?? 10,
             slug: (merchant.slug as string | null) ?? null,
+            loyaltyType: (merchant.loyalty_type as string | null) ?? null,
+            loyaltyConfig: (merchant.loyalty_config as Record<string, unknown> | null) ?? null,
           }
         : null,
     });

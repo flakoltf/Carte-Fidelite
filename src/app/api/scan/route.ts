@@ -7,6 +7,7 @@ import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { applyScan } from "@/lib/loyalty/engine";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, redeemablePointsTiers } from "@/lib/loyalty/points";
 
 type AtomicScan = { status: "incremented" | "cooldown" | "full" | "notfound"; newCount: number };
 
@@ -190,6 +191,85 @@ export async function POST(req: Request) {
         pointsEarned: result.pointsEarned,
         rewardReady: result.rewardReady,
         rewardLabel: program.config.rewardLabel,
+      };
+      if (idempotencyKey) await setIdempotency(idempotencyKey, response);
+      return NextResponse.json(response);
+    }
+
+    // 2-ter. points : crédit FIXE par scan via la RPC atomique dédiée (invariant 4).
+    if (program.type === "points") {
+      const capPoints = maxPointsThreshold(program.config);
+      const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc("scan_increment_points", {
+        p_card_id: actualCardId,
+        p_points: program.config.pointsPerScan,
+        p_cap: capPoints,
+        p_cooldown_seconds: cooldownSeconds,
+      });
+      if (rpcError) {
+        console.error("[scan] RPC scan_increment_points échec:", rpcError.message);
+        throw new Error("Crédit atomique indisponible");
+      }
+      const row = (Array.isArray(rpcData) ? rpcData[0] : null) as
+        { new_count: number; points_added: number; status: "incremented" | "cooldown" | "full" | "notfound" } | null;
+      if (!row) throw new Error("scan_increment_points: réponse vide");
+
+      if (row.status === "cooldown") {
+        return NextResponse.json(
+          { error: "Carte déjà scannée à l'instant. Patientez quelques secondes.", cooldown: true },
+          { status: 429 }
+        );
+      }
+      if (row.status === "notfound") {
+        return NextResponse.json({ error: "Carte invalide ou introuvable" }, { status: 404 });
+      }
+
+      const redeemed = parseRedeemedTiers(card.redeemed_tiers);
+      const redeemable = redeemablePointsTiers(program.config, row.new_count, redeemed);
+
+      // Carte pleine : aucun point ajouté, on propose juste la validation (miroir stamps).
+      if (row.status === "full") {
+        const response = {
+          success: true, loyaltyType: "points" as const, currentValue: row.new_count, pointsAdded: 0,
+          added: false, rewardReady: redeemable.length > 0, redeemableTiers: redeemable, maxThreshold: capPoints,
+        };
+        if (idempotencyKey) await setIdempotency(idempotencyKey, response);
+        return NextResponse.json(response);
+      }
+
+      const before = row.new_count - row.points_added;
+      const crossed = crossedPointsTiers(program.config, before, row.new_count);
+
+      // Historique (points_added = points crédités ce scan) puis push best-effort :
+      // AVEC message au franchissement de palier (récompense disponible), silencieux sinon.
+      await supabaseAdmin.from("scan_history")
+        .insert({ card_id: actualCardId, merchant_id: card.merchant_id, points_added: row.points_added });
+      try {
+        const { getChannels } = await import("@/lib/wallet/channel");
+        const top = crossed[crossed.length - 1];
+        // Titre sans emoji (Minor 7, revue finale) : cohérent avec "Récompense
+        // utilisée" (redeem.ts) — les emojis restent réservés aux corps de message.
+        const message = top
+          ? { title: "Récompense disponible", body: `${top.reward} — présentez votre carte au comptoir pour en profiter.` }
+          : undefined;
+        for (const ch of getChannels()) await ch.notify([actualCardId], message);
+      } catch (e) {
+        console.error("[scan] push notify failed:", e);
+      }
+
+      const meta = extractRequestMeta(req);
+      await logAuditEvent({
+        action: "CARD_SCANNED",
+        merchant_id: merchant.id, user_id: user.id, card_id: actualCardId,
+        details: {
+          points_added: row.points_added, new_balance: row.new_count,
+          crossed_thresholds: crossed.map((t) => t.threshold),
+          reward_ready: redeemable.length > 0, loyalty_type: program.type,
+        }, ...meta,
+      });
+
+      const response = {
+        success: true, loyaltyType: "points" as const, currentValue: row.new_count, pointsAdded: row.points_added,
+        added: true, rewardReady: redeemable.length > 0, redeemableTiers: redeemable, maxThreshold: capPoints,
       };
       if (idempotencyKey) await setIdempotency(idempotencyKey, response);
       return NextResponse.json(response);

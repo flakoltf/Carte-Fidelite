@@ -11,6 +11,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushSpy }) }));
 vi.mock("../_components/TemplateGallery", () => ({ default: () => <div /> }));
 vi.mock("../_components/ColorsSection", () => ({ default: () => <div /> }));
 vi.mock("../_components/StampsSection", () => ({ default: () => <div /> }));
+vi.mock("../_components/PointsSection", () => ({
+  default: () => <div data-testid="points-section" />,
+  DEFAULT_POINTS_RULES: { pointsPerScan: 10, tiers: [{ threshold: 100, reward: "10% de réduction" }], expiration: { type: "none" } },
+}));
 vi.mock("../_components/FieldsSection", () => ({ default: () => <div /> }));
 vi.mock("../_components/BarcodeSection", () => ({ default: () => <div /> }));
 vi.mock("../_components/ImageUploadField", () => ({ default: () => <div /> }));
@@ -92,5 +96,65 @@ describe("StudioClient — mode express (?express=1)", () => {
     // L'en-tête normal apparaît, jamais la bannière express.
     expect(await screen.findByText(/studio de carte/i)).toBeTruthy();
     expect(screen.queryByText(/vérifiez et validez/i)).toBeNull();
+  });
+
+  // Régression : validateAndContinue ne persiste jamais le programme points
+  // (seuls reward_label/couleur + brouillon sont PATCHés/PUT — voir StudioClient
+  // L360-395). Le type « points » doit donc rester inatteignable en express,
+  // sinon une config saisie serait silencieusement jetée à la validation.
+  it("mode express, éditeur avancé ouvert : le type « points » est verrouillé (studio complet)", async () => {
+    render(<StudioClient express />);
+    await screen.findByText(/vérifiez et validez/i);
+    fireEvent.click(screen.getByRole("button", { name: /personnaliser plus/i }));
+
+    await screen.findByText(/programme & tampons/i);
+    // Le chip « points » n'est pas un bouton cliquable en express.
+    expect(screen.queryByRole("button", { name: /^carte à points$/i })).toBeNull();
+    expect(screen.getByText(/carte à points · studio complet/i)).toBeTruthy();
+    // Et l'éditeur détaillé (paliers, expiration) n'est jamais monté.
+    expect(screen.queryByTestId("points-section")).toBeNull();
+  });
+
+  it("mode express, design existant déjà « points » : pas d'éditeur points, aucune saisie possible ni perdue", async () => {
+    const pointsDesign = {
+      colors: { background: "#0D6B5E", foreground: "#FFFFFF", label: "#BFEEE6" },
+      programName: "Carte de fidélité",
+      logo: {},
+      fields: [{ id: "points", zone: "primary", label: "POINTS", value: "{points}", order: 0 }],
+      barcode: { type: "QR", source: "card_token" },
+      cardType: "points",
+    };
+    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.includes("/api/merchant/card-design") && method === "GET") {
+        return jsonOk({
+          ...PAYLOAD,
+          draft: pointsDesign,
+          merchant: { ...PAYLOAD.merchant, loyaltyType: "points", loyaltyConfig: { pointsPerScan: 5, tiers: [{ threshold: 50, reward: "Café offert" }] } },
+        });
+      }
+      if (url.includes("/api/merchant/me") && method === "GET") return jsonOk({ merchant: { reward_label: null } });
+      if (url.includes("/api/merchant/me") && method === "PATCH") return jsonOk({ ok: true });
+      if (url.includes("/api/merchant/card-design") && method === "PUT") return jsonOk({ draftSavedAt: "now" });
+      return jsonOk({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<StudioClient express />);
+    await screen.findByText(/vérifiez et validez/i);
+    fireEvent.click(screen.getByRole("button", { name: /personnaliser plus/i }));
+
+    // Message informatif à la place de l'éditeur (jamais monté en express).
+    expect(await screen.findByText(/utilise déjà un programme à points/i)).toBeTruthy();
+    expect(screen.queryByTestId("points-section")).toBeNull();
+
+    // La validation reste possible et ne touche que reward_label/couleur + brouillon.
+    fireEvent.change(screen.getByLabelText(/récompense/i), { target: { value: "Le 10e café offert" } });
+    fireEvent.click(screen.getByRole("button", { name: /valider et continuer/i }));
+    await waitFor(() => expect(pushSpy).toHaveBeenCalledWith("/dashboard/card"));
+
+    const calls = fetchMock.mock.calls.map((c) => ({ url: String(c[0]), init: c[1] as RequestInit | undefined }));
+    expect(calls.some((c) => c.url.includes("/api/merchant/card-design/publish"))).toBe(false);
   });
 });

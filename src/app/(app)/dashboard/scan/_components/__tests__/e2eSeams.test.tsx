@@ -83,6 +83,7 @@ describe("seam E2E — e2eProgramOverride (scan/page.tsx)", () => {
     process.env.NEXT_PUBLIC_E2E = "1";
     expect(e2eProgramOverride("amount_points")).toBe("amount_points");
     expect(e2eProgramOverride("stamp_card")).toBe("stamp_card");
+    expect(e2eProgramOverride("points")).toBe("points");
     expect(e2eProgramOverride(["amount_points"])).toBe("amount_points");
     expect(e2eProgramOverride("n_importe_quoi")).toBeNull();
     expect(e2eProgramOverride(undefined)).toBeNull();

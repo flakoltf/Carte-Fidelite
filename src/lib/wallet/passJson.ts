@@ -12,6 +12,8 @@ export interface PassJsonInput {
   design?: CardDesign;
   /** Optional tier label for {palier} token substitution. */
   palier?: string;
+  /** Nombre total de scans de la carte (compteur à vie) — jeton {visites}. */
+  visites?: number;
   /**
    * Données d'IDENTITÉ commerce (Feature 1 — carte vivante). Appliquées aux deux
    * chemins (legacy ET design) : infos du commerce, indépendantes du créatif de
@@ -158,6 +160,7 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       points: `${i.stamps} / ${i.stampGoal ?? 10}`,
       nom: i.customerName,
       palier: i.palier,
+      visites: i.visites !== undefined ? String(i.visites) : undefined,
     };
     // Deep-copy fields with resolved token values before mapping.
     const resolvedDesign: CardDesign = {
