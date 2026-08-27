@@ -31,6 +31,9 @@ ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_action_check
     'ONBOARDING_MODE_SELECTED','CONCIERGE_CARD_PROVISIONED',
     'CONCIERGE_DESIGN_DELIVERED',
     'SCAN_REVERTED',
+    -- Patch prod HORS REPO découvert à l'application (2026-08-27) : préservé,
+    -- sinon les logs de consentement marketing seraient silencieusement rejetés.
+    'MARKETING_CONSENT_UPDATED',
     'DEMO_ACCOUNT_SEEDED','DEMO_ACCOUNT_RESET',
     -- Carte à points (2026-08-26)
     'POINTS_EXPIRED'
