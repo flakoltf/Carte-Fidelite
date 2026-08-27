@@ -30,6 +30,18 @@ export function resolvePointsPassState(
   };
 }
 
+// Jeton {progression} d'une carte à POINTS : « solde/cible points » où la cible
+// est le PREMIER palier non encore validé dans le cycle (redeemed_tiers), repli
+// sur le palier max si tout est validé (état normal : le max validé reset le
+// cycle via points_redeem_tier — le repli est purement défensif). Le solde est
+// plafonné à la cible (« 30/30 », jamais « 35/30 ») : un palier atteint mais pas
+// encore encaissé s'affiche comme progression complète, pas comme dépassement.
+export function pointsProgressionLabel(config: PointsConfig, balance: number, redeemedTiers: number[]): string {
+  const next =
+    config.tiers.find((t) => !redeemedTiers.includes(t.threshold))?.threshold ?? maxPointsThreshold(config);
+  return `${Math.min(balance, next)}/${next} points`;
+}
+
 // Paliers atteints ET pas encore validés dans le cycle (modèle cumulatif validé en spec).
 export function redeemablePointsTiers(config: PointsConfig, balance: number, redeemedTiers: number[]): PointsTier[] {
   return config.tiers.filter((t) => balance >= t.threshold && !redeemedTiers.includes(t.threshold));

@@ -47,6 +47,8 @@ const TOKENS: { token: string; hint: string }[] = [
   { token: '{nom}', hint: 'nom du client' },
   { token: '{palier}', hint: 'palier de fidélité' },
   { token: '{visites}', hint: 'Nombre total de passages' },
+  { token: '{derniere_visite}', hint: 'Date du dernier passage (jj.mm.aaaa)' },
+  { token: '{progression}', hint: 'Progression vers le prochain palier (ex. 3/8 points)' },
 ];
 
 function SortableRow({
