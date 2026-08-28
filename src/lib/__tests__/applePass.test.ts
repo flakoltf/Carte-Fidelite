@@ -289,6 +289,80 @@ describe("buildApplePassBuffer — jeton {derniere_visite}", () => {
   });
 });
 
+describe("buildApplePassBuffer — jeton {statut} (statut client, cumul à vie)", () => {
+  const FIELDS: Row[] = [
+    { id: "p", zone: "primary", label: "POINTS", value: "{points}", order: 0 },
+    { id: "st", zone: "secondary", label: "STATUT", value: "{statut}", order: 1 },
+  ];
+  const STATUS_MERCHANT: Row = {
+    ...BASE_MERCHANT,
+    loyalty_type: "points",
+    loyalty_config: {
+      pointsPerScan: 5,
+      tiers: [{ threshold: 30, reward: "Café offert" }],
+      statusTiers: [
+        { threshold: 0, label: "Bronze" },
+        { threshold: 50, label: "Argent" },
+      ],
+    },
+  };
+
+  it("carte à POINTS : libellé du statut calculé depuis lifetime_points", async () => {
+    state.cardRow = {
+      merchant_id: "merchant-1", points_balance: 10, redeemed_tiers: [],
+      lifetime_points: 60, current_status_tier: null,
+    };
+    state.merchantRow = STATUS_MERCHANT;
+    state.designRow = designRow(FIELDS, "points");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 0, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("Argent");
+  });
+
+  it("jamais rétrogradé : le seuil stocké prime sur un cumul plus bas (seuils remontés)", async () => {
+    state.cardRow = {
+      merchant_id: "merchant-1", points_balance: 10, redeemed_tiers: [],
+      lifetime_points: 10, current_status_tier: 50,
+    };
+    state.merchantRow = STATUS_MERCHANT;
+    state.designRow = designRow(FIELDS, "points");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 0, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("Argent");
+  });
+
+  it("statusTiers absents → champ {statut} RETIRÉ du pass (repli couche 1)", async () => {
+    state.cardRow = {
+      merchant_id: "merchant-1", points_balance: 10, redeemed_tiers: [],
+      lifetime_points: 500, current_status_tier: null,
+    };
+    state.merchantRow = {
+      ...STATUS_MERCHANT,
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+    };
+    state.designRow = designRow(FIELDS, "points");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 0, branding: {} });
+
+    expect(JSON.stringify(lastPassJson())).not.toContain("{statut}");
+  });
+
+  it("carte à TAMPONS → champ {statut} RETIRÉ (statuts réservés aux cartes à points)", async () => {
+    state.cardRow = {
+      merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [],
+      lifetime_points: 500, current_status_tier: 50,
+    };
+    state.merchantRow = BASE_MERCHANT;
+    state.designRow = designRow(FIELDS, "stamps");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    expect(JSON.stringify(lastPassJson())).not.toContain("{statut}");
+  });
+});
+
 describe("buildApplePassBuffer — jeton {progression}", () => {
   const FIELDS: Row[] = [
     { id: "p", zone: "primary", label: "POINTS", value: "{points}", order: 0 },

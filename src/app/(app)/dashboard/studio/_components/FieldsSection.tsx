@@ -49,6 +49,7 @@ const TOKENS: { token: string; hint: string }[] = [
   { token: '{visites}', hint: 'Nombre total de passages' },
   { token: '{derniere_visite}', hint: 'Date du dernier passage (jj.mm.aaaa)' },
   { token: '{progression}', hint: 'Progression vers le prochain palier (ex. 3/8 points)' },
+  { token: '{statut}', hint: 'Statut du client (ex. Or) — cartes à points avec statuts configurés' },
 ];
 
 function SortableRow({

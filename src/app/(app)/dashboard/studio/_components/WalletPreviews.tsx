@@ -24,6 +24,7 @@ export const DEFAULT_SAMPLE: SampleData = {
   visites: '12',
   derniere_visite: '14.08.2026',
   progression: '7/10 tampons',
+  statut: 'Or',
 };
 
 function resolve(template: string, sample: SampleData): string {

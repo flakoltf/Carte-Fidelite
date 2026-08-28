@@ -18,6 +18,7 @@ const state = {
   stampGoal: 10,
 };
 const calls = { rpc: [] as { name: string; params: Record<string, unknown> }[] };
+const updateCalls: { table: string; values: Record<string, unknown>; filters: [string, unknown[]][] }[] = [];
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
@@ -38,6 +39,18 @@ vi.mock("@/lib/supabaseAdmin", () => ({
                 : { data: state.card, error: null },
           }),
         }),
+        // UPDATE chaîné (statut client) : enregistre valeurs + filtres, thenable.
+        update: (values: Record<string, unknown>) => {
+          const rec = { table, values, filters: [] as [string, unknown[]][] };
+          updateCalls.push(rec);
+          const builder = {
+            eq: (...a: unknown[]) => { rec.filters.push(["eq", a]); return builder; },
+            or: (...a: unknown[]) => { rec.filters.push(["or", a]); return builder; },
+            then: (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
+              Promise.resolve({ error: null }).then(resolve, reject),
+          };
+          return builder;
+        },
       };
     },
     rpc: async (name: string, params: Record<string, unknown>) => {
@@ -105,6 +118,7 @@ beforeEach(() => {
   state.cooldownSeconds = 30;
   state.stampGoal = 10;
   calls.rpc = [];
+  updateCalls.length = 0;
   channelCalls.notify = [];
 });
 
@@ -189,6 +203,121 @@ describe("POST /api/scan — programme à points : push au franchissement d'un p
     expect(res.status).toBe(200);
     expect(channelCalls.notify).toHaveLength(1);
     expect(channelCalls.notify[0].message).toBeUndefined();
+  });
+});
+
+describe("POST /api/scan — statut client (cumul à vie, cartes à points)", () => {
+  const STATUS_CONFIG = {
+    pointsPerScan: 5,
+    tiers: [{ threshold: 30, reward: "Café offert" }],
+    statusTiers: [
+      { threshold: 0, label: "Bronze" },
+      { threshold: 50, label: "Argent", benefit: "5% de réduction" },
+    ],
+  };
+
+  function pointsState(card: Record<string, unknown>, rpcRow: Record<string, unknown>) {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "points",
+      loyalty_config: STATUS_CONFIG,
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "card-1", merchant_id: "merchant-1", redeemed_tiers: [], customers: { full_name: "Nadia" }, ...card };
+    state.rpcData = [rpcRow];
+  }
+
+  it("changement de statut SEUL → notification « Nouveau statut » + UPDATE monotone du seuil", async () => {
+    // before=20 → after=25 : aucun palier de récompense franchi ; cumul 50 → Argent.
+    pointsState(
+      { points_balance: 20, current_status_tier: 0 },
+      { new_count: 25, points_added: 5, new_lifetime: 50, status: "incremented" }
+    );
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+
+    expect(channelCalls.notify).toHaveLength(1);
+    expect(channelCalls.notify[0].message?.title).toBe("Nouveau statut");
+    expect(channelCalls.notify[0].message?.body).toContain("Argent");
+    expect(channelCalls.notify[0].message?.body).toContain("5% de réduction");
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0].values).toEqual({ current_status_tier: 50 });
+    expect(updateCalls[0].filters).toContainEqual(["eq", ["id", "card-1"]]);
+    expect(updateCalls[0].filters).toContainEqual(["eq", ["merchant_id", "merchant-1"]]);
+    // Garde monotone : jamais rétrogradé, même en course entre deux scans.
+    expect(updateCalls[0].filters).toContainEqual(["or", ["current_status_tier.is.null,current_status_tier.lt.50"]]);
+  });
+
+  it("récompense ET statut au même scan → UNE notification combinée, récompense en tête", async () => {
+    // before=25 → after=30 : palier récompense 30 franchi ; cumul 50 → Argent.
+    pointsState(
+      { points_balance: 25, current_status_tier: 0 },
+      { new_count: 30, points_added: 5, new_lifetime: 50, status: "incremented" }
+    );
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+
+    expect(channelCalls.notify).toHaveLength(1);
+    expect(channelCalls.notify[0].message?.title).toBe("Récompense disponible");
+    expect(channelCalls.notify[0].message?.body).toContain("Café offert");
+    expect(channelCalls.notify[0].message?.body).toContain("Argent");
+    expect(updateCalls).toHaveLength(1);
+  });
+
+  it("statut inchangé → push silencieux, aucun UPDATE de statut", async () => {
+    pointsState(
+      { points_balance: 10, current_status_tier: 0 },
+      { new_count: 15, points_added: 5, new_lifetime: 30, status: "incremented" }
+    );
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message).toBeUndefined();
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("jamais rétrogradé : seuil stocké plus haut que le calculé → ni UPDATE ni notification", async () => {
+    pointsState(
+      { points_balance: 10, current_status_tier: 50 },
+      { new_count: 15, points_added: 5, new_lifetime: 10, status: "incremented" }
+    );
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message).toBeUndefined();
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("RPC d'avant migration (sans new_lifetime) → aucun recalcul, comportement inchangé", async () => {
+    pointsState(
+      { points_balance: 20, current_status_tier: null },
+      { new_count: 25, points_added: 5, status: "incremented" }
+    );
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message).toBeUndefined();
+    expect(updateCalls).toHaveLength(0);
+  });
+
+  it("statusTiers absents de la config → aucun recalcul même avec new_lifetime", async () => {
+    pointsState(
+      { points_balance: 20, current_status_tier: null },
+      { new_count: 25, points_added: 5, new_lifetime: 500, status: "incremented" }
+    );
+    state.merchant = {
+      ...(state.merchant as Record<string, unknown>),
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+    };
+
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message).toBeUndefined();
+    expect(updateCalls).toHaveLength(0);
   });
 });
 

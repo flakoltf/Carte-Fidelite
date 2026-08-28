@@ -1,4 +1,4 @@
-import type { AmountPointsConfig, LoyaltyProgram, PointsConfig, PointsTier, StampCardConfig } from "./types";
+import type { AmountPointsConfig, LoyaltyProgram, PointsConfig, PointsTier, StampCardConfig, StatusTier } from "./types";
 
 export type ValidateResult = { ok: true; program: LoyaltyProgram } | { ok: false; error: string };
 
@@ -100,6 +100,33 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
     if (!strictAsc(tiers.map((t) => t.threshold))) return { ok: false, error: "Seuils de paliers strictement croissants et distincts." };
 
     const config: PointsConfig = { pointsPerScan: pps, tiers };
+
+    // Statuts clients (optionnels — absent/vide = désactivé). IMPORTANT : la
+    // config nettoyée DOIT les porter — les routes (admin, publish studio)
+    // réécrivent loyalty_config depuis CETTE config, une clé perdue ici serait
+    // silencieusement effacée en base.
+    const rawStatus = cfg.statusTiers;
+    if (rawStatus !== undefined && rawStatus !== null) {
+      if (!Array.isArray(rawStatus) || rawStatus.length > 5) return { ok: false, error: "Statuts clients : 5 maximum." };
+      if (rawStatus.length > 0) {
+        const statusTiers: StatusTier[] = [];
+        for (const s of rawStatus) {
+          const threshold = (s as Record<string, unknown>)?.threshold;
+          const label = (s as Record<string, unknown>)?.label;
+          const benefit = (s as Record<string, unknown>)?.benefit;
+          if (!isInt(threshold) || threshold < 0) return { ok: false, error: "Seuil de statut invalide (entier ≥ 0)." };
+          if (typeof label !== "string" || label.trim().length < 1 || label.trim().length > 40)
+            return { ok: false, error: "Libellé de statut : 1 à 40 caractères." };
+          if (benefit !== undefined && benefit !== null && (typeof benefit !== "string" || benefit.trim().length > 120))
+            return { ok: false, error: "Avantage de statut : 120 caractères maximum." };
+          const cleanBenefit = typeof benefit === "string" ? benefit.trim() : "";
+          statusTiers.push({ threshold, label: label.trim(), ...(cleanBenefit ? { benefit: cleanBenefit } : {}) });
+        }
+        if (!strictAsc(statusTiers.map((s) => s.threshold)))
+          return { ok: false, error: "Seuils de statuts strictement croissants et distincts." };
+        config.statusTiers = statusTiers;
+      }
+    }
 
     const exp = cfg.expiration as Record<string, unknown> | undefined;
     if (exp !== undefined && exp !== null && (exp as { type?: unknown }).type !== "none") {

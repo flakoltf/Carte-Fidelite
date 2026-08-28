@@ -18,6 +18,8 @@ export interface PassJsonInput {
   derniereVisite?: string;
   /** Progression vers le prochain palier, déjà formatée (« 3/8 points », « 3/10 tampons ») — jeton {progression}. */
   progression?: string;
+  /** Libellé du statut client (cumul à vie, cartes à points) — jeton {statut}. */
+  statut?: string;
   /**
    * Données d'IDENTITÉ commerce (Feature 1 — carte vivante). Appliquées aux deux
    * chemins (legacy ET design) : infos du commerce, indépendantes du créatif de
@@ -196,6 +198,7 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       visites: i.visites !== undefined ? String(i.visites) : undefined,
       derniere_visite: i.derniereVisite,
       progression: i.progression,
+      statut: i.statut,
     };
     // Deep-copy fields with resolved token values before mapping.
     // Un champ dont la valeur devient vide après résolution (jeton connu non

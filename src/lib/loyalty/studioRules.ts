@@ -15,7 +15,7 @@ export type StudioRulesInput = {
   reward_label?: unknown; // libellé récompense (TEXT 1-80, ou vide → null)
   welcome_stamps?: unknown; // 0 | 1
   intermediate_milestone?: unknown; // null | number
-  config?: { milestones?: unknown; tiers?: unknown; pointsPerScan?: unknown; expiration?: unknown }; // visit_based / tiered / points
+  config?: { milestones?: unknown; tiers?: unknown; pointsPerScan?: unknown; expiration?: unknown; statusTiers?: unknown }; // visit_based / tiered / points
 };
 
 export type LoyaltyMerchantUpdate = {
@@ -51,6 +51,7 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
       tiers: input.config?.tiers,
     };
     if (input.config?.expiration !== undefined) cfg.expiration = input.config.expiration;
+    if (input.config?.statusTiers !== undefined) cfg.statusTiers = input.config.statusTiers;
     return cfg;
   }
   return {};

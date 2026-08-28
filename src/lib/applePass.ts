@@ -93,10 +93,12 @@ export async function buildApplePassBuffer({
   let palier: string | undefined;
   // Jeton {progression} : renseigné pour points/tampons, littéral sinon.
   let progression: string | undefined;
+  // Jeton {statut} : statut client (cumul à vie), cartes à points uniquement.
+  let statut: string | undefined;
   let identity: import("@/lib/wallet/passJson").PassIdentity | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
-    .select("merchant_id, points_balance, redeemed_tiers")
+    .select("merchant_id, points_balance, redeemed_tiers, lifetime_points, current_status_tier")
     .eq("id", cardId)
     .single();
   if (cardRow?.merchant_id) {
@@ -143,6 +145,16 @@ export async function buildApplePassBuffer({
       passStampGoal = state.stampGoal;
       palier = state.palier;
       progression = pointsProgressionLabel(program.config, pointsBalance, redeemedTiers);
+      // {statut} : max(calculé depuis lifetime_points, seuil stocké) — jamais
+      // rétrogradé, même si le marchand a remonté ses seuils. statusTiers
+      // absents → undefined → jeton littéral (convention {palier}).
+      const { parseStatusTiers, effectiveStatus } = await import("@/lib/loyalty/status");
+      const statusTiers = parseStatusTiers(program.config.statusTiers);
+      statut = effectiveStatus(
+        statusTiers,
+        cardRow.lifetime_points ?? 0,
+        typeof cardRow.current_status_tier === "number" ? cardRow.current_status_tier : null
+      )?.label;
     } else if (program.type === "stamp_card") {
       // {progression} d'une carte à tampons : « tampons/objectif tampons ».
       const { stampsProgressionLabel } = await import("@/lib/loyalty/stamp");
@@ -306,6 +318,7 @@ export async function buildApplePassBuffer({
     visites,
     derniereVisite,
     progression,
+    statut,
     identity,
   });
 

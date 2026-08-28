@@ -7,14 +7,14 @@ export type CardZone = 'header' | 'primary' | 'secondary' | 'auxiliary' | 'back'
 // Tout NOUVEAU jeton doit être ajouté ICI en plus du ctx serveur (passJson) et
 // de la liste du Studio (FieldsSection) — le test « GARANTIE » de passJson le
 // couvre alors automatiquement.
-export const KNOWN_TOKENS = ['points', 'nom', 'palier', 'visites', 'derniere_visite', 'progression'] as const;
+export const KNOWN_TOKENS = ['points', 'nom', 'palier', 'visites', 'derniere_visite', 'progression', 'statut'] as const;
 export type KnownToken = (typeof KNOWN_TOKENS)[number];
 
 export type CardField = {
   id: string;
   zone: CardZone;
   label: string;
-  value: string; // peut contenir des jetons : {nom}, {points}, {palier}, {visites}, {derniere_visite}, {progression}
+  value: string; // peut contenir des jetons : {nom}, {points}, {palier}, {visites}, {derniere_visite}, {progression}, {statut}
   order: number;
 };
 
