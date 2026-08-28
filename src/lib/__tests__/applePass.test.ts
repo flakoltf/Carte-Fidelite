@@ -24,6 +24,10 @@ const state = {
   cardRow: null as Row | null,
   merchantRow: null as Row | null,
   visitsCount: 0,
+  // Dernière ligne scan_history (jeton {derniere_visite}) ; null = aucun scan.
+  lastScanRow: null as Row | null,
+  // Ligne card_designs ; null = aucun design → rendu legacy.
+  designRow: null as Row | null,
 };
 
 const calls = {
@@ -44,8 +48,13 @@ function resolveQuery(record: QueryRecord): { data: unknown; error: null; count?
     return { data: null, error: null };
   }
   if (record.table === "merchants") return { data: state.merchantRow, error: null };
-  if (record.table === "card_designs") return { data: null, error: null }; // aucun design → rendu legacy
-  if (record.table === "scan_history") return { data: null, error: null, count: state.visitsCount };
+  if (record.table === "card_designs") return { data: state.designRow, error: null };
+  if (record.table === "scan_history") {
+    // Deux requêtes distinctes sur la table : le COUNT {visites} (select "id")
+    // et la dernière visite {derniere_visite} (select "scanned_at").
+    if (selectCols.includes("scanned_at")) return { data: state.lastScanRow, error: null };
+    return { data: null, error: null, count: state.visitsCount };
+  }
   return { data: null, error: null };
 }
 
@@ -73,6 +82,14 @@ function makeBuilder(table: string): Record<string, unknown> {
       record.calls.push(["update", args]);
       return builder;
     },
+    order: (...args: unknown[]) => {
+      record.calls.push(["order", args]);
+      return builder;
+    },
+    limit: (...args: unknown[]) => {
+      record.calls.push(["limit", args]);
+      return builder;
+    },
     single: async () => resolveQuery(record),
     maybeSingle: async () => resolveQuery(record),
     then: (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
@@ -83,6 +100,13 @@ function makeBuilder(table: string): Record<string, unknown> {
 
 vi.mock("@/lib/supabaseAdmin", () => ({
   supabaseAdmin: { from: (table: string) => makeBuilder(table) },
+}));
+
+// Strip tampons inerte : on teste pass.json, jamais le raster sharp.
+vi.mock("@/lib/cardDesign/stampStripRaster", () => ({
+  STRIP_SIZES: [] as [string, number, number][],
+  compositeStampStrip: async () => Buffer.from(""),
+  rasterStampStrip: async () => Buffer.from(""),
 }));
 
 vi.mock("passkit-generator", () => ({
@@ -115,6 +139,8 @@ beforeEach(() => {
   calls.queries = [];
   calls.pkpassBuffers = [];
   state.visitsCount = 4;
+  state.lastScanRow = null;
+  state.designRow = null;
 });
 
 describe("buildApplePassBuffer — rewardReady d'une carte à POINTS (Important 3)", () => {
@@ -179,6 +205,138 @@ describe("buildApplePassBuffer — rewardReady d'une carte à POINTS (Important 
 
     const json = lastPassJson();
     expect(backFieldKeys(json)).toContain("review");
+  });
+});
+
+// Ligne card_designs minimale (rowToDesign) — champs paramétrables par test.
+function designRow(fields: Row[], cardType: string): Row {
+  return {
+    background_color: "#0D6B5E",
+    foreground_color: "#FFFFFF",
+    label_color: "#BFEEE6",
+    program_name: "Prog",
+    logo_original_path: null,
+    logo_assets: null,
+    fields,
+    barcode: null,
+    google_class_id: null,
+    card_type: cardType,
+    stamps: null,
+  };
+}
+
+const BASE_MERCHANT: Row = {
+  stamp_goal: 10,
+  latitude: null,
+  longitude: null,
+  loyalty_type: "stamp_card",
+  loyalty_config: { goal: 10 },
+  reward_label: null,
+  address: null,
+  phone: null,
+  business_hours: null,
+  google_place_id: null,
+};
+
+function secondaryValues(passJson: Row): string[] {
+  const storeCard = passJson.storeCard as { secondaryFields?: { value: string }[] } | undefined;
+  return (storeCard?.secondaryFields ?? []).map((f) => f.value);
+}
+
+describe("buildApplePassBuffer — jeton {derniere_visite}", () => {
+  const FIELDS: Row[] = [
+    { id: "p", zone: "primary", label: "POINTS", value: "{points}", order: 0 },
+    { id: "lv", zone: "secondary", label: "DERNIER PASSAGE", value: "{derniere_visite}", order: 1 },
+  ];
+
+  it("requête : dernier scan_history hors compensations, scanned_at DESC, LIMIT 1", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
+    state.merchantRow = BASE_MERCHANT;
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    const lastVisitQuery = calls.queries.find(
+      (q) => q.table === "scan_history" && q.calls.some((c) => c[0] === "select" && String(c[1][0]).includes("scanned_at"))
+    );
+    expect(lastVisitQuery).toBeTruthy();
+    expect(lastVisitQuery!.calls).toContainEqual(["eq", ["card_id", "card-1"]]);
+    expect(lastVisitQuery!.calls).toContainEqual(["gte", ["points_added", 0]]);
+    expect(lastVisitQuery!.calls).toContainEqual(["order", ["scanned_at", { ascending: false }]]);
+    expect(lastVisitQuery!.calls).toContainEqual(["limit", [1]]);
+  });
+
+  it("résout la date en jj.mm.aaaa dans le pass (design présent)", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
+    state.merchantRow = BASE_MERCHANT;
+    state.lastScanRow = { scanned_at: "2026-08-14T10:30:00Z" };
+    state.designRow = designRow(FIELDS, "stamps");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("14.08.2026");
+  });
+
+  it("aucun scan → le jeton reste littéral (même convention que {palier})", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
+    state.merchantRow = BASE_MERCHANT;
+    state.lastScanRow = null;
+    state.designRow = designRow(FIELDS, "stamps");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("{derniere_visite}");
+  });
+});
+
+describe("buildApplePassBuffer — jeton {progression}", () => {
+  const FIELDS: Row[] = [
+    { id: "p", zone: "primary", label: "POINTS", value: "{points}", order: 0 },
+    { id: "pg", zone: "secondary", label: "PROGRESSION", value: "{progression}", order: 1 },
+  ];
+
+  it("carte à POINTS : « solde/prochain palier non validé points »", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 32, redeemed_tiers: [30] };
+    state.merchantRow = {
+      ...BASE_MERCHANT,
+      loyalty_type: "points",
+      loyalty_config: {
+        pointsPerScan: 5,
+        tiers: [
+          { threshold: 30, reward: "Café offert" },
+          { threshold: 40, reward: "Boisson offerte" },
+          { threshold: 50, reward: "Menu offert" },
+        ],
+      },
+    };
+    state.designRow = designRow(FIELDS, "points");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 0, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("32/40 points");
+  });
+
+  it("carte à TAMPONS : « tampons/objectif tampons »", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
+    state.merchantRow = BASE_MERCHANT;
+    state.designRow = designRow(FIELDS, "stamps");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("3/10 tampons");
+  });
+
+  it("autres programmes (tiered…) → jeton littéral", async () => {
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
+    state.merchantRow = {
+      ...BASE_MERCHANT,
+      loyalty_type: "tiered",
+      loyalty_config: { tiers: [{ name: "Argent", at: 5 }] },
+    };
+    state.designRow = designRow(FIELDS, "stamps");
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
+
+    expect(secondaryValues(lastPassJson())).toContain("{progression}");
   });
 });
 

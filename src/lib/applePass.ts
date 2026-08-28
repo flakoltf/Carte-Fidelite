@@ -91,6 +91,8 @@ export async function buildApplePassBuffer({
   let locations;
   let merchantId: string | undefined;
   let palier: string | undefined;
+  // Jeton {progression} : renseigné pour points/tampons, littéral sinon.
+  let progression: string | undefined;
   let identity: import("@/lib/wallet/passJson").PassIdentity | undefined;
   const { data: cardRow } = await supabaseAdmin
     .from("loyalty_cards")
@@ -122,11 +124,12 @@ export async function buildApplePassBuffer({
     // web-service après scan) les porte.
     const { identityFromMerchant } = await import("@/lib/wallet/identityFromMerchant");
     const { rewardReadyForIdentity, parseRedeemedTiers } = await import("@/lib/loyalty/points");
+    const redeemedTiers = parseRedeemedTiers(cardRow.redeemed_tiers);
     const rewardReady = rewardReadyForIdentity(program, {
       stamps,
       stampGoal,
       pointsBalance,
-      redeemedTiers: parseRedeemedTiers(cardRow.redeemed_tiers),
+      redeemedTiers,
     });
     identity = identityFromMerchant(mRow, new Date(), { rewardReady });
     if (mRow?.latitude != null && mRow?.longitude != null) {
@@ -134,11 +137,16 @@ export async function buildApplePassBuffer({
       locations = [{ latitude: mRow.latitude, longitude: mRow.longitude, relevantText: proximityText(orgName) }];
     }
     if (program.type === "points") {
-      const { resolvePointsPassState } = await import("@/lib/loyalty/points");
+      const { resolvePointsPassState, pointsProgressionLabel } = await import("@/lib/loyalty/points");
       const state = resolvePointsPassState(program.config, pointsBalance);
       passStamps = state.stamps;
       passStampGoal = state.stampGoal;
       palier = state.palier;
+      progression = pointsProgressionLabel(program.config, pointsBalance, redeemedTiers);
+    } else if (program.type === "stamp_card") {
+      // {progression} d'une carte à tampons : « tampons/objectif tampons ».
+      const { stampsProgressionLabel } = await import("@/lib/loyalty/stamp");
+      progression = stampsProgressionLabel(stamps, program.config.goal);
     } else if (mRow?.loyalty_type === "tiered") {
       // Resolve the customer's current tier name for {palier} token substitution.
       // Only applies to tiered loyalty programs; for all other types the token stays literal.
@@ -258,6 +266,27 @@ export async function buildApplePassBuffer({
     visites = 0;
   }
 
+  // {derniere_visite} : date du dernier passage réel — même filtre anti-compensation
+  // que {visites} (points_added ≥ 0 : une ligne négative est un revert, pas un
+  // passage). Best-effort : sans scan (ou sur erreur), le jeton reste littéral.
+  let derniereVisite: string | undefined;
+  try {
+    const { data: lastScan } = await supabaseAdmin
+      .from("scan_history")
+      .select("scanned_at")
+      .eq("card_id", cardId)
+      .gte("points_added", 0)
+      .order("scanned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (lastScan?.scanned_at) {
+      const { formatDerniereVisite } = await import("@/lib/wallet/passJson");
+      derniereVisite = formatDerniereVisite(String(lastScan.scanned_at));
+    }
+  } catch {
+    // Jeton littéral — l'émission du pass ne doit jamais échouer pour ça.
+  }
+
   const passJson = buildPassJson({
     cardId,
     customerName,
@@ -275,6 +304,8 @@ export async function buildApplePassBuffer({
     design,
     palier,
     visites,
+    derniereVisite,
+    progression,
     identity,
   });
 

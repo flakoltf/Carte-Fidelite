@@ -176,7 +176,8 @@ export default function CardEditor({ merchantId, initialDesign, initialLogoPrevi
           <p className="text-xs text-galet-ink mb-5">
             Glisser pour réordonner. Jetons disponibles : <code className="text-onyx">{'{points}'}</code>,{' '}
             <code className="text-onyx">{'{nom}'}</code>, <code className="text-onyx">{'{palier}'}</code>,{' '}
-            <code className="text-onyx">{'{visites}'}</code>.
+            <code className="text-onyx">{'{visites}'}</code>, <code className="text-onyx">{'{derniere_visite}'}</code>,{' '}
+            <code className="text-onyx">{'{progression}'}</code>.
           </p>
           <FieldList
             fields={design.fields}

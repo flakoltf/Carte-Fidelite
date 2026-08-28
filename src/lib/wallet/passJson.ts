@@ -14,6 +14,10 @@ export interface PassJsonInput {
   palier?: string;
   /** Nombre total de scans de la carte (compteur à vie) — jeton {visites}. */
   visites?: number;
+  /** Date du dernier passage, déjà formatée (formatDerniereVisite) — jeton {derniere_visite}. */
+  derniereVisite?: string;
+  /** Progression vers le prochain palier, déjà formatée (« 3/8 points », « 3/10 tampons ») — jeton {progression}. */
+  progression?: string;
   /**
    * Données d'IDENTITÉ commerce (Feature 1 — carte vivante). Appliquées aux deux
    * chemins (legacy ET design) : infos du commerce, indépendantes du créatif de
@@ -113,6 +117,24 @@ export function applyMerchantMessage(store: StoreCardShape, message?: string): v
 }
 
 /**
+ * Formate la date du dernier passage pour le jeton {derniere_visite} :
+ * jj.mm.aaaa (style fr-CH dominant du projet), fuseau Europe/Zurich explicite
+ * (le serveur tourne en UTC — sans lui, un scan du soir daterait de la veille).
+ * Format ABSOLU voulu : le jeton n'est ré-résolu qu'à la régénération du pass,
+ * un « il y a X jours » se figerait et deviendrait faux dès le lendemain.
+ */
+export function formatDerniereVisite(iso: string): string | undefined {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toLocaleDateString("fr-CH", {
+    timeZone: "Europe/Zurich",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/**
  * Substitutes {token} placeholders in a string using the supplied context.
  * Unknown tokens are left verbatim (no crash).
  */
@@ -161,6 +183,8 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       nom: i.customerName,
       palier: i.palier,
       visites: i.visites !== undefined ? String(i.visites) : undefined,
+      derniere_visite: i.derniereVisite,
+      progression: i.progression,
     };
     // Deep-copy fields with resolved token values before mapping.
     const resolvedDesign: CardDesign = {

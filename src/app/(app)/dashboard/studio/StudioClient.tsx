@@ -105,6 +105,14 @@ function pointsSampleLabel(rules: PointsRulesState): string {
   return `${mid} / ${maxThreshold}`;
 }
 
+// Aperçu du jeton {progression} d'une carte à POINTS : mi-parcours du PREMIER
+// palier — la cible réelle d'un client en début de cycle (redeemed_tiers vide),
+// fidèle à pointsProgressionLabel côté pass.
+function progressionSampleLabel(rules: PointsRulesState): string {
+  const first = rules.tiers.length > 0 ? rules.tiers[0].threshold : 0;
+  return `${Math.round(first / 2)}/${first} points`;
+}
+
 type Feedback = { kind: 'ok' | 'partial' | 'error'; messages: string[] };
 
 const sectionCls = 'bg-surface border border-line-warm rounded-3xl p-6 shadow-sm';
@@ -249,6 +257,12 @@ export default function StudioClient({ express = false }: { express?: boolean })
       nom: 'Sarah M.',
       palier: 'Argent',
       visites: '12',
+      // Statique (pas de new Date()) : aperçu déterministe, testable.
+      derniere_visite: '14.08.2026',
+      progression:
+        cardType === 'points'
+          ? progressionSampleLabel(pointsRules)
+          : `${Math.min(sampleStamps, stamps.goal)}/${stamps.goal} tampons`,
     }),
     [cardType, sampleStamps, stamps.goal, pointsRules]
   );

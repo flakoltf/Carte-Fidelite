@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPassJson, resolveTokens } from "@/lib/wallet/passJson";
+import { buildPassJson, formatDerniereVisite, resolveTokens } from "@/lib/wallet/passJson";
 import type { CardDesign } from "@/lib/cardDesign/types";
 
 const base = {
@@ -173,6 +173,52 @@ describe("buildPassJson — avec design", () => {
     };
     const p = buildPassJson({ ...input, design: withVisits, visites: 17 });
     expect(p.storeCard.primaryFields[0].value).toBe("17 visites");
+  });
+
+  it("résout {derniere_visite} depuis l'input", () => {
+    const withLastVisit: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "lv", zone: "secondary", label: "DERNIER PASSAGE", value: "{derniere_visite}", order: 0 }],
+    };
+    const p = buildPassJson({ ...input, design: withLastVisit, derniereVisite: "14.08.2026" });
+    expect(p.storeCard.secondaryFields[0].value).toBe("14.08.2026");
+  });
+
+  it("résout {progression} depuis l'input", () => {
+    const withProgress: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "pg", zone: "secondary", label: "PROGRESSION", value: "{progression}", order: 0 }],
+    };
+    const p = buildPassJson({ ...input, design: withProgress, progression: "3/8 points" });
+    expect(p.storeCard.secondaryFields[0].value).toBe("3/8 points");
+  });
+
+  it("{derniere_visite} et {progression} restent littéraux quand undefined (même convention que {palier})", () => {
+    const withBoth: CardDesign = {
+      ...stubDesign,
+      fields: [
+        { id: "lv", zone: "secondary", label: "DERNIER PASSAGE", value: "{derniere_visite}", order: 0 },
+        { id: "pg", zone: "auxiliary", label: "PROGRESSION", value: "{progression}", order: 1 },
+      ],
+    };
+    const p = buildPassJson({ ...input, design: withBoth });
+    expect(p.storeCard.secondaryFields[0].value).toBe("{derniere_visite}");
+    expect(p.storeCard.auxiliaryFields[0].value).toBe("{progression}");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatDerniereVisite — date absolue jj.mm.aaaa, fuseau Europe/Zurich
+// ---------------------------------------------------------------------------
+describe("formatDerniereVisite", () => {
+  it("formate en jj.mm.aaaa (style fr-CH du projet)", () => {
+    expect(formatDerniereVisite("2026-08-14T10:30:00Z")).toBe("14.08.2026");
+  });
+  it("bascule de jour selon l'heure de Zurich, pas UTC (23h30 UTC en été = lendemain à Zurich)", () => {
+    expect(formatDerniereVisite("2026-08-14T23:30:00Z")).toBe("15.08.2026");
+  });
+  it("date invalide → undefined (le jeton restera littéral)", () => {
+    expect(formatDerniereVisite("pas-une-date")).toBeUndefined();
   });
 });
 

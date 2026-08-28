@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, redeemablePointsTiers, resolvePointsPassState, rewardReadyForIdentity } from "../points";
+import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, pointsCycleExpired, pointsProgressionLabel, redeemablePointsTiers, resolvePointsPassState, rewardReadyForIdentity } from "../points";
 import { applyScan } from "../engine";
 import type { LoyaltyProgram, PointsConfig } from "../types";
 
@@ -41,6 +41,23 @@ describe("helpers points", () => {
     const single: PointsConfig = { pointsPerScan: 5, tiers: [{ threshold: 20, reward: "Café offert" }] };
     expect(resolvePointsPassState(single, 19)).toEqual({ stamps: 19, stampGoal: 20, palier: undefined });
     expect(resolvePointsPassState(single, 20)).toEqual({ stamps: 20, stampGoal: 20, palier: "Café offert" });
+  });
+});
+
+describe("pointsProgressionLabel — jeton {progression} (cycle en cours)", () => {
+  it("cible = premier palier NON validé du cycle", () => {
+    expect(pointsProgressionLabel(config, 12, [])).toBe("12/30 points");
+    // Palier 30 validé → la progression vise le 40.
+    expect(pointsProgressionLabel(config, 32, [30])).toBe("32/40 points");
+  });
+  it("solde au-delà de la cible (palier atteint, pas encore validé) → plafonné « 30/30 », jamais « 35/30 »", () => {
+    expect(pointsProgressionLabel(config, 35, [])).toBe("30/30 points");
+  });
+  it("tous les paliers intermédiaires validés → progression vers le palier max", () => {
+    expect(pointsProgressionLabel(config, 42, [30, 40])).toBe("42/50 points");
+  });
+  it("défensif : même le max marqué validé (état anormal) → repli sur le palier max", () => {
+    expect(pointsProgressionLabel(config, 42, [30, 40, 50])).toBe("42/50 points");
   });
 });
 

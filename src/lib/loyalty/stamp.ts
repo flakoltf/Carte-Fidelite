@@ -10,3 +10,9 @@ export function applyStamp(currentStamps: number, goal: number): StampResult {
 export function canRedeem(stamps: number, goal: number): boolean {
   return goal > 0 && stamps >= goal;
 }
+
+// Jeton {progression} d'une carte à TAMPONS : « tampons/objectif tampons »,
+// plafonné à l'objectif (miroir du plafonnement points, pointsProgressionLabel).
+export function stampsProgressionLabel(stamps: number, goal: number): string {
+  return `${Math.min(stamps, goal)}/${goal} tampons`;
+}

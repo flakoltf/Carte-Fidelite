@@ -30,14 +30,15 @@ vi.mock("../_components/BarcodeSection", () => ({ default: () => <div /> }));
 vi.mock("../_components/ImageUploadField", () => ({ default: () => <div /> }));
 vi.mock("../_components/StampGrid", () => ({ default: () => <div /> }));
 
-const previewSamples = vi.hoisted(() => [] as { who: string; points: string }[]);
+type CapturedSample = { who: string; points: string; progression?: string; derniere_visite?: string };
+const previewSamples = vi.hoisted(() => [] as CapturedSample[]);
 vi.mock("../_components/WalletPreviews", () => ({
-  AppleWalletPreview: (props: { sample: { points: string } }) => {
-    previewSamples.push({ who: "apple", points: props.sample.points });
+  AppleWalletPreview: (props: { sample: Record<string, string> }) => {
+    previewSamples.push({ who: "apple", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite });
     return <div data-testid="apple-preview">{props.sample.points}</div>;
   },
-  GoogleWalletPreview: (props: { sample: { points: string } }) => {
-    previewSamples.push({ who: "google", points: props.sample.points });
+  GoogleWalletPreview: (props: { sample: Record<string, string> }) => {
+    previewSamples.push({ who: "google", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite });
     return <div data-testid="google-preview">{props.sample.points}</div>;
   },
 }));
@@ -169,5 +170,22 @@ describe("StudioClient — aperçu d'une carte à points (Minor 6)", () => {
       expect(s.points).toMatch(/^\d+ \/ \d+$/);
     }
     expect(previewSamples.some((s) => s.points === "40 / 80")).toBe(true);
+    // {progression} : mi-parcours du PREMIER palier (30) → « 15/30 points ».
+    expect(previewSamples.some((s) => s.progression === "15/30 points")).toBe(true);
+  });
+});
+
+describe("StudioClient — samples des jetons {progression} et {derniere_visite}", () => {
+  it("carte à tampons : progression « x/objectif tampons », derniere_visite statique jj.mm.aaaa", async () => {
+    setupFetch("stamp_card");
+    render(<StudioClient />);
+    await screen.findByText(/studio de carte/i);
+
+    await waitFor(() => expect(previewSamples.length).toBeGreaterThan(0));
+    // Client fictif par défaut = 7 tampons, objectif 10.
+    expect(previewSamples.some((s) => s.progression === "7/10 tampons")).toBe(true);
+    for (const s of previewSamples) {
+      expect(s.derniere_visite).toMatch(/^\d{2}\.\d{2}\.\d{4}$/);
+    }
   });
 });

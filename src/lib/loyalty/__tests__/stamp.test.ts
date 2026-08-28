@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyStamp, canRedeem } from "../stamp";
+import { applyStamp, canRedeem, stampsProgressionLabel } from "../stamp";
 
 describe("applyStamp", () => {
   it("ajoute un tampon sous l'objectif (pas encore prête)", () => {
@@ -16,6 +16,16 @@ describe("applyStamp", () => {
   });
   it("respecte un objectif personnalisé", () => {
     expect(applyStamp(7, 8)).toEqual({ newStamps: 8, rewardReady: true, added: true });
+  });
+});
+
+describe("stampsProgressionLabel — jeton {progression} (carte à tampons)", () => {
+  it("affiche « tampons/objectif tampons »", () => {
+    expect(stampsProgressionLabel(3, 10)).toBe("3/10 tampons");
+  });
+  it("plafonné à l'objectif (carte pleine ou au-delà)", () => {
+    expect(stampsProgressionLabel(10, 10)).toBe("10/10 tampons");
+    expect(stampsProgressionLabel(12, 10)).toBe("10/10 tampons");
   });
 });
 
