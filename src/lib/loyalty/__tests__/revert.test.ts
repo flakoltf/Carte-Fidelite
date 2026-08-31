@@ -4,6 +4,9 @@ import {
   normalizeRevertStatus,
   revertStatusMessage,
   revertSecondsLeft,
+  canRevertScan,
+  revertActionLabel,
+  revertDoneMessage,
 } from "../revert";
 
 describe("annulation de tampon — logique pure", () => {
@@ -27,6 +30,25 @@ describe("annulation de tampon — logique pure", () => {
       // pas de jargon technique dans les messages comptoir
       expect(msg).not.toMatch(/RPC|SQL|token|merchant_id/i);
     }
+  });
+
+  it("canRevertScan : seulement les mécaniques à compteur (la RPC décrémente stamps_count)", () => {
+    expect(canRevertScan("stamp_card")).toBe(true);
+    expect(canRevertScan("visit_based")).toBe(true);
+    expect(canRevertScan("tiered")).toBe(true);
+    // amount_points / points créditent points_balance : la RPC scan_revert ne
+    // sait pas les corriger — exposer le bouton fausserait les compteurs.
+    expect(canRevertScan("amount_points")).toBe(false);
+    expect(canRevertScan("points")).toBe(false);
+  });
+
+  it("libellés d'annulation adaptés à la mécanique (tampon/visite/passage)", () => {
+    expect(revertActionLabel("stamp_card")).toBe("Annuler ce tampon");
+    expect(revertActionLabel("visit_based")).toBe("Annuler cette visite");
+    expect(revertActionLabel("tiered")).toBe("Annuler ce passage");
+    expect(revertDoneMessage("stamp_card")).toBe("Tampon annulé");
+    expect(revertDoneMessage("visit_based")).toBe("Visite annulée");
+    expect(revertDoneMessage("tiered")).toBe("Passage annulé");
   });
 
   it("revertSecondsLeft : compte à rebours borné à zéro", () => {

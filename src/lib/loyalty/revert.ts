@@ -24,6 +24,25 @@ export function revertStatusMessage(status: RevertStatus): string {
   }
 }
 
+// L'annulation n'existe que pour les mécaniques à COMPTEUR : la RPC scan_revert
+// décrémente stamps_count. amount_points / points créditent points_balance
+// (montants variables) — le bouton ne doit jamais leur être proposé, sous peine
+// de fausser les compteurs.
+export type RevertableLoyaltyType = "stamp_card" | "visit_based" | "tiered";
+
+export function canRevertScan(t: string): t is RevertableLoyaltyType {
+  return t === "stamp_card" || t === "visit_based" || t === "tiered";
+}
+
+// Le mot juste par mécanique (même règle que la confirmation de scan).
+export function revertActionLabel(t: RevertableLoyaltyType): string {
+  return t === "visit_based" ? "Annuler cette visite" : t === "tiered" ? "Annuler ce passage" : "Annuler ce tampon";
+}
+
+export function revertDoneMessage(t: RevertableLoyaltyType): string {
+  return t === "visit_based" ? "Visite annulée" : t === "tiered" ? "Passage annulé" : "Tampon annulé";
+}
+
 // Secondes restantes pour annuler (pour le compte à rebours du Scanner).
 // lastScan invalide ou absent → 0 (pas de bouton).
 export function revertSecondsLeft(
