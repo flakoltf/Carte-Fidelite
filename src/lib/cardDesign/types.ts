@@ -1,5 +1,15 @@
 export type CardZone = 'header' | 'primary' | 'secondary' | 'auxiliary' | 'back';
 
+// Registre des jetons CONNUS du système de templating — source de vérité pour
+// la distinction « connu mais non résolvable dans ce contexte » (→ repli : le
+// jeton disparaît, jamais d'accolades sur une carte émise) vs « inconnu /
+// faute de frappe » (→ laissé tel quel, le commerçant doit voir son erreur).
+// Tout NOUVEAU jeton doit être ajouté ICI en plus du ctx serveur (passJson) et
+// de la liste du Studio (FieldsSection) — le test « GARANTIE » de passJson le
+// couvre alors automatiquement.
+export const KNOWN_TOKENS = ['points', 'nom', 'palier', 'visites', 'derniere_visite', 'progression'] as const;
+export type KnownToken = (typeof KNOWN_TOKENS)[number];
+
 export type CardField = {
   id: string;
   zone: CardZone;

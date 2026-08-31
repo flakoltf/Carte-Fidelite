@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildPassJson, formatDerniereVisite, resolveTokens } from "@/lib/wallet/passJson";
 import type { CardDesign } from "@/lib/cardDesign/types";
+import { KNOWN_TOKENS } from "@/lib/cardDesign/types";
 
 const base = {
   cardId: "card-1", customerName: "Alice", stamps: 3,
@@ -78,8 +79,11 @@ describe("resolveTokens", () => {
   it("laisse un jeton inconnu {xyz} tel quel", () => {
     expect(resolveTokens("{xyz}", { points: "1" })).toBe("{xyz}");
   });
-  it("laisse {palier} tel quel quand la valeur ctx est undefined", () => {
-    expect(resolveTokens("{palier}", { palier: undefined })).toBe("{palier}");
+  it("jeton connu (clé présente dans ctx) mais undefined → remplacé par du vide", () => {
+    expect(resolveTokens("{palier}", { palier: undefined })).toBe("");
+  });
+  it("jeton absent du ctx (inconnu) → laissé tel quel même si d'autres clés existent", () => {
+    expect(resolveTokens("{fauteDeFrappe}", { palier: "Gold" })).toBe("{fauteDeFrappe}");
   });
   it("résout plusieurs jetons dans la même chaîne", () => {
     expect(resolveTokens("{nom} — {points}", { nom: "Bob", points: "5 / 10" })).toBe("Bob — 5 / 10");
@@ -157,13 +161,54 @@ describe("buildPassJson — avec design", () => {
     expect(p.storeCard.secondaryFields[0].value).toBe("Gold");
   });
 
-  it("{palier} reste literal quand palier est undefined", () => {
+  it("jeton CONNU non résolvable → le champ est RETIRÉ du pass (jamais d'accolades pour le client)", () => {
     const designWithPalier: CardDesign = {
       ...stubDesign,
       fields: [{ id: "tier1", zone: "secondary", label: "NIVEAU", value: "{palier}", order: 0 }],
     };
     const p = buildPassJson({ ...input, design: designWithPalier, palier: undefined });
-    expect(p.storeCard.secondaryFields[0].value).toBe("{palier}");
+    expect(p.storeCard.secondaryFields).toHaveLength(0);
+  });
+
+  it("contenu mixte avec jeton connu non résolvable → seul le jeton disparaît (valeur trimée)", () => {
+    const mixed: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "tier1", zone: "secondary", label: "NIVEAU", value: "Niveau {palier}", order: 0 }],
+    };
+    const p = buildPassJson({ ...input, design: mixed, palier: undefined });
+    expect(p.storeCard.secondaryFields[0].value).toBe("Niveau");
+  });
+
+  it("jeton INCONNU (faute de frappe) → laissé tel quel, le commerçant doit voir son erreur", () => {
+    const typo: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "t", zone: "secondary", label: "OOPS", value: "{paliier}", order: 0 }],
+    };
+    const p = buildPassJson({ ...input, design: typo, palier: "Gold" });
+    expect(p.storeCard.secondaryFields[0].value).toBe("{paliier}");
+  });
+
+  it("GARANTIE : aucun jeton connu ne subsiste en accolades sur un pass émis, quel que soit le jeton", () => {
+    // Un champ par jeton du registre, AUCUNE donnée optionnelle fournie : chaque
+    // futur jeton ajouté à KNOWN_TOKENS est automatiquement couvert.
+    const allTokens: CardDesign = {
+      ...stubDesign,
+      fields: KNOWN_TOKENS.map((t, i) => ({
+        id: `f${i}`, zone: "back" as const, label: t.toUpperCase(), value: `{${t}}`, order: i,
+      })),
+    };
+    const p = buildPassJson({ ...input, design: allTokens });
+    const zones = [
+      p.storeCard.headerFields, p.storeCard.primaryFields, p.storeCard.secondaryFields,
+      p.storeCard.auxiliaryFields, p.storeCard.backFields,
+    ];
+    for (const zone of zones) {
+      for (const f of zone) {
+        for (const t of KNOWN_TOKENS) {
+          expect(f.value).not.toContain(`{${t}}`);
+        }
+      }
+    }
   });
 
   it("résout {visites} depuis l'input", () => {
@@ -193,7 +238,7 @@ describe("buildPassJson — avec design", () => {
     expect(p.storeCard.secondaryFields[0].value).toBe("3/8 points");
   });
 
-  it("{derniere_visite} et {progression} restent littéraux quand undefined (même convention que {palier})", () => {
+  it("{derniere_visite} et {progression} non résolvables → champs RETIRÉS (même repli que {palier})", () => {
     const withBoth: CardDesign = {
       ...stubDesign,
       fields: [
@@ -202,8 +247,8 @@ describe("buildPassJson — avec design", () => {
       ],
     };
     const p = buildPassJson({ ...input, design: withBoth });
-    expect(p.storeCard.secondaryFields[0].value).toBe("{derniere_visite}");
-    expect(p.storeCard.auxiliaryFields[0].value).toBe("{progression}");
+    expect(p.storeCard.secondaryFields).toHaveLength(0);
+    expect(p.storeCard.auxiliaryFields).toHaveLength(0);
   });
 });
 

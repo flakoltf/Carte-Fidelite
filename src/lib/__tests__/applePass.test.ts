@@ -276,7 +276,7 @@ describe("buildApplePassBuffer — jeton {derniere_visite}", () => {
     expect(secondaryValues(lastPassJson())).toContain("14.08.2026");
   });
 
-  it("aucun scan → le jeton reste littéral (même convention que {palier})", async () => {
+  it("aucun scan → le champ {derniere_visite} est RETIRÉ du pass (repli couche 1, jamais d'accolades)", async () => {
     state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
     state.merchantRow = BASE_MERCHANT;
     state.lastScanRow = null;
@@ -284,7 +284,8 @@ describe("buildApplePassBuffer — jeton {derniere_visite}", () => {
 
     await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
 
-    expect(secondaryValues(lastPassJson())).toContain("{derniere_visite}");
+    expect(secondaryValues(lastPassJson())).not.toContain("{derniere_visite}");
+    expect(JSON.stringify(lastPassJson())).not.toContain("{derniere_visite}");
   });
 });
 
@@ -325,7 +326,7 @@ describe("buildApplePassBuffer — jeton {progression}", () => {
     expect(secondaryValues(lastPassJson())).toContain("3/10 tampons");
   });
 
-  it("autres programmes (tiered…) → jeton littéral", async () => {
+  it("autres programmes (tiered…) → champ {progression} RETIRÉ du pass (repli couche 1)", async () => {
     state.cardRow = { merchant_id: "merchant-1", points_balance: 0, redeemed_tiers: [] };
     state.merchantRow = {
       ...BASE_MERCHANT,
@@ -336,7 +337,43 @@ describe("buildApplePassBuffer — jeton {progression}", () => {
 
     await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 3, branding: {} });
 
-    expect(secondaryValues(lastPassJson())).toContain("{progression}");
+    expect(JSON.stringify(lastPassJson())).not.toContain("{progression}");
+  });
+});
+
+describe("buildApplePassBuffer — repli couche 1 : cas réel boulangerie-demo (bug du 2026-09-01)", () => {
+  it("carte à POINTS sous le premier palier : {palier} n'apparaît JAMAIS en accolades sur le pass", async () => {
+    // Reproduction du bug constaté en prod : programme points (paliers 100/200),
+    // solde 20 → aucun palier atteint dans le cycle → l'ancien code émettait
+    // « {palier} » brut au client final.
+    state.cardRow = { merchant_id: "merchant-1", points_balance: 20, redeemed_tiers: [] };
+    state.merchantRow = {
+      ...BASE_MERCHANT,
+      loyalty_type: "points",
+      loyalty_config: {
+        pointsPerScan: 50,
+        tiers: [
+          { threshold: 100, reward: "10% de réduction" },
+          { threshold: 200, reward: "Un article offert" },
+        ],
+      },
+    };
+    state.designRow = designRow(
+      [
+        { id: "p", zone: "primary", label: "Points", value: "{points}", order: 0 },
+        { id: "n", zone: "secondary", label: "Client", value: "{nom}", order: 1 },
+        { id: "t", zone: "auxiliary", label: "Palier", value: "{palier}", order: 2 },
+      ],
+      "points"
+    );
+
+    await buildApplePassBuffer({ cardId: "card-1", customerName: "Nadia", stamps: 0, branding: {} });
+
+    const json = JSON.stringify(lastPassJson());
+    expect(json).not.toContain("{palier}");
+    // Les jetons résolvables restent bien résolus.
+    expect(json).toContain("20 / 200");
+    expect(json).toContain("Nadia");
   });
 });
 

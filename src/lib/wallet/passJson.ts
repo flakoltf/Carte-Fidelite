@@ -1,4 +1,4 @@
-import type { CardDesign } from '@/lib/cardDesign/types';
+import type { CardDesign, KnownToken } from '@/lib/cardDesign/types';
 import { APPLE_ZONE_LIMITS } from '@/lib/cardDesign/types';
 import { mapToAppleFields, appleBarcodeFormat } from '@/lib/cardDesign/mapApple';
 
@@ -135,11 +135,20 @@ export function formatDerniereVisite(iso: string): string | undefined {
 }
 
 /**
- * Substitutes {token} placeholders in a string using the supplied context.
- * Unknown tokens are left verbatim (no crash).
+ * Substitue les jetons {token} d'une chaîne selon le contexte fourni.
+ * Deux cas distincts (repli couche 1, décision 2026-09-01) :
+ *  - jeton CONNU (clé présente dans ctx) mais non résolvable ici (valeur
+ *    undefined) → remplacé par du VIDE : un client final ne doit JAMAIS voir
+ *    d'accolades sur sa carte. buildPassJson retire ensuite les champs devenus
+ *    vides (un libellé orphelin est pire qu'un champ absent — le champ
+ *    apparaîtra quand la donnée existera, comme RÉCOMPENSE via applyIdentity).
+ *  - jeton INCONNU (clé absente du ctx : faute de frappe du commerçant) →
+ *    laissé tel quel : c'est une erreur de saisie qu'il doit pouvoir VOIR.
  */
 export function resolveTokens(value: string, ctx: Record<string, string | undefined>): string {
-  return value.replace(/\{(\w+)\}/g, (_match, key: string) => ctx[key] ?? `{${key}}`);
+  return value.replace(/\{(\w+)\}/g, (_match, key: string) =>
+    key in ctx ? ctx[key] ?? "" : `{${key}}`
+  );
 }
 
 export function buildPassJson(i: PassJsonInput): PassJson {
@@ -178,7 +187,9 @@ export function buildPassJson(i: PassJsonInput): PassJson {
   // The base fields built above are fully replaced; backward-compat is preserved
   // by the caller never passing `design` when none exists in the DB.
   if (i.design) {
-    const ctx: Record<string, string | undefined> = {
+    // Typé sur KnownToken : ajouter un jeton à KNOWN_TOKENS sans le brancher ici
+    // devient une erreur de compilation (registre et ctx ne peuvent pas diverger).
+    const ctx: Record<KnownToken, string | undefined> = {
       points: `${i.stamps} / ${i.stampGoal ?? 10}`,
       nom: i.customerName,
       palier: i.palier,
@@ -187,9 +198,14 @@ export function buildPassJson(i: PassJsonInput): PassJson {
       progression: i.progression,
     };
     // Deep-copy fields with resolved token values before mapping.
+    // Un champ dont la valeur devient vide après résolution (jeton connu non
+    // résolvable, seul dans son champ) est RETIRÉ : ni accolades ni libellé
+    // orphelin sur la carte émise. Le filet {points} plus bas reste intact.
     const resolvedDesign: CardDesign = {
       ...i.design,
-      fields: i.design.fields.map(f => ({ ...f, value: resolveTokens(f.value, ctx) })),
+      fields: i.design.fields
+        .map(f => ({ ...f, value: resolveTokens(f.value, ctx).trim() }))
+        .filter(f => f.value !== ""),
     };
     const m = mapToAppleFields(resolvedDesign);
     pass.backgroundColor = m.backgroundColor;
