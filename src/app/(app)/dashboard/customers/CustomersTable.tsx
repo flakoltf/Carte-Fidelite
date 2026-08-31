@@ -6,18 +6,20 @@ import { Search, Calendar, Users, Pencil, Trash2 } from "lucide-react";
 import { RedeemCell } from "./RedeemCell";
 import { EditCustomerModal, type EditableCustomer } from "./EditCustomerModal";
 import { filterCustomers, type CustomerListItem, type StatusFilter } from "@/lib/customers/filter";
+import { loyaltyCellView } from "@/lib/customers/loyaltyCell";
 import { STAGE_STYLE, LEGEND_ORDER } from "@/lib/segments/stageStyle";
 import type { StageKey } from "@/lib/segments/types";
+import type { LoyaltyProgram } from "@/lib/loyalty/types";
 
-export function CustomersTable({ customers, stampGoal, stageByCustomer }: { customers: CustomerListItem[]; stampGoal: number; stageByCustomer: Record<string, StageKey> }) {
+export function CustomersTable({ customers, program, stageByCustomer }: { customers: CustomerListItem[]; program: LoyaltyProgram; stageByCustomer: Record<string, StageKey> }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [editing, setEditing] = useState<EditableCustomer | null>(null);
 
   const filtered = useMemo(
-    () => filterCustomers(customers, query, status, stampGoal),
-    [customers, query, status, stampGoal],
+    () => filterCustomers(customers, query, status, program),
+    [customers, query, status, program],
   );
 
   const del = async (c: CustomerListItem) => {
@@ -62,6 +64,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
       <div className="space-y-3 md:hidden">
         {filtered.length > 0 ? filtered.map((customer) => {
           const card = customer.loyalty_cards?.[0];
+          const view = card ? loyaltyCellView(program, card) : null;
           const stage = stageByCustomer[customer.id];
           const dot = stage ? STAGE_STYLE[stage].color : "#98999C";
           return (
@@ -95,15 +98,17 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                   <Calendar className="w-3.5 h-3.5 text-galet" />
                   {card?.last_scan ? new Date(card.last_scan).toLocaleDateString() : "—"}
                 </div>
-                {card ? (
+                {card && view ? (
                   <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#ECE7DB]">
-                      <div className="h-full bg-halo" style={{ width: `${Math.min(100, (card.stamps_count / stampGoal) * 100)}%` }} />
-                    </div>
-                    <span className="whitespace-nowrap text-xs text-galet-ink">{card.stamps_count}/{stampGoal}</span>
+                    {view.percent !== null && (
+                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#ECE7DB]">
+                        <div className="h-full bg-halo" style={{ width: `${view.percent}%` }} />
+                      </div>
+                    )}
+                    <span className="whitespace-nowrap text-xs text-galet-ink">{view.label}</span>
                   </div>
                 ) : (<span className="text-xs italic text-galet-ink">Pas de carte active</span>)}
-                <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
+                <RedeemCell cardId={card?.id ?? null} action={view?.redeem ?? null} customerName={customer.full_name} />
               </div>
             </div>
           );
@@ -140,6 +145,7 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
             <tbody className="divide-y divide-[#F2EEE4]">
               {filtered.length > 0 ? filtered.map((customer) => {
                 const card = customer.loyalty_cards?.[0];
+                const view = card ? loyaltyCellView(program, card) : null;
                 const stage = stageByCustomer[customer.id];
                 const dot = stage ? STAGE_STYLE[stage].color : "#98999C";
                 return (
@@ -168,18 +174,20 @@ export function CustomersTable({ customers, stampGoal, stageByCustomer }: { cust
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      {card ? (
+                      {card && view ? (
                         <div className="flex items-center gap-3">
-                          <div className="w-24 h-1.5 bg-[#ECE7DB] rounded-full overflow-hidden">
-                            <div className="h-full bg-halo" style={{ width: `${Math.min(100, (card.stamps_count / stampGoal) * 100)}%` }} />
-                          </div>
-                          <span className="text-sm text-galet-ink whitespace-nowrap">{card.stamps_count}/{stampGoal}</span>
+                          {view.percent !== null && (
+                            <div className="w-24 h-1.5 bg-[#ECE7DB] rounded-full overflow-hidden">
+                              <div className="h-full bg-halo" style={{ width: `${view.percent}%` }} />
+                            </div>
+                          )}
+                          <span className="text-sm text-galet-ink whitespace-nowrap">{view.label}</span>
                         </div>
                       ) : (<span className="text-xs text-galet-ink italic">Pas de carte active</span>)}
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-2">
-                        <RedeemCell cardId={card?.id ?? null} stampsCount={card?.stamps_count ?? null} goal={stampGoal} customerName={customer.full_name} />
+                        <RedeemCell cardId={card?.id ?? null} action={view?.redeem ?? null} customerName={customer.full_name} />
                         <button onClick={() => setEditing({ id: customer.id, full_name: customer.full_name, email: customer.email, phone: customer.phone })}
                           title="Modifier" aria-label={`Modifier ${customer.full_name}`} className="flex h-11 w-11 items-center justify-center rounded-lg border border-line-warm hover:bg-calcaire">
                           <Pencil className="w-4 h-4 text-galet-ink" aria-hidden />
