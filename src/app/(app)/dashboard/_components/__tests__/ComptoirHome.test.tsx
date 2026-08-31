@@ -38,6 +38,12 @@ describe("<ComptoirHome>", () => {
     expect(screen.getByTestId("stat-trio")).toBeTruthy();
   });
 
+  it("« Vue complète » mène au tableau de bord complet, depuis les chiffres", () => {
+    render(<ComptoirHome shopName="Café du Rhône" />);
+    const link = screen.getByRole("link", { name: /vue complète/i });
+    expect(link.getAttribute("href")).toBe("/dashboard/full");
+  });
+
   it("l'engrenage mène au tableau de bord complet /dashboard/full", () => {
     render(<ComptoirHome shopName="Café du Rhône" />);
     const gear = screen.getByRole("link", { name: /réglages et tableau de bord complet/i });
