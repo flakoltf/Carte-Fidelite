@@ -15,6 +15,23 @@ export type ValidateResult = { ok: true; value: ValidatedMerchantConfig } | { ok
 
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
 
+// Réglage COMMERÇANT des seuils de récence (Paramètres → rythme des clients).
+// Bornes plus strictes que le panneau admin : entiers, 7 ≤ actif < perdu ≤ 365.
+export type SegmentDaysResult =
+  | { ok: true; value: { active_days: number; at_risk_days: number } }
+  | { ok: false; error: string };
+
+export function validateSegmentDays(input: { active_days?: unknown; at_risk_days?: unknown }): SegmentDaysResult {
+  const { active_days, at_risk_days } = input;
+  if (!isInt(active_days) || active_days < 7)
+    return { ok: false, error: "« En train de partir » : au moins 7 jours." };
+  if (!isInt(at_risk_days) || at_risk_days > 365)
+    return { ok: false, error: "« Perdu » : au plus 365 jours." };
+  if (active_days >= at_risk_days)
+    return { ok: false, error: "Le seuil « perdu » doit dépasser le seuil « en train de partir »." };
+  return { ok: true, value: { active_days, at_risk_days } };
+}
+
 export function validateMerchantConfig(input: MerchantConfigInput): ValidateResult {
   if (!isInt(input.stampGoal) || input.stampGoal < 1 || input.stampGoal > 50)
     return { ok: false, error: "Objectif carte invalide (1 à 50)." };

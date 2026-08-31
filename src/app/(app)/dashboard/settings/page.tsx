@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle, Gift, Clock, Camera, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { SecuritySection } from "./SecuritySection";
+import { SegmentsSection } from "./SegmentsSection";
 import BusinessHoursEditor from "./BusinessHoursEditor";
 import { DEFAULT_BUSINESS_HOURS, normalizeBusinessHours, todaysHoursLabel, type BusinessHours } from "@/lib/merchant-config/hours";
 
@@ -357,6 +358,8 @@ export default function Settings() {
         </div>
 
       </div>
+
+      <SegmentsSection />
 
       <SecuritySection />
 
