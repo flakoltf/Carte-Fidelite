@@ -91,6 +91,45 @@ export function loyaltyCellView(program: LoyaltyProgram, card: CardLoyaltySnapsh
   }
 }
 
+// Indicateur principal de la FICHE client (customers/[id]) — même exigence que
+// la colonne : la valeur et sa légende suivent la mécanique du programme, jamais
+// un compteur de tampons en dur.
+export function loyaltyHeroStat(
+  program: LoyaltyProgram,
+  card: CardLoyaltySnapshot
+): { value: string; caption: string } {
+  const stamps = card.stamps_count;
+  const balance = card.points_balance ?? 0;
+  switch (program.type) {
+    case "stamp_card":
+      return { value: `${stamps}/${program.config.goal}`, caption: "Tampons en cours" };
+    case "visit_based":
+      return { value: String(stamps), caption: "Visites comptées" };
+    case "tiered":
+      return { value: currentTier(program.config.tiers, stamps)?.name ?? "—", caption: "Palier actuel" };
+    case "amount_points":
+      return {
+        value: `${Math.min(balance, program.config.rewardThreshold)}/${program.config.rewardThreshold}`,
+        caption: "Points en cours",
+      };
+    case "points": {
+      const redeemed = parseRedeemedTiers(card.redeemed_tiers);
+      // Même valeur que le jeton {progression} du pass, sans l'unité (la légende la porte).
+      return {
+        value: pointsProgressionLabel(program.config, balance, redeemed).replace(/ points$/, ""),
+        caption: "Points — prochain palier",
+      };
+    }
+  }
+}
+
+// Libellé d'un passage dans l'historique de la fiche : l'unité suit la mécanique
+// (« tampons » n'a aucun sens pour un programme à points).
+export function scanTimelineLabel(program: LoyaltyProgram, points: number): string {
+  const unit = program.type === "points" || program.type === "amount_points" ? "points" : "tampons";
+  return `Passage scanné${points > 1 ? ` (+${points} ${unit})` : ""}`;
+}
+
 // Filtre « Carte pleine » : une carte n'est « prête » que selon SA mécanique.
 export function isRewardReady(program: LoyaltyProgram, card: CardLoyaltySnapshot): boolean {
   return loyaltyCellView(program, card).redeem !== null;
