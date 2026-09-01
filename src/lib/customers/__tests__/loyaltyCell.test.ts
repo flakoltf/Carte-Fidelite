@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { loyaltyCellView, isRewardReady, redeemConfirmMessage } from "../loyaltyCell";
+import { loyaltyCellView, loyaltyHeroStat, isRewardReady, redeemConfirmMessage, scanTimelineLabel } from "../loyaltyCell";
 import type { LoyaltyProgram } from "@/lib/loyalty/types";
 
 const stampCard: LoyaltyProgram = { type: "stamp_card", config: { goal: 10 } };
@@ -111,5 +111,43 @@ describe("redeemConfirmMessage — libellé adapté à la mécanique", () => {
     const msg = redeemConfirmMessage({ kind: "tier_validate", tierThreshold: 100, reward: "Café offert" }, "Jean");
     expect(msg).toContain("Café offert");
     expect(msg).toContain("Jean");
+  });
+});
+
+describe("loyaltyHeroStat — indicateur principal de la FICHE client (même bug que la colonne, jamais de tampons en dur)", () => {
+  it("programme points → valeur « solde/prochain palier », jamais le compteur de tampons", () => {
+    const s = loyaltyHeroStat(points, { stamps_count: 3, points_balance: 30, redeemed_tiers: [] });
+    expect(s.value).toBe("30/100");
+    expect(s.caption).toBe("Points — prochain palier");
+  });
+  it("stamp_card → comportement historique conservé", () => {
+    const s = loyaltyHeroStat(stampCard, { stamps_count: 3 });
+    expect(s.value).toBe("3/10");
+    expect(s.caption).toBe("Tampons en cours");
+  });
+  it("amount_points → points vers le seuil", () => {
+    const s = loyaltyHeroStat(amountPoints, { stamps_count: 0, points_balance: 120 });
+    expect(s.value).toBe("120/200");
+    expect(s.caption).toBe("Points en cours");
+  });
+  it("tiered → palier atteint (ou tiret si aucun)", () => {
+    expect(loyaltyHeroStat(tiered, { stamps_count: 7 })).toEqual({ value: "Argent", caption: "Palier actuel" });
+    expect(loyaltyHeroStat(tiered, { stamps_count: 2 })).toEqual({ value: "—", caption: "Palier actuel" });
+  });
+  it("visit_based → nombre de visites", () => {
+    expect(loyaltyHeroStat(visits, { stamps_count: 4 })).toEqual({ value: "4", caption: "Visites comptées" });
+  });
+});
+
+describe("scanTimelineLabel — libellé d'un passage dans l'historique, unité selon la mécanique", () => {
+  it("programme points → « (+50 points) », jamais « tampons »", () => {
+    expect(scanTimelineLabel(points, 50)).toBe("Passage scanné (+50 points)");
+  });
+  it("stamp_card → suffixe tampons uniquement au-delà d'un", () => {
+    expect(scanTimelineLabel(stampCard, 1)).toBe("Passage scanné");
+    expect(scanTimelineLabel(stampCard, 3)).toBe("Passage scanné (+3 tampons)");
+  });
+  it("amount_points → points", () => {
+    expect(scanTimelineLabel(amountPoints, 12)).toBe("Passage scanné (+12 points)");
   });
 });

@@ -11,7 +11,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
-import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
+import { fetchMerchantProgram } from "@/lib/loyalty/fetchProgram";
+import { loyaltyCellView, loyaltyHeroStat, scanTimelineLabel } from "@/lib/customers/loyaltyCell";
 import { fetchCustomerStages } from "@/lib/segments/fetch";
 import { STAGE_STYLE } from "@/lib/segments/stageStyle";
 import { relativeTime } from "@/lib/analytics/activity";
@@ -40,21 +41,27 @@ export default async function CustomerDetailPage({
 
   const { data: customer } = await supabase
     .from("customers")
-    .select("id, full_name, email, phone, created_at, loyalty_cards(id, stamps_count, pass_type, last_scan, created_at)")
+    .select("id, full_name, email, phone, created_at, loyalty_cards(id, stamps_count, points_balance, redeemed_tiers, pass_type, last_scan, created_at)")
     .eq("merchant_id", merchant.id)
     .eq("id", id)
     .maybeSingle();
   if (!customer) notFound();
 
-  type CardRow = { id: string; stamps_count: number; pass_type: string | null; last_scan: string | null; created_at: string };
+  type CardRow = {
+    id: string; stamps_count: number; points_balance: number | null; redeemed_tiers: unknown;
+    pass_type: string | null; last_scan: string | null; created_at: string;
+  };
   const cards = ((customer.loyalty_cards ?? []) as CardRow[]).sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
   const card = cards[0] ?? null;
   const cardIds = cards.map((c) => c.id);
 
-  const config = await fetchMerchantConfig(merchant.id);
-  const stampGoal = config.stampGoal;
+  // Programme RÉEL du marchand : l'indicateur, les barres et l'historique
+  // suivent la mécanique (tampons/visites/paliers/points) — même correctif que
+  // la colonne Fidélité de la Base clients (loyaltyCell).
+  const program = await fetchMerchantProgram(merchant.id);
+  const heroStat = card ? loyaltyHeroStat(program, card) : null;
 
   // Historique : visites + récompenses encaissées.
   let visits: { scanned_at: string; points_added: number | null }[] = [];
@@ -143,9 +150,9 @@ export default async function CustomerDetailPage({
         <div className="rounded-3xl border border-line-warm bg-surface p-5 shadow-sm">
           <Stamp className="mb-2 h-4 w-4 text-halo" aria-hidden />
           <p className="font-display text-2xl text-onyx tabular-nums">
-            {card ? `${card.stamps_count}/${stampGoal}` : "—"}
+            {heroStat ? heroStat.value : "—"}
           </p>
-          <p className="text-xs text-galet-ink">Tampons en cours</p>
+          <p className="text-xs text-galet-ink">{heroStat ? heroStat.caption : "Fidélité"}</p>
         </div>
         <div className="rounded-3xl border border-line-warm bg-surface p-5 shadow-sm">
           <QrCode className="mb-2 h-4 w-4 text-halo" aria-hidden />
@@ -188,7 +195,7 @@ export default async function CustomerDetailPage({
                   </span>
                   <span className="flex-1 text-onyx">
                     {e.type === "scan"
-                      ? `Passage scanné${e.points > 1 ? ` (+${e.points} tampons)` : ""}`
+                      ? scanTimelineLabel(program, e.points)
                       : "Récompense encaissée — carte remise à zéro"}
                   </span>
                   <span className="shrink-0 text-xs text-galet-ink">
@@ -233,21 +240,22 @@ export default async function CustomerDetailPage({
               <p className="text-sm italic text-galet-ink">Pas de carte active.</p>
             ) : (
               <ul className="space-y-3">
-                {cards.map((c) => (
+                {cards.map((c) => {
+                  const view = loyaltyCellView(program, c);
+                  return (
                   <li key={c.id} className="rounded-2xl border border-line-warm bg-calcaire/60 p-4">
                     <p className="flex items-center gap-2 text-sm font-medium text-onyx">
                       <Wallet className="h-4 w-4 text-halo" aria-hidden />
                       {WALLET_LABELS[c.pass_type ?? ""] ?? "Wallet"}
                     </p>
                     <div className="mt-2 flex items-center gap-3">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECE7DB]">
-                        <div
-                          className="h-full rounded-full bg-halo"
-                          style={{ width: `${Math.min(100, (c.stamps_count / stampGoal) * 100)}%` }}
-                        />
-                      </div>
+                      {view.percent !== null && (
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECE7DB]">
+                          <div className="h-full rounded-full bg-halo" style={{ width: `${view.percent}%` }} />
+                        </div>
+                      )}
                       <span className="shrink-0 text-xs tabular-nums text-galet-ink">
-                        {c.stamps_count}/{stampGoal}
+                        {view.label}
                       </span>
                     </div>
                     <p className="mt-1.5 text-[11px] text-galet-ink">
@@ -255,7 +263,8 @@ export default async function CustomerDetailPage({
                       {c.last_scan && ` · dernier scan ${relativeTime(c.last_scan, now)}`}
                     </p>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </section>
