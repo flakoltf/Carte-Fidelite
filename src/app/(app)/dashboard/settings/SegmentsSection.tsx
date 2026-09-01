@@ -1,16 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2, Save, UserMinus } from "lucide-react";
+import { Loader2, Save, Users } from "lucide-react";
 
-// Réglage des seuils « client en train de partir » / « perdu » — langage
-// simple, pas de jargon (pas de « segments », pas de « churn »). Les valeurs
-// vivent dans merchants.segment_config via /api/merchant/segments.
+// Réglage des seuils clients — « fidèle », « en train de partir », « perdu » —
+// en langage simple, pas de jargon (ni « segments », ni « VIP », ni « churn »
+// dans la copy ; les clés du moteur, elles, ne changent pas : vip_visits…).
+// Les valeurs vivent dans merchants.segment_config via /api/merchant/segments.
 export function SegmentsSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [activeDays, setActiveDays] = useState("30");
   const [atRiskDays, setAtRiskDays] = useState("90");
+  const [vipVisits, setVipVisits] = useState("10");
 
   useEffect(() => {
     (async () => {
@@ -20,6 +22,7 @@ export function SegmentsSection() {
           const json = await res.json();
           setActiveDays(String(json.active_days));
           setAtRiskDays(String(json.at_risk_days));
+          setVipVisits(String(json.vip_visits));
         }
       } finally {
         setLoading(false);
@@ -34,7 +37,7 @@ export function SegmentsSection() {
       const res = await fetch("/api/merchant/segments", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active_days: Number(activeDays), at_risk_days: Number(atRiskDays) }),
+        body: JSON.stringify({ active_days: Number(activeDays), at_risk_days: Number(atRiskDays), vip_visits: Number(vipVisits) }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -56,11 +59,11 @@ export function SegmentsSection() {
     <div className="bg-surface border border-line-warm rounded-3xl p-8 space-y-5 shadow-sm">
       <div>
         <h2 className="font-bold text-onyx flex items-center gap-2">
-          <UserMinus className="w-4 h-4 text-halo" aria-hidden /> Clients en train de partir
+          <Users className="w-4 h-4 text-halo" aria-hidden /> Vos seuils clients
         </h2>
         <p className="text-sm text-galet-ink mt-1">
-          Trois semaines sans visite n&apos;ont pas le même sens pour un café et pour un coiffeur.
-          Réglez ces seuils selon le rythme de votre commerce.
+          Fidèle, en train de partir, perdu : trois semaines sans visite n&apos;ont pas le même
+          sens pour un café et pour un coiffeur. Réglez ces seuils selon le rythme de votre commerce.
         </p>
       </div>
 
@@ -71,6 +74,12 @@ export function SegmentsSection() {
       ) : (
         <>
           <div className="space-y-3 text-sm text-onyx">
+            <label htmlFor="seg-vip" className="flex flex-wrap items-center gap-2">
+              Un client est considéré fidèle à partir de
+              <input id="seg-vip" type="number" min={1} inputMode="numeric"
+                value={vipVisits} onChange={(e) => setVipVisits(e.target.value)} className={inputCls} />
+              visites.
+            </label>
             <label htmlFor="seg-active" className="flex flex-wrap items-center gap-2">
               Un client est «&nbsp;en train de partir&nbsp;» après
               <input id="seg-active" type="number" min={7} max={364} inputMode="numeric"

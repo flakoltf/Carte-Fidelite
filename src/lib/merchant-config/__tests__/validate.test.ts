@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateMerchantConfig } from "@/lib/merchant-config/validate";
+import { validateMerchantConfig, validateSegmentDays } from "@/lib/merchant-config/validate";
 
 const base = {
   stampGoal: 10, businessType: "cafe", primaryColor: "#10b981", logoUrl: "",
@@ -45,5 +45,22 @@ describe("validateMerchantConfig", () => {
     expect(validateMerchantConfig({ ...base, scanCooldownSeconds: -1 }).ok).toBe(false);
     expect(validateMerchantConfig({ ...base, scanCooldownSeconds: 601 }).ok).toBe(false);
     expect(validateMerchantConfig({ ...base, scanCooldownSeconds: 0 }).ok).toBe(true);
+  });
+});
+
+describe("validateSegmentDays — vip_visits (seuil « client fidèle », optionnel)", () => {
+  it("accepte un entier ≥ 1 et le renvoie dans la valeur", () => {
+    const v = validateSegmentDays({ active_days: 30, at_risk_days: 90, vip_visits: 15 });
+    expect(v).toEqual({ ok: true, value: { active_days: 30, at_risk_days: 90, vip_visits: 15 } });
+  });
+  it("absent → valide, sans vip_visits dans la valeur (rétrocompatible)", () => {
+    const v = validateSegmentDays({ active_days: 30, at_risk_days: 90 });
+    expect(v.ok).toBe(true);
+    if (v.ok) expect("vip_visits" in v.value).toBe(false);
+  });
+  it("rejette 0, négatif, décimal et string", () => {
+    for (const bad of [0, -1, 2.5, "10"]) {
+      expect(validateSegmentDays({ active_days: 30, at_risk_days: 90, vip_visits: bad }).ok).toBe(false);
+    }
   });
 });

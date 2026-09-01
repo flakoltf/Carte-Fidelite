@@ -18,17 +18,29 @@ const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInt
 // Réglage COMMERÇANT des seuils de récence (Paramètres → rythme des clients).
 // Bornes plus strictes que le panneau admin : entiers, 7 ≤ actif < perdu ≤ 365.
 export type SegmentDaysResult =
-  | { ok: true; value: { active_days: number; at_risk_days: number } }
+  | { ok: true; value: { active_days: number; at_risk_days: number; vip_visits?: number } }
   | { ok: false; error: string };
 
-export function validateSegmentDays(input: { active_days?: unknown; at_risk_days?: unknown }): SegmentDaysResult {
-  const { active_days, at_risk_days } = input;
+export function validateSegmentDays(input: {
+  active_days?: unknown;
+  at_risk_days?: unknown;
+  vip_visits?: unknown;
+}): SegmentDaysResult {
+  const { active_days, at_risk_days, vip_visits } = input;
   if (!isInt(active_days) || active_days < 7)
     return { ok: false, error: "« En train de partir » : au moins 7 jours." };
   if (!isInt(at_risk_days) || at_risk_days > 365)
     return { ok: false, error: "« Perdu » : au plus 365 jours." };
   if (active_days >= at_risk_days)
     return { ok: false, error: "Le seuil « perdu » doit dépasser le seuil « en train de partir »." };
+  // Seuil « client fidèle » (vip_visits du moteur) — OPTIONNEL : absent, la
+  // valeur existante de segment_config est préservée par le GET-then-merge de
+  // la route (rétrocompatible). Mêmes bornes que la validation admin (≥ 1).
+  if (vip_visits !== undefined) {
+    if (!isInt(vip_visits) || vip_visits < 1)
+      return { ok: false, error: "« Fidèle » : au moins 1 visite." };
+    return { ok: true, value: { active_days, at_risk_days, vip_visits } };
+  }
   return { ok: true, value: { active_days, at_risk_days } };
 }
 
