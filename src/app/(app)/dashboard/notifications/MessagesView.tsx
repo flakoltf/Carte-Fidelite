@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AUDIENCE_KEYS, audienceLabel, type AudienceKey } from "@/lib/segments/audience";
 import type { SegmentSummary } from "@/lib/segments/summary";
@@ -16,8 +16,13 @@ function statusLabel(c: CampaignListItem): string {
   return c.active ? "Récurrente • active" : "Récurrente • en pause";
 }
 
-export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
+// Page unique du geste « écrire à mes clients » (fusion Messages clients +
+// Campagnes, 2026-09-01) : le même formulaire couvre l'envoi immédiat
+// (/api/notifications/send) et la programmation (/api/campaigns) via « Quand ? ».
+export function MessagesView({ initial }: { initial: CampaignListItem[] }) {
   const router = useRouter();
+  const audienceId = useId();
+  const momentId = useId();
   const [summary, setSummary] = useState<SegmentSummary | null>(null);
   const [audience, setAudience] = useState<AudienceKey>("all");
   const [title, setTitle] = useState("");
@@ -48,7 +53,12 @@ export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
         });
         if (!res.ok) throw new Error();
         const j = await res.json();
-        setMsg(`Envoyé à ${j.pushed} appareil(s).`);
+        setMsg(
+          j.pushed === 0
+            ? "Aucun client ne peut encore recevoir de message : dès qu'ils ajoutent leur carte, ils le recevront."
+            : `Message envoyé à ${j.pushed} clients. (${j.reachable} ont la carte dans leur téléphone.)`
+        );
+        router.refresh();
       } else {
         const res = await fetch("/api/campaigns", {
           method: "POST", headers: { "Content-Type": "application/json" },
@@ -77,44 +87,44 @@ export function CampaignsView({ initial }: { initial: CampaignListItem[] }) {
     router.refresh();
   };
 
-  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx focus:border-halo outline-none";
+  const input = "w-full bg-surface border border-line-warm rounded-xl px-4 py-3 text-sm text-onyx placeholder:text-galet-ink focus:border-halo outline-none";
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight mb-2 text-onyx">Campagnes</h1>
-        <p className="text-galet-ink">Envoyez maintenant, programmez un jour, ou activez une relance récurrente.</p>
+        <h1 className="font-display text-3xl font-bold tracking-tight mb-2 text-onyx">Messages clients</h1>
+        <p className="text-galet-ink">Écrivez à vos clients, directement sur leur téléphone — sans SMS, sans frais. Maintenant, à une date choisie, ou en relance automatique.</p>
       </div>
 
       <div className="bg-surface border border-line-warm rounded-3xl p-6 max-w-xl space-y-4 shadow-sm">
         <div className="space-y-1">
-          <label className="text-sm text-galet-ink">Audience</label>
-          <select value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)} className={input}>
+          <label htmlFor={audienceId} className="text-sm text-galet-ink">Audience</label>
+          <select id={audienceId} value={audience} onChange={(e) => setAudience(e.target.value as AudienceKey)} className={input}>
             {AUDIENCE_KEYS.map((a) => {
               const n = sizeOf(a);
               return <option key={a} value={a}>{audienceLabel(a)}{n !== null ? ` (${n})` : ""}</option>;
             })}
           </select>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre" className={input} />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3} className={input} />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre (ex. Offre du week-end)" aria-label="Titre du message" className={input} />
+        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Votre message…" rows={3} aria-label="Message" className={input} />
         <div className="space-y-1">
-          <label className="text-sm text-galet-ink">Quand ?</label>
-          <select value={moment} onChange={(e) => setMoment(e.target.value as Moment)} className={input}>
+          <label htmlFor={momentId} className="text-sm text-galet-ink">Quand ?</label>
+          <select id={momentId} value={moment} onChange={(e) => setMoment(e.target.value as Moment)} className={input}>
             <option value="now">Maintenant</option>
             <option value="once">Programmée (un jour)</option>
             <option value="recurring">Récurrente (relance auto)</option>
           </select>
         </div>
         {moment === "once" && (
-          <input type="date" value={runOn} onChange={(e) => setRunOn(e.target.value)} className={input} />
+          <input type="date" value={runOn} onChange={(e) => setRunOn(e.target.value)} aria-label="Date d'envoi" className={input} />
         )}
         <button onClick={submit}
           disabled={busy || !title.trim() || !body.trim() || (moment === "once" && !runOn)}
           className="bg-halo text-white hover:bg-halo-600 rounded-xl px-5 py-2.5 font-bold disabled:opacity-50">
-          {busy ? "…" : moment === "now" ? "Envoyer" : "Enregistrer la campagne"}
+          {busy ? "…" : moment === "now" ? "Envoyer à mes clients" : "Enregistrer la campagne"}
         </button>
-        {msg && <p className="text-sm text-galet-ink">{msg}</p>}
+        {msg && <p role="status" aria-live="polite" className="text-sm text-galet-ink">{msg}</p>}
       </div>
 
       <div>
