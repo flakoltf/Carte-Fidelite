@@ -10,7 +10,6 @@ import {
   Scan,
   LogOut,
   Bell,
-  Megaphone,
   Menu,
   X,
   ChevronRight,
@@ -87,7 +86,6 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     {
       title: "Marketing",
       items: [
-        { name: "Campagnes", icon: Megaphone, href: "/dashboard/campaigns" },
         { name: "Messages clients", icon: Bell, href: "/dashboard/notifications" },
       ],
     },

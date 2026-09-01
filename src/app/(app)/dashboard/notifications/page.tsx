@@ -1,9 +1,13 @@
 import { createClient } from "@/utils/supabase/server";
-import { SendForm } from "./SendForm";
+import { MessagesView, type CampaignListItem } from "./MessagesView";
 import { audienceLabel, isAudienceKey } from "@/lib/segments/audience";
 
 export const dynamic = "force-dynamic";
 
+// Page unique « Messages clients » : formulaire (envoi immédiat OU campagne
+// programmée/récurrente), liste des campagnes, et historique des envois —
+// wallet_notifications est alimentée par les envois immédiats ET par le cron
+// des campagnes (deliverToCards), l'historique couvre donc les deux.
 export default async function NotificationsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,17 +15,21 @@ export default async function NotificationsPage() {
   if (!merchant) {
     return <p className="text-galet-ink">Aucun profil marchand associé à ce compte.</p>;
   }
+
+  const { data: campaignRows } = await supabase
+    .from("campaigns")
+    .select("id, audience, title, body, mode, run_on, active")
+    .eq("merchant_id", merchant.id)
+    .order("created_at", { ascending: false });
+  const campaigns = (campaignRows ?? []) as CampaignListItem[];
+
   const { data: history } = await supabase
     .from("wallet_notifications").select("*").eq("merchant_id", merchant.id)
     .order("created_at", { ascending: false }).limit(20);
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-3xl tracking-tight mb-2 text-onyx">Messages clients</h1>
-        <p className="text-galet-ink">Envoyez un message à vos clients, directement sur leur téléphone — sans SMS, sans frais.</p>
-      </div>
-      <SendForm />
+      <MessagesView initial={campaigns} />
       <div>
         <h2 className="text-lg font-bold mb-4 text-onyx">Historique</h2>
         <div className="space-y-3">

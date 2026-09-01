@@ -71,7 +71,7 @@ describe("checklist — campagne de réveil (conditionnelle, pas de bruit)", () 
     const { items } = computeStartupChecklist({ ...fresh, dormantsCount: 10 });
     expect(items.at(-1)?.key).toBe("wake_campaign");
     expect(done(items, "wake_campaign")).toBe(false);
-    expect(items.find((i) => i.key === "wake_campaign")?.href).toBe("/dashboard/campaigns");
+    expect(items.find((i) => i.key === "wake_campaign")?.href).toBe("/dashboard/notifications");
   });
 
   it("campagne de réveil déjà envoyée → item coché", () => {

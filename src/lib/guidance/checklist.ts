@@ -136,7 +136,7 @@ export function computeStartupChecklist(input: ChecklistInput): {
       done: input.wakeCampaignSent,
       title: "Réveillez vos clients endormis",
       hint: `${input.dormantsCount} clients ne sont pas revenus depuis un moment — un petit message les fait repasser la porte.`,
-      href: "/dashboard/campaigns",
+      href: "/dashboard/notifications",
       cta: "Créer ma campagne",
     });
   }

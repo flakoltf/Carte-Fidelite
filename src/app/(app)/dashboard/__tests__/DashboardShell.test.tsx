@@ -90,7 +90,6 @@ describe("<DashboardShell>", () => {
       "Studio de carte": "/dashboard/studio",
       Clients: "/dashboard/customers",
       Groupes: "/dashboard/segments",
-      Campagnes: "/dashboard/campaigns",
       "Messages clients": "/dashboard/notifications",
       Abonnement: "/dashboard/subscription",
       "Sécurité": "/dashboard/security",
