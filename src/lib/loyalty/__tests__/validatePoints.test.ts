@@ -6,6 +6,56 @@ const tiers = [
   { threshold: 50, reward: "Café offert" },
 ];
 
+describe("validateLoyaltyProgram — points, statusTiers (statut client)", () => {
+  const statusTiers = [
+    { threshold: 0, label: "Bronze" },
+    { threshold: 50, label: "Argent", benefit: "5% de réduction" },
+  ];
+  it("accepte et nettoie des statusTiers valides (trim libellé/avantage, benefit vide omis)", () => {
+    const v = validateLoyaltyProgram("points", {
+      pointsPerScan: 5,
+      tiers,
+      statusTiers: [
+        { threshold: 0, label: "  Bronze  ", benefit: "  " },
+        { threshold: 50, label: "Argent", benefit: " 5% de réduction " },
+      ],
+    });
+    expect(v.ok).toBe(true);
+    if (v.ok && v.program.type === "points") expect(v.program.config.statusTiers).toEqual(statusTiers);
+  });
+  it("PRÉSERVE statusTiers dans la config nettoyée (la route admin réécrit loyalty_config depuis cette config)", () => {
+    const v = validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers });
+    expect(v.ok).toBe(true);
+    if (v.ok) expect((v.program.config as { statusTiers?: unknown }).statusTiers).toEqual(statusTiers);
+  });
+  it("absent ou tableau vide → clé omise de la config (feature désactivée)", () => {
+    for (const cfg of [{ pointsPerScan: 5, tiers }, { pointsPerScan: 5, tiers, statusTiers: [] }]) {
+      const v = validateLoyaltyProgram("points", cfg);
+      expect(v.ok).toBe(true);
+      if (v.ok) expect("statusTiers" in v.program.config).toBe(false);
+    }
+  });
+  it("rejette : plus de 5 statuts, seuils non strictement croissants ou invalides", () => {
+    const six = Array.from({ length: 6 }, (_, i) => ({ threshold: i * 10, label: `S${i}` }));
+    expect(validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: six }).ok).toBe(false);
+    expect(
+      validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: [{ threshold: 50, label: "A" }, { threshold: 50, label: "B" }] }).ok
+    ).toBe(false);
+    for (const bad of [-1, 1.5, "50"]) {
+      expect(validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: [{ threshold: bad, label: "A" }] }).ok).toBe(false);
+    }
+  });
+  it("rejette : label vide ou > 40 caractères, benefit > 120 caractères", () => {
+    expect(validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: [{ threshold: 0, label: "  " }] }).ok).toBe(false);
+    expect(
+      validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: [{ threshold: 0, label: "x".repeat(41) }] }).ok
+    ).toBe(false);
+    expect(
+      validateLoyaltyProgram("points", { pointsPerScan: 5, tiers, statusTiers: [{ threshold: 0, label: "Bronze", benefit: "x".repeat(121) }] }).ok
+    ).toBe(false);
+  });
+});
+
 describe("validateLoyaltyProgram — points", () => {
   it("accepte une config points valide", () => {
     const v = validateLoyaltyProgram("points", { pointsPerScan: 5, tiers });

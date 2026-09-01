@@ -210,7 +210,9 @@ export async function POST(req: Request) {
         throw new Error("Crédit atomique indisponible");
       }
       const row = (Array.isArray(rpcData) ? rpcData[0] : null) as
-        { new_count: number; points_added: number; status: "incremented" | "cooldown" | "full" | "notfound" } | null;
+        // new_lifetime : absent tant que la migration 20260828_status_tiers n'est
+        // pas appliquée (ancienne signature RPC) → le recalcul de statut est sauté.
+        { new_count: number; points_added: number; new_lifetime?: number; status: "incremented" | "cooldown" | "full" | "notfound" } | null;
       if (!row) throw new Error("scan_increment_points: réponse vide");
 
       if (row.status === "cooldown") {
@@ -239,8 +241,32 @@ export async function POST(req: Request) {
       const before = row.new_count - row.points_added;
       const crossed = crossedPointsTiers(program.config, before, row.new_count);
 
+      // Statut client (cumul à VIE) : recalculé à chaque scan, jamais rétrogradé.
+      // Système PARALLÈLE en lecture sur new_lifetime — aucun effet sur le gain
+      // de points ni sur le cycle de récompenses.
+      let newStatus: import("@/lib/loyalty/types").StatusTier | undefined;
+      if (typeof row.new_lifetime === "number") {
+        const { parseStatusTiers, statusForLifetime } = await import("@/lib/loyalty/status");
+        const statusTiers = parseStatusTiers(program.config.statusTiers);
+        const computed = statusForLifetime(statusTiers, row.new_lifetime);
+        const prev = typeof card.current_status_tier === "number" ? card.current_status_tier : null;
+        if (computed && (prev === null || computed.threshold > prev)) {
+          newStatus = computed;
+          // UPDATE MONOTONE (garde OR) : le statut ne redescend jamais, même en
+          // course entre deux scans concurrents. Filtre tenant (invariant 3).
+          await supabaseAdmin
+            .from("loyalty_cards")
+            .update({ current_status_tier: computed.threshold })
+            .eq("id", actualCardId)
+            .eq("merchant_id", card.merchant_id)
+            .or(`current_status_tier.is.null,current_status_tier.lt.${computed.threshold}`);
+        }
+      }
+
       // Historique (points_added = points crédités ce scan) puis push best-effort :
-      // AVEC message au franchissement de palier (récompense disponible), silencieux sinon.
+      // AVEC message au franchissement de palier (récompense disponible) et/ou au
+      // changement de statut, silencieux sinon. Les deux au même scan → UNE seule
+      // notification combinée, récompense en tête (décision spec statut client).
       await supabaseAdmin.from("scan_history")
         .insert({ card_id: actualCardId, merchant_id: card.merchant_id, points_added: row.points_added });
       try {
@@ -248,9 +274,17 @@ export async function POST(req: Request) {
         const top = crossed[crossed.length - 1];
         // Titre sans emoji (Minor 7, revue finale) : cohérent avec "Récompense
         // utilisée" (redeem.ts) — les emojis restent réservés aux corps de message.
-        const message = top
-          ? { title: "Récompense disponible", body: `${top.reward} — présentez votre carte au comptoir pour en profiter.` }
+        const statusText = newStatus
+          ? `${newStatus.label}${newStatus.benefit ? ` — ${newStatus.benefit}` : ""}`
           : undefined;
+        const message = top
+          ? {
+              title: "Récompense disponible",
+              body: `${top.reward} — présentez votre carte au comptoir pour en profiter.${statusText ? ` Nouveau statut : ${statusText}.` : ""}`,
+            }
+          : statusText
+            ? { title: "Nouveau statut", body: `Vous êtes désormais ${statusText}.` }
+            : undefined;
         for (const ch of getChannels()) await ch.notify([actualCardId], message);
       } catch (e) {
         console.error("[scan] push notify failed:", e);
@@ -264,6 +298,9 @@ export async function POST(req: Request) {
           points_added: row.points_added, new_balance: row.new_count,
           crossed_thresholds: crossed.map((t) => t.threshold),
           reward_ready: redeemable.length > 0, loyalty_type: program.type,
+          // Statut client : tracé dans CARD_SCANNED (aucune nouvelle AuditAction —
+          // pas de migration jumelle du CHECK requise).
+          ...(newStatus ? { status_changed: true, new_status: newStatus.label, new_status_threshold: newStatus.threshold } : {}),
         }, ...meta,
       });
 

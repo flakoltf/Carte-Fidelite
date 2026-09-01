@@ -30,15 +30,15 @@ vi.mock("../_components/BarcodeSection", () => ({ default: () => <div /> }));
 vi.mock("../_components/ImageUploadField", () => ({ default: () => <div /> }));
 vi.mock("../_components/StampGrid", () => ({ default: () => <div /> }));
 
-type CapturedSample = { who: string; points: string; progression?: string; derniere_visite?: string };
+type CapturedSample = { who: string; points: string; progression?: string; derniere_visite?: string; statut?: string };
 const previewSamples = vi.hoisted(() => [] as CapturedSample[]);
 vi.mock("../_components/WalletPreviews", () => ({
   AppleWalletPreview: (props: { sample: Record<string, string> }) => {
-    previewSamples.push({ who: "apple", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite });
+    previewSamples.push({ who: "apple", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite, statut: props.sample.statut });
     return <div data-testid="apple-preview">{props.sample.points}</div>;
   },
   GoogleWalletPreview: (props: { sample: Record<string, string> }) => {
-    previewSamples.push({ who: "google", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite });
+    previewSamples.push({ who: "google", points: props.sample.points, progression: props.sample.progression, derniere_visite: props.sample.derniere_visite, statut: props.sample.statut });
     return <div data-testid="google-preview">{props.sample.points}</div>;
   },
 }));
@@ -172,6 +172,84 @@ describe("StudioClient — aperçu d'une carte à points (Minor 6)", () => {
     expect(previewSamples.some((s) => s.points === "40 / 80")).toBe(true);
     // {progression} : mi-parcours du PREMIER palier (30) → « 15/30 points ».
     expect(previewSamples.some((s) => s.progression === "15/30 points")).toBe(true);
+  });
+});
+
+describe("StudioClient — statut client (statusTiers)", () => {
+  const STATUS_TIERS = [
+    { threshold: 0, label: "Bronze" },
+    { threshold: 50, label: "Argent", benefit: "5% de réduction" },
+  ];
+
+  function setupPointsWithStatus() {
+    fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (url.includes("/api/merchant/card-design/publish")) return jsonOk({ ok: true, version: 2 });
+      if (url.includes("/api/merchant/card-design") && method === "GET") {
+        return jsonOk({
+          published: null,
+          draft: {
+            ...STAMPS_DESIGN,
+            cardType: "points",
+            fields: [{ id: "points", zone: "primary", label: "POINTS", value: "{points}", order: 0 }],
+          },
+          version: 1,
+          publishedAt: null,
+          draftSavedAt: null,
+          assetUrls: {},
+          merchant: {
+            shopName: "Café du Rhône",
+            businessType: "cafe",
+            stampGoal: 10,
+            slug: "cafe-du-rhone",
+            loyaltyType: "points",
+            loyaltyConfig: {
+              pointsPerScan: 5,
+              tiers: [{ threshold: 30, reward: "Café offert" }],
+              statusTiers: STATUS_TIERS,
+            },
+          },
+        });
+      }
+      if (url.includes("/api/merchant/me") && method === "GET") return jsonOk({ merchant: { reward_label: null } });
+      return jsonOk({});
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  }
+
+  it("publier round-trippe les statusTiers chargés — une publication sans toucher aux statuts ne les efface JAMAIS", async () => {
+    setupPointsWithStatus();
+    render(<StudioClient />);
+    await screen.findByText(/studio de carte/i);
+    const publishBtn = await screen.findByRole("button", { name: /publier la version/i });
+    fireEvent.click(publishBtn);
+    await waitFor(() => expect(publishCallBody()).toBeTruthy());
+    const body = publishCallBody()!;
+    const program = body.program as { type: string; config: { statusTiers?: unknown } };
+    expect(program.type).toBe("points");
+    // L'état UI normalise benefit à "" quand absent — validateLoyaltyProgram
+    // omet les avantages vides à l'écriture : aucune perte de données.
+    expect(program.config.statusTiers).toEqual([
+      { threshold: 0, label: "Bronze", benefit: "" },
+      { threshold: 50, label: "Argent", benefit: "5% de réduction" },
+    ]);
+  });
+
+  it("sample {statut} des previews = plus haut statut configuré", async () => {
+    setupPointsWithStatus();
+    render(<StudioClient />);
+    await screen.findByText(/studio de carte/i);
+    await waitFor(() => expect(previewSamples.length).toBeGreaterThan(0));
+    expect(previewSamples.some((s) => s.statut === "Argent")).toBe(true);
+  });
+
+  it("sample {statut} statique « Or » quand aucun statut configuré (carte à tampons)", async () => {
+    setupFetch("stamp_card");
+    render(<StudioClient />);
+    await screen.findByText(/studio de carte/i);
+    await waitFor(() => expect(previewSamples.length).toBeGreaterThan(0));
+    for (const s of previewSamples) expect(s.statut).toBe("Or");
   });
 });
 

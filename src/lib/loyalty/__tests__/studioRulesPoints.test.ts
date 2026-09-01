@@ -19,4 +19,13 @@ describe("buildLoyaltyUpdate — points", () => {
   it("propage l'erreur de validation", () => {
     expect(buildLoyaltyUpdate({ type: "points", config: { pointsPerScan: 0, tiers: [] } }).ok).toBe(false);
   });
+  it("propage statusTiers (statut client) dans loyalty_config", () => {
+    const statusTiers = [{ threshold: 0, label: "Bronze" }, { threshold: 50, label: "Argent", benefit: "5% de réduction" }];
+    const r = buildLoyaltyUpdate({
+      type: "points",
+      config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "10% de réduction" }], statusTiers },
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.update.loyalty_config.statusTiers).toEqual(statusTiers);
+  });
 });

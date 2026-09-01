@@ -10,6 +10,10 @@ import { Plus, Trash2 } from 'lucide-react';
 
 export type PointsTierState = { threshold: number; reward: string };
 
+// Statut client (Bronze/Argent/Or…) : cumul de points À VIE, purement informatif.
+// `benefit` = texte libre affiché sur la carte (jamais interprété par le moteur).
+export type StatusTierState = { threshold: number; label: string; benefit: string };
+
 export type PointsExpirationState =
   | { type: 'none' }
   | { type: 'fixed_date'; month: number; day: number }
@@ -19,6 +23,9 @@ export type PointsRulesState = {
   pointsPerScan: number;
   tiers: PointsTierState[];
   expiration: PointsExpirationState;
+  // Optionnel (vide = statuts désactivés) — reste optionnel pour tolérer un
+  // état hérité sans la clé.
+  statusTiers?: StatusTierState[];
 };
 
 export const DEFAULT_POINTS_RULES: PointsRulesState = {
@@ -28,11 +35,15 @@ export const DEFAULT_POINTS_RULES: PointsRulesState = {
     { threshold: 200, reward: 'Un article offert' },
   ],
   expiration: { type: 'none' },
+  statusTiers: [],
 };
 
 const POINTS_PER_SCAN_MIN = 1;
 const POINTS_PER_SCAN_MAX = 1000;
 const TIERS_MAX = 6;
+const STATUS_MAX = 5;
+const STATUS_LABEL_MAX = 40;
+const STATUS_BENEFIT_MAX = 120;
 const ROLLING_MONTHS_MIN = 1;
 const ROLLING_MONTHS_MAX = 60;
 
@@ -54,6 +65,18 @@ export default function PointsSection({
   const addTier = () => {
     const last = value.tiers[value.tiers.length - 1];
     onChange({ ...value, tiers: [...value.tiers, { threshold: (last?.threshold ?? 0) + 50, reward: '' }] });
+  };
+
+  const statusTiers = value.statusTiers ?? [];
+  const setStatus = (i: number, patch: Partial<StatusTierState>) =>
+    onChange({ ...value, statusTiers: statusTiers.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
+  const removeStatus = (i: number) => onChange({ ...value, statusTiers: statusTiers.filter((_, j) => j !== i) });
+  const addStatus = () => {
+    const last = statusTiers[statusTiers.length - 1];
+    onChange({
+      ...value,
+      statusTiers: [...statusTiers, { threshold: last ? last.threshold + 100 : 0, label: '', benefit: '' }],
+    });
   };
 
   return (
@@ -226,6 +249,65 @@ export default function PointsSection({
               className={`${inputCls} w-16`}
             />
           </div>
+        )}
+      </div>
+
+      {/* Statuts clients (cumul à vie) */}
+      <div>
+        <p className="text-xs font-medium text-galet-ink mb-1.5">Statuts clients (optionnel)</p>
+        <p className="text-[11px] text-galet-ink mb-2">
+          Basés sur le TOTAL de points gagnés depuis le début — jamais remis à zéro, un statut acquis ne se perd pas.
+          L&apos;avantage est un texte affiché sur la carte (jeton {'{statut}'} pour le libellé), sans effet sur le calcul des points.
+        </p>
+        <div className="space-y-2">
+          {statusTiers.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 bg-surface border border-line-warm rounded-xl px-2 py-2">
+              <input
+                type="number"
+                min={0}
+                value={s.threshold}
+                aria-label={`Seuil du statut ${i + 1}`}
+                onChange={(e) => setStatus(i, { threshold: Math.max(0, Number(e.target.value) || 0) })}
+                className={`${inputCls} w-20 shrink-0`}
+              />
+              <input
+                type="text"
+                maxLength={STATUS_LABEL_MAX}
+                value={s.label}
+                placeholder="Ex. Argent"
+                aria-label={`Libellé du statut ${i + 1}`}
+                onChange={(e) => setStatus(i, { label: e.target.value })}
+                className={`${inputCls} w-32 shrink-0`}
+              />
+              <input
+                type="text"
+                maxLength={STATUS_BENEFIT_MAX}
+                value={s.benefit}
+                placeholder="Avantage — ex. 5% de réduction permanente"
+                aria-label={`Avantage du statut ${i + 1}`}
+                onChange={(e) => setStatus(i, { benefit: e.target.value })}
+                className={`${inputCls} flex-1 min-w-0`}
+              />
+              <button
+                type="button"
+                onClick={() => removeStatus(i)}
+                aria-label={`Supprimer le statut ${i + 1}`}
+                className="shrink-0 p-1.5 text-galet-ink hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" aria-hidden />
+              </button>
+            </div>
+          ))}
+        </div>
+        {statusTiers.length < STATUS_MAX && (
+          <button
+            type="button"
+            onClick={addStatus}
+            className="mt-2 flex items-center gap-2 w-full border border-dashed border-halo/40 rounded-xl px-3 py-2.5 text-sm text-galet-ink hover:text-halo hover:border-halo hover:bg-halo/5 transition-all"
+          >
+            <Plus className="w-4 h-4" aria-hidden />
+            Ajouter un statut
+          </button>
         )}
       </div>
     </div>

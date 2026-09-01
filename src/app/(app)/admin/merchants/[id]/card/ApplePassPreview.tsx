@@ -10,6 +10,7 @@ const DEMO_SAMPLE: Record<string, string> = {
   visites: '12',
   derniere_visite: '14.08.2026',
   progression: '7/10 tampons',
+  statut: 'Or',
 };
 
 function resolve(template: string, sample: Record<string, string>): string {

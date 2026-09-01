@@ -229,6 +229,17 @@ describe("buildPassJson — avec design", () => {
     expect(p.storeCard.secondaryFields[0].value).toBe("14.08.2026");
   });
 
+  it("résout {statut} depuis l'input, champ RETIRÉ quand undefined (repli couche 1)", () => {
+    const withStatus: CardDesign = {
+      ...stubDesign,
+      fields: [{ id: "st", zone: "secondary", label: "STATUT", value: "{statut}", order: 0 }],
+    };
+    const p = buildPassJson({ ...input, design: withStatus, statut: "Argent" });
+    expect(p.storeCard.secondaryFields[0].value).toBe("Argent");
+    const unresolved = buildPassJson({ ...input, design: withStatus });
+    expect(unresolved.storeCard.secondaryFields).toHaveLength(0);
+  });
+
   it("résout {progression} depuis l'input", () => {
     const withProgress: CardDesign = {
       ...stubDesign,

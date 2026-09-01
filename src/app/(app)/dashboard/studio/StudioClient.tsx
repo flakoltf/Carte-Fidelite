@@ -87,10 +87,23 @@ function pointsRulesFromLoyaltyConfig(config: Record<string, unknown> | null | u
   } else if (exp?.type === 'fixed_date' && typeof exp.month === 'number' && typeof exp.day === 'number') {
     expiration = { type: 'fixed_date', month: exp.month, day: exp.day };
   }
+  // Statuts clients : round-trip fidèle — une publication qui ne touche pas aux
+  // statuts NE DOIT JAMAIS les effacer (le publish renvoie tout pointsRules).
+  const rawStatus = Array.isArray(config.statusTiers) ? config.statusTiers : [];
+  const statusTiers = rawStatus
+    .map((s) => {
+      const threshold = (s as Record<string, unknown>)?.threshold;
+      const label = (s as Record<string, unknown>)?.label;
+      const benefit = (s as Record<string, unknown>)?.benefit;
+      if (typeof threshold !== 'number' || typeof label !== 'string') return null;
+      return { threshold, label, benefit: typeof benefit === 'string' ? benefit : '' };
+    })
+    .filter((s): s is { threshold: number; label: string; benefit: string } => s !== null);
   return {
     pointsPerScan,
     tiers: tiers.length > 0 ? tiers : DEFAULT_POINTS_RULES.tiers,
     expiration,
+    statusTiers,
   };
 }
 
@@ -263,6 +276,12 @@ export default function StudioClient({ express = false }: { express?: boolean })
         cardType === 'points'
           ? progressionSampleLabel(pointsRules)
           : `${Math.min(sampleStamps, stamps.goal)}/${stamps.goal} tampons`,
+      // {statut} : plus haut statut configuré (l'aperçu « aspirationnel ») ;
+      // repli statique quand la carte n'a pas de statuts (tampons, config vide).
+      statut:
+        cardType === 'points' && (pointsRules.statusTiers?.length ?? 0) > 0
+          ? pointsRules.statusTiers![pointsRules.statusTiers!.length - 1].label
+          : 'Or',
     }),
     [cardType, sampleStamps, stamps.goal, pointsRules]
   );

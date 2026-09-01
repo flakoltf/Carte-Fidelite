@@ -31,10 +31,18 @@ export type PointsExpiration =
   | { type: "none" }
   | { type: "fixed_date"; month: number; day: number } // reset annuel récurrent
   | { type: "rolling"; months: number }; // N mois après le 1er scan du cycle
+// Statut client (Bronze/Argent/Or…) par cumul de points À VIE (lifetime_points,
+// jamais remis à zéro — distinct du cycle points_balance/redeemed_tiers).
+// Purement INFORMATIF : n'influence jamais le gain de points. `benefit` = texte
+// libre affiché sur la carte. Seuils strictement croissants (validate), le
+// premier peut être 0 (statut de base).
+export type StatusTier = { threshold: number; label: string; benefit?: string };
+
 export type PointsConfig = {
   pointsPerScan: number;
   tiers: PointsTier[];
   expiration?: PointsExpiration; // absent = aucune expiration
+  statusTiers?: StatusTier[]; // absent/vide = statuts désactivés
 };
 
 export type LoyaltyProgram =
