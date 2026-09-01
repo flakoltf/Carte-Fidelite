@@ -46,11 +46,19 @@ describe('validateStudioDesign', () => {
     expect(validateStudioDesign(ok).errors).toEqual([]);
   });
 
-  it('exige une icône de tampon valide sauf si un visuel est uploadé', () => {
-    const noIcon = base({ stamps: { goal: 10, icon: '', shape: 'circle' } });
-    expect(validateStudioDesign(noIcon).errors.some((e) => e.includes('icône de tampon'))).toBe(true);
+  it("« sans icône » (icon vide) est un choix VALIDE — alvéole pleine sans motif", () => {
+    const sansIcone = base({ stamps: { goal: 10, icon: '', shape: 'circle' } });
+    expect(validateStudioDesign(sansIcone).errors).toEqual([]);
+    // Espaces seuls = même sémantique (trim).
+    const espaces = base({ stamps: { goal: 10, icon: '   ', shape: 'circle' } });
+    expect(validateStudioDesign(espaces).errors).toEqual([]);
+  });
+
+  it("rejette une icône NON VIDE invalide (trop longue), sauf si un visuel est uploadé", () => {
+    const invalide = base({ stamps: { goal: 10, icon: 'abcdefghijkl', shape: 'circle' } });
+    expect(validateStudioDesign(invalide).errors.some((e) => /icône de tampon/i.test(e))).toBe(true);
     const withAsset = base({
-      stamps: { goal: 10, icon: '', shape: 'circle', filledAssetPath: 'm1/stamps/filled.png' },
+      stamps: { goal: 10, icon: 'abcdefghijkl', shape: 'circle', filledAssetPath: 'm1/stamps/filled.png' },
     });
     expect(validateStudioDesign(withAsset).errors).toEqual([]);
   });

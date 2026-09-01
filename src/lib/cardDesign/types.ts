@@ -69,7 +69,7 @@ export const STAMP_SHAPES: readonly StampShape[] = ['circle', 'rounded', 'square
 export type StampsConfig = {
   /** Nombre de tampons requis pour la récompense (aligné sur stamp_goal). */
   goal: number;
-  /** Emoji / caractère du tampon « tamponné » (bibliothèque ou libre). */
+  /** Emoji / caractère du tampon « tamponné » (bibliothèque ou libre) ; '' = SANS icône (plaque pleine). */
   icon: string;
   /** Forme de l'alvéole (tamponné comme vide). */
   shape: StampShape;
