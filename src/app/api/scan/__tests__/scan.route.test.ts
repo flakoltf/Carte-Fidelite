@@ -93,6 +93,16 @@ vi.mock("@/lib/wallet/channel", () => ({
   ],
 }));
 
+// Message commerçant consommé au scan (NOTIFICATIONS-WALLET §3) : on enregistre
+// les appels à clearCardMessage pour prouver QUAND la route efface (push
+// silencieux) et quand elle n'efface PAS (un message remplace, ou cooldown).
+const clearCalls: { cardId: string; merchantId: string }[] = [];
+vi.mock("@/lib/wallet/authToken", () => ({
+  clearCardMessage: async (cardId: string, merchantId: string) => {
+    clearCalls.push({ cardId, merchantId });
+  },
+}));
+
 import { POST } from "@/app/api/scan/route";
 
 function scanReq(cardId = "card-1") {
@@ -120,6 +130,7 @@ beforeEach(() => {
   calls.rpc = [];
   updateCalls.length = 0;
   channelCalls.notify = [];
+  clearCalls.length = 0;
 });
 
 describe("POST /api/scan — câblage RPC scan_increment", () => {
@@ -318,6 +329,57 @@ describe("POST /api/scan — statut client (cumul à vie, cartes à points)", ()
     expect(res.status).toBe(200);
     expect(channelCalls.notify[0].message).toBeUndefined();
     expect(updateCalls).toHaveLength(0);
+  });
+});
+
+describe("POST /api/scan — message commerçant consommé au scan (NOTIFICATIONS-WALLET §3)", () => {
+  function pointsState(rpcRow: Record<string, unknown>) {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "points",
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "card-1", merchant_id: "merchant-1", points_balance: 10, redeemed_tiers: [], customers: { full_name: "Nadia" } };
+    state.rpcData = [rpcRow];
+  }
+
+  it("scan tampons (push silencieux) → efface le message, filtré carte + marchand", async () => {
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(clearCalls).toEqual([{ cardId: "card-1", merchantId: "merchant-1" }]);
+  });
+
+  it("points SANS franchissement (push silencieux) → efface le message", async () => {
+    pointsState({ new_count: 15, points_added: 5, status: "incremented" });
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message).toBeUndefined();
+    expect(clearCalls).toEqual([{ cardId: "card-1", merchantId: "merchant-1" }]);
+  });
+
+  it("points AVEC franchissement → n'efface PAS (« Récompense disponible » remplace)", async () => {
+    state.merchant = {
+      id: "merchant-1",
+      loyalty_type: "points",
+      loyalty_config: { pointsPerScan: 5, tiers: [{ threshold: 30, reward: "Café offert" }] },
+      stamp_goal: 10,
+      suspended_at: null,
+    };
+    state.card = { id: "card-1", merchant_id: "merchant-1", points_balance: 25, redeemed_tiers: [], customers: { full_name: "Nadia" } };
+    state.rpcData = [{ new_count: 30, points_added: 5, status: "incremented" }];
+    const res = await POST(scanReq());
+    expect(res.status).toBe(200);
+    expect(channelCalls.notify[0].message?.title).toBe("Récompense disponible");
+    expect(clearCalls).toHaveLength(0);
+  });
+
+  it("cooldown → n'efface pas (le client n'a pas été crédité, le message reste)", async () => {
+    state.rpcData = [{ new_count: 9, status: "cooldown" }];
+    const res = await POST(scanReq());
+    expect(res.status).toBe(429);
+    expect(clearCalls).toHaveLength(0);
   });
 });
 
