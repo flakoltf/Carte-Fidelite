@@ -28,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ error: "erreur serveur" }, { status: 500 });
   }
   const { thresholds } = resolveMerchantConfig((data ?? null) as MerchantConfigRow | null);
-  return NextResponse.json({ active_days: thresholds.activeDays, at_risk_days: thresholds.atRiskDays });
+  return NextResponse.json({ active_days: thresholds.activeDays, at_risk_days: thresholds.atRiskDays, vip_visits: thresholds.vipVisits });
 }
 
 export async function PATCH(req: Request) {
@@ -55,6 +55,9 @@ export async function PATCH(req: Request) {
     ...((current?.segment_config ?? {}) as Record<string, unknown>),
     active_days: v.value.active_days,
     at_risk_days: v.value.at_risk_days,
+    // Seuil « client fidèle » : écrit seulement s'il est fourni — sinon la
+    // valeur existante (posée ici ou par l'admin) reste intacte.
+    ...(v.value.vip_visits !== undefined ? { vip_visits: v.value.vip_visits } : {}),
   };
 
   const { error } = await supabaseAdmin

@@ -76,13 +76,20 @@ describe("GET /api/merchant/segments", () => {
   it("non authentifié → 401", async () => {
     expect((await GET()).status).toBe(401);
   });
-  it("renvoie les seuils résolus (défauts si segment_config vide)", async () => {
+  it("renvoie les seuils résolus (défauts si segment_config vide), vip_visits inclus", async () => {
     state.ctx = { merchantId: "m1", userId: "u1" };
     state.row = { segment_config: null };
     const res = await GET();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ active_days: 30, at_risk_days: 90 });
+    expect(await res.json()).toEqual({ active_days: 30, at_risk_days: 90, vip_visits: 10 });
     expect(calls.selectedIds).toEqual(["m1"]);
+  });
+
+  it("renvoie le vip_visits personnalisé du marchand", async () => {
+    state.ctx = { merchantId: "m1", userId: "u1" };
+    state.row = { segment_config: { vip_visits: 25 } };
+    const res = await GET();
+    expect((await res.json()).vip_visits).toBe(25);
   });
 });
 
@@ -121,6 +128,36 @@ describe("PATCH /api/merchant/segments", () => {
     await PATCH(patchReq({ active_days: 14, at_risk_days: 45 }));
     expect(calls.updates[0].payload.segment_config).toEqual({
       vip_visits: 12, scan_cooldown_seconds: 120, active_days: 14, at_risk_days: 45,
+    });
+  });
+
+  it("vip_visits fourni → validé, fusionné et renvoyé (seuil « client fidèle »)", async () => {
+    state.ctx = { merchantId: "m1", userId: "u1" };
+    state.row = { segment_config: { new_tenure_days: 45, scan_cooldown_seconds: 120 } };
+    const res = await PATCH(patchReq({ active_days: 21, at_risk_days: 60, vip_visits: 15 }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, active_days: 21, at_risk_days: 60, vip_visits: 15 });
+    // Fusion : les clés NON exposées côté marchand survivent.
+    expect(calls.updates[0].payload.segment_config).toEqual({
+      new_tenure_days: 45, scan_cooldown_seconds: 120,
+      active_days: 21, at_risk_days: 60, vip_visits: 15,
+    });
+  });
+
+  it("vip_visits invalide (0, négatif, non entier, string) → 400, aucune écriture", async () => {
+    state.ctx = { merchantId: "m1", userId: "u1" };
+    for (const bad of [0, -3, 2.5, "10"]) {
+      expect((await PATCH(patchReq({ active_days: 21, at_risk_days: 60, vip_visits: bad }))).status).toBe(400);
+    }
+    expect(calls.updates).toEqual([]);
+  });
+
+  it("vip_visits ABSENT du payload → la valeur existante est préservée (rétrocompatible)", async () => {
+    state.ctx = { merchantId: "m1", userId: "u1" };
+    state.row = { segment_config: { vip_visits: 12 } };
+    await PATCH(patchReq({ active_days: 14, at_risk_days: 45 }));
+    expect(calls.updates[0].payload.segment_config).toEqual({
+      vip_visits: 12, active_days: 14, at_risk_days: 45,
     });
   });
 
