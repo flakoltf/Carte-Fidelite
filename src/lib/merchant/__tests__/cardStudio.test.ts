@@ -129,3 +129,21 @@ describe('mapping colonnes studio', () => {
     expect(stampGoalForMerchant({ ...design, stamps: { goal: 90, icon: '☕', shape: 'circle' } })).toBeNull();
   });
 });
+
+describe('parseCardDesign — round-trip « sans icône » (stamps.icon vide)', () => {
+  const withIcon = (icon: unknown) => ({
+    ...DEFAULT_CARD_DESIGN,
+    cardType: 'stamps',
+    stamps: { goal: 8, icon, shape: 'circle' },
+  });
+
+  it("préserve icon: '' (le choix « sans icône » survit à la persistance jsonb)", () => {
+    const d = parseCardDesign(withIcon(''));
+    expect(d?.stamps?.icon).toBe('');
+  });
+
+  it("icône absente ou non-string → repli '⭐' (comportement historique inchangé)", () => {
+    expect(parseCardDesign(withIcon(undefined))?.stamps?.icon).toBe('⭐');
+    expect(parseCardDesign(withIcon(42))?.stamps?.icon).toBe('⭐');
+  });
+});

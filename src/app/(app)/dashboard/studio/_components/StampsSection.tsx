@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { STAMP_ICON_GROUPS, isValidStampIcon } from '@/lib/cardDesign/stampLibrary';
+import { isNoStampIcon, STAMP_ICON_GROUPS, isValidStampIcon } from '@/lib/cardDesign/stampLibrary';
 import { STAMP_GOAL_MIN, STAMP_GOAL_MAX } from '@/lib/cardDesign/studioValidation';
 import type { StampsConfig, StampShape } from '@/lib/cardDesign/types';
 import ImageUploadField from './ImageUploadField';
@@ -74,6 +74,24 @@ export default function StampsSection({
       <div>
         <p className="text-xs font-medium text-galet-ink mb-2">Icône du tampon</p>
         <div className="space-y-2.5">
+          {/* Choix « Sans icône » : alvéole pleine sans motif sur la carte. */}
+          <div className="flex items-center gap-2">
+            <span className="w-32 shrink-0 text-[11px] text-galet-ink">Sans icône</span>
+            <button
+              type="button"
+              onClick={() => onChange({ ...stamps, icon: '' })}
+              aria-label="Sans icône — alvéole pleine sans motif"
+              aria-pressed={isNoStampIcon(stamps.icon) && !stamps.filledAssetPath}
+              className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all ${
+                isNoStampIcon(stamps.icon) && !stamps.filledAssetPath
+                  ? 'border-halo bg-halo/10 ring-1 ring-halo/40'
+                  : 'border-line-warm hover:border-halo/60'
+              }`}
+            >
+              <span className="h-4 w-4 rounded-full bg-galet-ink/70" aria-hidden />
+            </button>
+            <span className="text-[11px] text-galet-ink">Juste l&apos;alvéole, remplie quand le tampon est obtenu.</span>
+          </div>
           {STAMP_ICON_GROUPS.map((group) => (
             <div key={group.label} className="flex items-center gap-2">
               <span className="w-32 shrink-0 text-[11px] text-galet-ink">{group.label}</span>

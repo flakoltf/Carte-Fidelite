@@ -6,7 +6,7 @@ import type { CardDesign, CardZone } from './types';
 import { APPLE_ZONE_LIMITS } from './types';
 import { validateDesign, type ValidationResult } from './validation';
 import { contrastRatio } from './color';
-import { isValidStampIcon } from './stampLibrary';
+import { isNoStampIcon, isValidStampIcon } from './stampLibrary';
 
 export const STAMP_GOAL_MIN = 2;
 export const STAMP_GOAL_MAX = 30;
@@ -79,8 +79,9 @@ export function validateStudioDesign(design: CardDesign): ValidationResult {
     if (!Number.isInteger(goal) || goal < STAMP_GOAL_MIN || goal > STAMP_GOAL_MAX) {
       errors.push(`Le nombre de tampons requis doit être entre ${STAMP_GOAL_MIN} et ${STAMP_GOAL_MAX}.`);
     }
-    if (!design.stamps.filledAssetPath && !isValidStampIcon(icon)) {
-      errors.push('Choisissez une icône de tampon (bibliothèque, emoji libre, ou visuel uploadé).');
+    // « Sans icône » (icon vide) est un choix valide : plaque pleine sans motif.
+    if (!design.stamps.filledAssetPath && !isNoStampIcon(icon) && !isValidStampIcon(icon)) {
+      errors.push('Icône de tampon invalide : choisissez un emoji (bibliothèque ou libre), « Sans icône », ou uploadez un visuel.');
     }
     if (goal > 12) {
       warnings.push('Au-delà de 12 tampons, la grille devient dense sur mobile — pensez à un objectif plus court.');

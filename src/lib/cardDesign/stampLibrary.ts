@@ -14,6 +14,16 @@ export const STAMP_ICON_GROUPS: readonly StampIconGroup[] = [
 
 export const ALL_STAMP_ICONS: readonly string[] = STAMP_ICON_GROUPS.flatMap((g) => [...g.icons]);
 
+/**
+ * « Sans icône » : chaîne vide (ou espaces). L'alvéole obtenue est alors une
+ * plaque pleine sans motif — choix VALIDE au studio, préservé tel quel par la
+ * persistance (parseCardDesign). Le rendu serveur du strip Apple ignore déjà
+ * l'icône (formes pures) : aucun impact côté pass.
+ */
+export function isNoStampIcon(icon: string): boolean {
+  return icon.trim() === '';
+}
+
 /** Garde une icône valide : 1 à 4 unités de code (emoji composés inclus). */
 export function isValidStampIcon(icon: string): boolean {
   const trimmed = icon.trim();

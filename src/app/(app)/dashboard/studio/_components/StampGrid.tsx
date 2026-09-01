@@ -59,9 +59,9 @@ export default function StampGrid({
               filledUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={filledUrl} alt="" style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
-              ) : (
+              ) : stamps.icon.trim() ? (
                 stamps.icon
-              )
+              ) : null /* « sans icône » : plaque pleine, aucun motif */
             ) : emptyUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={emptyUrl} alt="" style={{ width: '78%', height: '78%', objectFit: 'contain', opacity: 0.55 }} />
