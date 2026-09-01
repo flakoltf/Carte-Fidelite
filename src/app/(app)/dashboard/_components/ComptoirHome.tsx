@@ -59,9 +59,17 @@ export default function ComptoirHome({ shopName, logoUrl, version = "v1", banner
         </Link>
       </header>
 
-      {/* Milieu (~40%) : les 3 chiffres en grand. */}
-      <section className="flex h-[40%] items-center justify-center px-5">
+      {/* Milieu (~40%) : les 3 chiffres en grand, puis l'accès sobre au
+          tableau de bord complet (/dashboard/full) — là où on regarde déjà
+          ses chiffres. L'engrenage de l'en-tête reste un accès secondaire. */}
+      <section className="flex h-[40%] flex-col items-center justify-center gap-4 px-5">
         <StatTrio />
+        <Link
+          href="/dashboard/full"
+          className="min-h-11 inline-flex items-center text-sm font-medium text-galet-ink underline-offset-4 transition-colors hover:text-onyx hover:underline"
+        >
+          Vue complète
+        </Link>
       </section>
 
       {/* Bas (~50%) : le geste central. Bouton Scanner géant, halo doré au tap. */}

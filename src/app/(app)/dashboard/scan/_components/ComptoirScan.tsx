@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Camera, Loader2, CheckCircle, AlertCircle, ArrowLeft, Undo2 } from "lucide-react";
 import type { LoyaltyType, PointsTier } from "@/lib/loyalty/types";
+import { canRevertScan, revertActionLabel, revertDoneMessage, revertSecondsLeft } from "@/lib/loyalty/revert";
 import { EASE_OUT } from "@/lib/motion";
 import RedeemFullScreen from "./RedeemFullScreen";
 import AmountPad from "./AmountPad";
@@ -40,12 +41,24 @@ export default function ComptoirScan({
   // scan précédent (ex. un autre type de carte).
   const [tiers, setTiers] = useState<PointsTier[] | undefined>(undefined);
   const [maxThreshold, setMaxThreshold] = useState<number | undefined>(undefined);
+  // Annulation du dernier crédit (POST /api/scan/revert, fenêtre de 5 min).
+  // Uniquement pour les mécaniques à COMPTEUR (canRevertScan) : la RPC
+  // décrémente stamps_count — amount_points/points n'y ont pas droit.
+  // Le bandeau survit à la relance auto de la caméra (scan continu) : il reste
+  // au-dessus du viseur sans bloquer l'enchaînement des scans.
+  const [revertable, setRevertable] = useState<{ cardId: string; at: number } | null>(null);
+  const [revertNote, setRevertNote] = useState<string | null>(null);
+  const [reverting, setReverting] = useState(false);
 
   // amountChf : présent UNIQUEMENT pour amount_points (envoyé dans le body) ;
   // absent → comportement actuel (tampon/visite) strictement inchangé.
   const handleScan = useCallback(async (cardId: string, amountChf?: number) => {
     setMode("processing");
     setScanned(cardId);
+    // Un nouveau scan remplace l'annulation en attente : le bandeau doit
+    // toujours viser le DERNIER crédit, jamais un client précédent.
+    setRevertable(null);
+    setRevertNote(null);
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -93,6 +106,7 @@ export default function ComptoirScan({
           programType === "visit_based" ? "Visite enregistrée" :
           programType === "tiered" ? "Passage compté" : "Tampon ajouté";
         setMessage(name ? `${label} · ${name}` : `${label}.`);
+        if (canRevertScan(programType)) setRevertable({ cardId, at: Date.now() });
       } else {
         // amount_points : la réponse porte pointsEarned/currentValue (pas de carte).
         const pts = typeof data.pointsEarned === "number" ? data.pointsEarned : 0;
@@ -192,6 +206,46 @@ export default function ComptoirScan({
     return () => clearTimeout(id);
   }, [mode]);
 
+  // Le bandeau d'annulation disparaît de lui-même à la fin de la fenêtre —
+  // c'est le serveur (RPC) qui fait foi, ce minuteur n'est que de l'affichage.
+  useEffect(() => {
+    if (!revertable) return;
+    const id = setInterval(() => {
+      if (revertSecondsLeft(new Date(revertable.at).toISOString(), new Date()) <= 0) setRevertable(null);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [revertable]);
+
+  // Confirmation « Tampon annulé » : transitoire, ne bloque jamais le comptoir.
+  useEffect(() => {
+    if (!revertNote) return;
+    const id = setTimeout(() => setRevertNote(null), 3000);
+    return () => clearTimeout(id);
+  }, [revertNote]);
+
+  const doRevert = async () => {
+    if (!revertable || reverting) return;
+    setReverting(true);
+    try {
+      const res = await fetch("/api/scan/revert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: revertable.cardId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setRevertNote(canRevertScan(programType) ? revertDoneMessage(programType) : "Annulé");
+      } else {
+        setRevertNote(typeof data?.error === "string" ? data.error : "Annulation impossible.");
+      }
+    } catch {
+      setRevertNote("Erreur réseau — rien n'a été annulé.");
+    } finally {
+      setRevertable(null);
+      setReverting(false);
+    }
+  };
+
   // amount_points : saisie du montant CHF avant le crédit.
   if (mode === "amount" && scanned) {
     return (
@@ -264,6 +318,25 @@ export default function ComptoirScan({
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center px-5 pb-10">
+        {/* Bandeau d'annulation : discret, au-dessus du viseur — il ne bloque
+            jamais l'enchaînement des scans (la caméra tourne en dessous). */}
+        {(revertable || revertNote) && (mode === "idle" || mode === "scanning" || mode === "added") && (
+          <div className="mb-3 flex w-full max-w-md justify-center">
+            {revertNote ? (
+              <span role="status" aria-live="polite"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-warm bg-surface px-4 py-2 text-sm font-medium text-galet-ink shadow-sm">
+                <CheckCircle className="h-4 w-4 text-halo" aria-hidden="true" />
+                {revertNote}
+              </span>
+            ) : revertable && canRevertScan(programType) ? (
+              <button type="button" onClick={doRevert} disabled={reverting}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-warm bg-surface px-4 py-2 text-sm font-medium text-galet-ink shadow-sm transition-colors hover:bg-line-warm/40 hover:text-onyx disabled:opacity-50">
+                {reverting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Undo2 className="h-4 w-4" aria-hidden="true" />}
+                {revertActionLabel(programType)}
+              </button>
+            ) : null}
+          </div>
+        )}
         <div className="relative flex aspect-square w-full max-w-md items-center justify-center overflow-hidden rounded-[32px] border border-line-warm bg-surface shadow-sm">
           {mode === "idle" && (
             <button

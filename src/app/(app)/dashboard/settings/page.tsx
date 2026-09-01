@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Save, Palette, Image as ImageIcon, Store, Loader2, CheckCircle, Gift, Clock, Camera, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { SecuritySection } from "./SecuritySection";
+import { SegmentsSection } from "./SegmentsSection";
 import BusinessHoursEditor from "./BusinessHoursEditor";
-import { DEFAULT_BUSINESS_HOURS, normalizeBusinessHours, todaysHoursLabel, type BusinessHours } from "@/lib/merchant-config/hours";
+import { DEFAULT_BUSINESS_HOURS, normalizeBusinessHours, type BusinessHours } from "@/lib/merchant-config/hours";
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -124,10 +125,9 @@ export default function Settings() {
         <p className="text-galet-ink">Personnalisez votre boutique et l&apos;apparence de vos cartes Wallet.</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-
-        {/* Formulaire */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Formulaire — pleine largeur depuis le retrait de l'aperçu (le vrai
+          rendu de la carte vit dans le Studio, source unique de vérité). */}
+      <div className="space-y-6">
             <form onSubmit={handleSave} className="bg-surface border border-line-warm rounded-3xl p-8 space-y-8 shadow-sm">
 
                 {/* Identité */}
@@ -294,69 +294,9 @@ export default function Settings() {
             </button>
             {addrMsg && <p role="status" aria-live="polite" className="text-sm text-galet-ink">{addrMsg}</p>}
           </div>
-        </div>
-
-        {/* Aperçu */}
-        <div className="space-y-6">
-            <h3 className="text-sm font-bold text-galet-ink ml-1">APERÇU DE LA CARTE</h3>
-            <div
-                className="aspect-[1.58/1] w-full rounded-3xl p-8 relative overflow-hidden shadow-2xl transition-all duration-500"
-                style={{ backgroundColor: primaryColor }}
-            >
-                {/* Gloss effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-
-                <div className="relative z-10 h-full flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <div className="text-[10px] opacity-70 font-bold tracking-widest uppercase mb-1">BOUTIQUE</div>
-                            <div className="text-xl font-bold italic">{shopName || "Ma Boutique"}</div>
-                        </div>
-                        {logoUrl ? (
-                            // Logo marchand : URL externe dynamique, aperçu 40px — pas d'optimisation next/image nécessaire.
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={logoUrl} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm p-1 border border-white/20" alt="logo" />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm" />
-                        )}
-                    </div>
-
-                    <div className="space-y-3">
-                        {(rewardLabel.trim() || todaysHoursLabel(businessHours, new Date())) && (
-                            <div className="flex flex-wrap gap-x-6 gap-y-1">
-                                {rewardLabel.trim() && (
-                                    <div>
-                                        <div className="text-[9px] opacity-70 font-bold tracking-widest uppercase">RÉCOMPENSE</div>
-                                        <div className="text-sm font-semibold">{rewardLabel.trim()}</div>
-                                    </div>
-                                )}
-                                {todaysHoursLabel(businessHours, new Date()) && (
-                                    <div>
-                                        <div className="text-[9px] opacity-70 font-bold tracking-widest uppercase">AUJOURD&apos;HUI</div>
-                                        <div className="text-sm font-semibold">{todaysHoursLabel(businessHours, new Date())}</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <div className="text-[10px] opacity-70 font-bold tracking-widest uppercase mb-1">POINTS DE FIDÉLITÉ</div>
-                                <div className="text-3xl font-black">7 / 10</div>
-                            </div>
-                            <div className="bg-white p-2 rounded-lg">
-                                <div className="w-12 h-12 bg-[#E6E1D5] animate-pulse rounded-sm" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-surface border border-line-warm rounded-3xl p-6 text-xs text-galet-ink leading-relaxed shadow-sm">
-                <p>💡 <strong>Aperçu indicatif.</strong> Adresse, téléphone et itinéraire apparaissent au dos de la carte. Après enregistrement, vos cartes en circulation sont rafraîchies automatiquement (push silencieux).</p>
-            </div>
-        </div>
-
       </div>
+
+      <SegmentsSection />
 
       <SecuritySection />
 

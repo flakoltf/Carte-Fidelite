@@ -57,13 +57,17 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   // UXP-1 : 12 items à plat → 5 zones cohérentes pour un commerçant. Moins de
   // charge cognitive, le Comptoir (scan) toujours en tête et mis en avant.
   // Pas d'accordéon (un tap de plus = friction) : 5 sections compactes ouvertes.
+  // La 1re zone garde son aria-label « Comptoir » mais n'affiche pas de titre :
+  // l'item d'accueil s'appelle lui-même « Comptoir » (ex-« Vue d'ensemble »),
+  // un intitulé répété deux fois de suite ne guiderait personne.
   type NavItem = { name: string; icon: LucideIcon; href: string; featured?: boolean };
-  const navZones: { title: string; items: NavItem[] }[] = [
+  const navZones: { title: string; showTitle?: boolean; items: NavItem[] }[] = [
     {
       title: "Comptoir",
+      showTitle: false,
       items: [
         { name: "Scanner", icon: Scan, href: "/dashboard/scan", featured: true },
-        { name: "Vue d'ensemble", icon: LayoutDashboard, href: "/dashboard" },
+        { name: "Comptoir", icon: LayoutDashboard, href: "/dashboard" },
       ],
     },
     {
@@ -111,9 +115,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <nav aria-label="Navigation principale" className="flex-1 space-y-5 overflow-y-auto">
             {navZones.map((zone) => (
                 <section key={zone.title} aria-label={zone.title} className="space-y-0.5">
-                    <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet-ink">
-                        {zone.title}
-                    </h6>
+                    {zone.showTitle !== false && (
+                      <h6 className="px-4 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-galet-ink">
+                          {zone.title}
+                      </h6>
+                    )}
                     {zone.items.map((item) => {
                         const isActive = isNavActive(item.href);
                         return (
@@ -179,9 +185,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">
                     {navZones.map((zone) => (
                         <section key={zone.title} aria-label={zone.title} className="space-y-2">
-                            <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet-ink">
-                                {zone.title}
-                            </h6>
+                            {zone.showTitle !== false && (
+                              <h6 className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-galet-ink">
+                                  {zone.title}
+                              </h6>
+                            )}
                             {zone.items.map((item) => (
                                 <Link
                                     key={item.href}
