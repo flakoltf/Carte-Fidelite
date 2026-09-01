@@ -1,4 +1,19 @@
 import type { CardDesign, BarcodeFormat } from './types';
+import { KNOWN_TOKENS } from './types';
+
+// La CLASSE Google est PARTAGÉE par tous les clients d'un marchand : un jeton
+// par-client ({nom}, {palier}…) y est irrésolvable par construction. Repli
+// couche 1 : on retire les jetons CONNUS (jamais d'accolades sur une carte
+// Android le jour où le publishing access sera accordé) ; un jeton INCONNU
+// (faute de frappe) reste visible. Vrai fix (reste-à-faire connu) : porter ces
+// champs sur l'OBJET par-client, résolus à l'émission.
+function stripKnownTokens(value: string): string {
+  return value
+    .replace(/\{(\w+)\}/g, (m, key: string) =>
+      (KNOWN_TOKENS as readonly string[]).includes(key) ? '' : m
+    )
+    .trim();
+}
 
 // Traduit un format générique vers le type de code-barres Google Wallet.
 const GOOGLE_BARCODE_TYPE: Record<BarcodeFormat, string> = {
@@ -15,7 +30,9 @@ export function mapToGoogleClass(design: CardDesign, logoPublicUrl?: string, her
   const textModulesData = design.fields
     .filter((f) => f.zone !== 'primary')
     .sort((a, b) => a.order - b.order)
-    .map((f) => ({ id: f.id, header: f.label, body: f.value }));
+    .map((f) => ({ id: f.id, header: f.label, body: stripKnownTokens(f.value) }))
+    // Module réduit au seul jeton → supprimé (un en-tête sans corps n'apporte rien).
+    .filter((m) => m.body !== '');
   const image = (uri: string) => ({
     sourceUri: { uri },
     contentDescription: { defaultValue: { language: 'fr', value: design.programName } },

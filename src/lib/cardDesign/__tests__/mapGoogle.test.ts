@@ -49,3 +49,34 @@ describe('mapToGoogleObjectExtras', () => {
     expect(extras.barcodeAltText).toBe('Scan');
   });
 });
+
+describe('mapToGoogleClass — jetons connus jamais en accolades (repli couche 1)', () => {
+  it('retire les jetons CONNUS des modules texte de la classe (partagée entre clients, irrésolvable par client)', () => {
+    const withTokens: CardDesign = {
+      ...base,
+      fields: [
+        { id: 'p', zone: 'primary', label: 'Points', value: '{points}', order: 0 },
+        { id: 's1', zone: 'secondary', label: 'Client', value: '{nom}', order: 1 },
+        { id: 's2', zone: 'secondary', label: 'Palier', value: 'Niveau {palier}', order: 2 },
+        { id: 's3', zone: 'auxiliary', label: 'Note', value: 'Merci !', order: 3 },
+      ],
+    };
+    const c = mapToGoogleClass(withTokens) as { textModulesData: { header: string; body: string }[] };
+    // Module réduit au seul jeton → supprimé entièrement.
+    expect(c.textModulesData.some((t) => t.header === 'Client')).toBe(false);
+    // Contenu mixte → le jeton disparaît, le texte reste (trimé).
+    expect(c.textModulesData.find((t) => t.header === 'Palier')?.body).toBe('Niveau');
+    // Texte statique inchangé.
+    expect(c.textModulesData.find((t) => t.header === 'Note')?.body).toBe('Merci !');
+    // Plus aucune accolade de jeton connu dans la classe.
+    expect(JSON.stringify(c)).not.toMatch(/\{(points|nom|palier|visites|derniere_visite|progression)\}/);
+  });
+  it('laisse un jeton INCONNU tel quel (faute de frappe, visible du commerçant)', () => {
+    const typo: CardDesign = {
+      ...base,
+      fields: [{ id: 's1', zone: 'secondary', label: 'Oops', value: '{paliier}', order: 0 }],
+    };
+    const c = mapToGoogleClass(typo) as { textModulesData: { header: string; body: string }[] };
+    expect(c.textModulesData.find((t) => t.header === 'Oops')?.body).toBe('{paliier}');
+  });
+});
