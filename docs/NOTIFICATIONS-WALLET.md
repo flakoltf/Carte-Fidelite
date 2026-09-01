@@ -55,13 +55,31 @@ DOS n'est PAS un déclencheur fiable de bannière.
    `key`. Un champ qui n'existait pas dans l'ancien pass et apparaît dans le
    nouveau n'a **pas de valeur précédente** à comparer : plusieurs
    implémentations rapportent que ce premier passage **peut ne pas déclencher**
-   la bannière. Conséquence pratique : le premier message JAMAIS envoyé à une
-   carte donnée est le cas le moins fiable ; **tous les envois suivants**
-   (valeur A → valeur B sur un champ déjà présent) déclenchent, eux, de façon
-   fiable. Chez nous `loyalty_cards.pass_message` est **persistant** (jamais
-   remis à zéro par les rafraîchissements silencieux) : dès le 2ᵉ message le
-   champ est présent→présent. Source (retours d'implémentation, moindre autorité
-   que la doc Apple) : Passcreator / Airship / forums PassKit.
+   la bannière. Conséquence pratique : un envoi qui fait APPARAÎTRE le champ
+   est le cas le moins fiable ; les envois **présent→présent** (valeur A →
+   valeur B sur un champ déjà là) déclenchent, eux, de façon fiable. Source
+   (retours d'implémentation, moindre autorité que la doc Apple) :
+   Passcreator / Airship / forums PassKit.
+
+   **Cycle de vie du message (décision produit 2026-09-01).** Historiquement,
+   `loyalty_cards.pass_message` était **persistant** (jamais remis à zéro) :
+   dès le 2ᵉ message, le champ était présent→présent et la bannière fiable.
+   Contrepartie inacceptable : le message ne disparaissait JAMAIS de la carte.
+   Depuis le 2026-09-01, le message est **consommé au prochain passage en
+   boutique** : écrit (campagne, « Récompense disponible », « Récompense
+   utilisée ») → vu/consommé au scan (`clearCardMessage`, appelé par
+   `POST /api/scan` avant le push silencieux) → **le prochain envoi retombe
+   dans le cas « champ qui apparaît »** ci-dessus, donc bannière moins fiable
+   au 1ᵉʳ envoi qui suit un scan. **Compromis assumé, à ne pas « réparer »** :
+   une carte propre au comptoir prime sur la fiabilité du tout premier envoi
+   suivant. Précisions :
+   - un scan qui pousse un message (palier franchi → « Récompense disponible »,
+     changement de statut) **remplace** l'ancien au lieu d'effacer
+     (présent→présent, bannière fiable — inchangé) ;
+   - les rafraîchissements silencieux HORS scan (publication de design,
+     `refresh.ts`) n'effacent toujours PAS le message ;
+   - le redeem émet toujours « Récompense utilisée » (remplacement, pas
+     d'effacement).
 
 4. **Valeur identique = pas de bannière.** Déjà connu (piège n°3 ci-dessous) :
    réenvoyer le même texte ne rejoue pas la bannière.
@@ -139,10 +157,16 @@ Dans `src/lib/wallet/passJson.ts`, fonction `applyMerchantMessage` :
 - [ ] La bannière apparaît sur l'écran verrouillé. Sur la carte, le message
       apparaît sur un champ AVANT « MESSAGE » (auxiliaire, bas de la carte) et
       reste consultable au dos, champ « INFO ».
-- [ ] **Premier message d'une carte neuve** : c'est le cas le moins fiable
-      (champ absent → présent, cf. enquête §3). Si la bannière ne sort pas au
-      1ᵉʳ essai, renvoyer un **2ᵉ texte différent** : le champ existe désormais,
-      la bannière sort de façon fiable. Toujours tester avec ≥ 2 textes distincts.
+- [ ] **Premier message après une carte « propre »** : c'est le cas le moins
+      fiable (champ absent → présent, cf. enquête §3). Concerne la carte neuve
+      ET, depuis le 2026-09-01, **toute carte scannée depuis le dernier
+      message** (le scan consomme le message → le champ a disparu). Si la
+      bannière ne sort pas au 1ᵉʳ essai, renvoyer un **2ᵉ texte différent
+      SANS scanner entre les deux** : le champ existe désormais, la bannière
+      sort de façon fiable. Toujours tester avec ≥ 2 textes distincts.
+- [ ] **Ne PAS scanner la carte entre deux envois de test** : le scan efface le
+      message (recto « MESSAGE » et dos « INFO » disparaissent — c'est voulu)
+      et remet le test suivant dans le cas « champ qui apparaît ».
 - [ ] En cas d'échec : re-tester avec un NOUVEAU texte avant de conclure.
 
 ## Où regarder si ça ne marche toujours pas

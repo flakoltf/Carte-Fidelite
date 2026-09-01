@@ -35,3 +35,16 @@ export async function getCardMessage(cardId: string): Promise<string> {
   const { data } = await supabaseAdmin.from("loyalty_cards").select("pass_message").eq("id", cardId).single();
   return (data?.pass_message as string) ?? "";
 }
+
+// Message commerçant CONSOMMÉ au passage en boutique (décision produit 2026-09-01,
+// docs/NOTIFICATIONS-WALLET.md §3). Filtre merchant_id : invariant tenancy n°3.
+// Le .neq évite d'écrire quand il n'y a rien à effacer — le scan est le chemin le
+// plus chaud de l'app (un pass_message NULL ne matche pas le neq : rien à effacer).
+export async function clearCardMessage(cardId: string, merchantId: string): Promise<void> {
+  await supabaseAdmin
+    .from("loyalty_cards")
+    .update({ pass_message: "" })
+    .eq("id", cardId)
+    .eq("merchant_id", merchantId)
+    .neq("pass_message", "");
+}

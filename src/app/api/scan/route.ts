@@ -159,8 +159,12 @@ export async function POST(req: Request) {
         );
       }
 
-      // Carte vivante : push best-effort.
+      // Carte vivante : push best-effort. Le message commerçant est CONSOMMÉ au
+      // passage en boutique (décision produit 2026-09-01, NOTIFICATIONS-WALLET §3)
+      // — effacé AVANT le push pour que le pass re-téléchargé parte sans lui.
       try {
+        const { clearCardMessage } = await import("@/lib/wallet/authToken");
+        await clearCardMessage(actualCardId, card.merchant_id);
         const { getChannels } = await import("@/lib/wallet/channel");
         for (const ch of getChannels()) await ch.notify([actualCardId]);
       } catch (e) {
@@ -285,6 +289,13 @@ export async function POST(req: Request) {
           : statusText
             ? { title: "Nouveau statut", body: `Vous êtes désormais ${statusText}.` }
             : undefined;
+        // Push silencieux → le message commerçant est CONSOMMÉ (vu au comptoir).
+        // Si un message part (récompense/statut), il REMPLACE l'ancien via notify
+        // (champ présent→présent, bannière plus fiable — NOTIFICATIONS-WALLET §3).
+        if (!message) {
+          const { clearCardMessage } = await import("@/lib/wallet/authToken");
+          await clearCardMessage(actualCardId, card.merchant_id);
+        }
         for (const ch of getChannels()) await ch.notify([actualCardId], message);
       } catch (e) {
         console.error("[scan] push notify failed:", e);
@@ -346,8 +357,11 @@ export async function POST(req: Request) {
     await supabaseAdmin.from("scan_history")
       .insert({ card_id: actualCardId, merchant_id: card.merchant_id, points_added: 1 });
 
-    // 4b. Carte vivante : push best-effort
+    // 4b. Carte vivante : push best-effort. Message commerçant CONSOMMÉ au scan
+    // (décision produit 2026-09-01, NOTIFICATIONS-WALLET §3), effacé AVANT le push.
     try {
+      const { clearCardMessage } = await import("@/lib/wallet/authToken");
+      await clearCardMessage(actualCardId, card.merchant_id);
       const { getChannels } = await import("@/lib/wallet/channel");
       for (const ch of getChannels()) await ch.notify([actualCardId]);
     } catch (e) {
