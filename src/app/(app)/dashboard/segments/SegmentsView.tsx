@@ -60,6 +60,10 @@ export function SegmentsView({ summary }: { summary: SegmentSummary }) {
             {FLAG_LABELS.joignable_push} : <strong>{summary.flags.joignable_push}</strong>
           </span>
         </div>
+        <p className="text-xs text-galet-ink mt-2">
+          Un client peut recevoir vos messages dès qu&apos;il a ajouté sa carte dans son téléphone ;
+          «&nbsp;Récompense prête&nbsp;» compte les cartes arrivées au bout.
+        </p>
       </div>
 
       {active && (

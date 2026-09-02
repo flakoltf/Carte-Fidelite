@@ -380,7 +380,7 @@ export default function StudioClient({ express = false }: { express?: boolean })
         setFeedback({
           kind: 'partial',
           messages: [
-            `Version ${json.version} publiée. La synchronisation Google Wallet a échoué — elle sera retentée à la prochaine publication.`,
+            `Version ${json.version} publiée. La mise à jour Google Wallet a échoué — elle sera retentée à la prochaine publication.`,
             ...(json.warnings ?? []),
           ],
         });

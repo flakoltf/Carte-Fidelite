@@ -14,7 +14,9 @@ export type FlagKey = (typeof FLAG_KEYS)[number];
 
 export const FLAG_LABELS: Record<FlagKey, string> = {
   recompense_prete: "Récompense prête",
-  joignable_push: "Joignable en push",
+  // Libellé visible SANS jargon (« push » = terme développeur) ; la clé
+  // interne joignable_push, elle, ne change pas (colonnes, API, exports).
+  joignable_push: "Peut recevoir vos messages",
 };
 
 // Regroupement d'affichage de l'onglet Segments.
