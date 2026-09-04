@@ -17,6 +17,9 @@ export function organizationJsonLd() {
     name: "HaloCard",
     legalName: company.raisonSociale,
     url: "https://halocard.ch",
+    // Logo lu par Google pour la vignette de marque (≥112×112, URL stable).
+    logo: "https://halocard.ch/halo-logo.png",
+    image: "https://halocard.ch/halo-logo.png",
     email: company.emailContact,
     address: {
       "@type": "PostalAddress",

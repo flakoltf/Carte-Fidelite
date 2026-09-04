@@ -37,8 +37,16 @@ export const metadata: Metadata = {
     siteName: "HaloCard",
     title: "Carte de fidélité numérique Apple & Google Wallet — HaloCard",
     description: "La fidélité des grandes enseignes, à votre image. Sans appli à télécharger.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "HALO — cartes de fidélité numériques",
+      },
+    ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
   robots: { index: true, follow: true },
   // verification: { google: "TOKEN_GSC" }, // ← après création de la propriété Search Console
 };
