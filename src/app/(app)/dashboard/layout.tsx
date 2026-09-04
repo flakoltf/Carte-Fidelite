@@ -15,11 +15,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const impersonating = await readImpersonationCookie();
     if (!impersonating) redirect("/admin"); // admin sans impersonation → back-office
   }
+  // Colonne = hauteur de la fenêtre (dvh : viewport dynamique mobile, repli
+  // 100vh) : bannières + coque remplissent exactement l'écran. Seul <main>
+  // défile — le document n'a jamais d'espace mort sous le contenu.
   return (
-    <>
+    <div className="flex h-screen flex-col supports-[height:100dvh]:h-dvh">
       <ImpersonationBanner />
       <TrialBanner />
       <DashboardShell>{children}</DashboardShell>
-    </>
+    </div>
   );
 }

@@ -67,12 +67,10 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Pas de thème sombre : l'app (dashboard, admin, vitrine) est dessinée sur
+   fond clair uniquement. L'ancien bloc `prefers-color-scheme: dark` hérité du
+   scaffold Next.js peignait le body en #0a0a0a — c'est ce noir qui apparaissait
+   dès qu'on découvrait le body (défilement au-delà de la coque, rebond). */
 
 body {
   background: var(--background);

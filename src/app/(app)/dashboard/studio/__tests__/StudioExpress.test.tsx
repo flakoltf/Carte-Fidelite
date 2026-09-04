@@ -107,10 +107,12 @@ describe("StudioClient — mode express (?express=1)", () => {
     await screen.findByText(/vérifiez et validez/i);
     fireEvent.click(screen.getByRole("button", { name: /personnaliser plus/i }));
 
-    await screen.findByText(/programme & tampons/i);
-    // Le chip « points » n'est pas un bouton cliquable en express.
-    expect(screen.queryByRole("button", { name: /^carte à points$/i })).toBeNull();
+    await screen.findByText(/programme de fidélité/i);
+    // Aucune mécanique autre que les tampons n'est cliquable en express.
+    expect(screen.queryByRole("radio", { name: /^carte à points$/i })).toBeNull();
     expect(screen.getByText(/carte à points · studio complet/i)).toBeTruthy();
+    expect(screen.getByText(/niveaux par visites · studio complet/i)).toBeTruthy();
+    expect(screen.getByRole("radio", { name: /^carte à tampons$/i })).toBeTruthy();
     // Et l'éditeur détaillé (paliers, expiration) n'est jamais monté.
     expect(screen.queryByTestId("points-section")).toBeNull();
   });

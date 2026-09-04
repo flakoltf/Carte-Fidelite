@@ -10,12 +10,22 @@ import { validateLoyaltyProgram } from "./validate";
 // le filtre tenant (.eq('id', merchantId), invariant 3).
 
 export type StudioRulesInput = {
-  type: unknown; // "stamp_card" | "visit_based" | "tiered" | "points"
+  type: unknown; // "stamp_card" | "visit_based" | "tiered" | "amount_points" | "points"
   goal?: unknown; // stamp_card
   reward_label?: unknown; // libellé récompense (TEXT 1-80, ou vide → null)
   welcome_stamps?: unknown; // 0 | 1
   intermediate_milestone?: unknown; // null | number
-  config?: { milestones?: unknown; tiers?: unknown; pointsPerScan?: unknown; expiration?: unknown; statusTiers?: unknown }; // visit_based / tiered / points
+  config?: {
+    milestones?: unknown; // visit_based
+    tiers?: unknown; // tiered / points
+    pointsPerScan?: unknown; // points
+    expiration?: unknown; // points
+    statusTiers?: unknown; // points
+    pointsPerChf?: unknown; // amount_points
+    rewardThreshold?: unknown; // amount_points
+    rewardLabel?: unknown; // amount_points
+    maxPointsPerScan?: unknown; // amount_points (optionnel — absent = défaut moteur)
+  };
 };
 
 export type LoyaltyMerchantUpdate = {
@@ -45,6 +55,19 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
   }
   if (input.type === "visit_based") return { milestones: input.config?.milestones };
   if (input.type === "tiered") return { tiers: input.config?.tiers };
+  if (input.type === "amount_points") {
+    const cfg: Record<string, unknown> = {
+      pointsPerChf: input.config?.pointsPerChf,
+      rewardThreshold: input.config?.rewardThreshold,
+      rewardLabel: input.config?.rewardLabel,
+    };
+    // Plafond anti-fraude optionnel : null/absent → clé omise (validate n'écrit
+    // alors rien, le moteur applique DEFAULT_MAX_POINTS_PER_SCAN).
+    if (input.config?.maxPointsPerScan !== undefined && input.config?.maxPointsPerScan !== null) {
+      cfg.maxPointsPerScan = input.config.maxPointsPerScan;
+    }
+    return cfg;
+  }
   if (input.type === "points") {
     const cfg: Record<string, unknown> = {
       pointsPerScan: input.config?.pointsPerScan,

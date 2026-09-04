@@ -101,7 +101,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   ];
 
   return (
-    <div className="min-h-screen bg-calcaire text-onyx flex overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-calcaire text-onyx lg:flex-row">
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-sidebar p-6">
@@ -154,8 +154,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-[60]">
+      {/* Mobile Header — dans le flux (sous les bannières), plus en `fixed` :
+          une position fixe recouvrait la bannière d'essai et forçait un
+          `pt-24` sur <main>. `z-[60]` : reste au-dessus du menu (z-50). */}
+      <div className="lg:hidden relative z-[60] flex h-16 shrink-0 items-center justify-between border-b border-line-warm bg-calcaire px-6">
         <div className="flex items-center gap-2">
             <HaloSymbol size={22} className="text-halo" />
             <span className="font-display tracking-[0.12em]">HALO</span>
@@ -178,7 +180,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 animate={{ opacity: 1, x: 0 }}
                 exit={reduce ? { opacity: 0 } : { opacity: 0, x: -24 }}
                 transition={{ duration: 0.28, ease: EASE_DRAWER }}
-                className="lg:hidden fixed inset-0 bg-calcaire z-50 p-6 pt-24 overflow-y-auto"
+                className="lg:hidden absolute inset-0 bg-calcaire z-50 p-6 pt-24 overflow-y-auto"
             >
                 <nav aria-label="Navigation principale" className="space-y-6 pb-6">
                     {navZones.map((zone) => (
@@ -220,7 +222,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 h-screen overflow-y-auto lg:p-10 pt-24 p-6">
+      {/* `relative` : les éléments en position absolue du contenu (inputs fichier
+          `sr-only` du Studio…) restent DANS ce conteneur de défilement au lieu
+          d'allonger le document. `bg-calcaire` : le rebond (overscroll) montre
+          le fond du thème, jamais celui du body. */}
+      <main className="relative min-h-0 flex-1 overflow-y-auto bg-calcaire p-6 lg:p-10">
         <div className="max-w-6xl mx-auto">
             {children}
         </div>
