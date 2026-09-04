@@ -31,6 +31,18 @@ const calls = {
   audit: [] as Row[],
 };
 
+// Consentement marketing (maillon 1 de la chaîne LPD/RGPD) : la route délègue
+// à requestMarketingConsent — mockée ici, testée dans lib/consent/__tests__.
+const consentCalls: Row[] = [];
+let consentThrows = false;
+vi.mock("@/lib/consent/request", () => ({
+  requestMarketingConsent: async (input: Row) => {
+    if (consentThrows) throw new Error("boom consent");
+    consentCalls.push(input);
+    return { state: "pending" };
+  },
+}));
+
 vi.mock("@/lib/rateLimit", () => ({
   rateLimit: async () => ({ success: true, remaining: 10 }),
 }));
@@ -153,6 +165,8 @@ beforeEach(() => {
   calls.cardSelectFilters = [];
   calls.cardInserts = [];
   calls.audit = [];
+  consentCalls.length = 0;
+  consentThrows = false;
 });
 
 describe("POST /api/enroll — validation", () => {
@@ -314,5 +328,44 @@ describe("POST /api/enroll — carte & tampon de bienvenue", () => {
     expect(body.isNew).toBe(false);
     // pas d'audit CARD_GENERATED pour une carte qui existait déjà (course)
     expect(calls.audit).toHaveLength(0);
+  });
+});
+
+describe("POST /api/enroll — consentement marketing (case à cocher)", () => {
+  it("case cochée → demande de consentement enregistrée pour CE client, CE marchand, avec l'IP", async () => {
+    const res = await POST(enrollReq({ ...VALID, marketingConsent: true }));
+    expect(res.status).toBe(200);
+    expect(consentCalls).toHaveLength(1);
+    expect(consentCalls[0]).toMatchObject({
+      customerId: "cust-new",
+      merchantId: "merchant-1",
+      ip: "203.0.113.7",
+      email: "nadia@example.ch",
+    });
+  });
+
+  it("case absente ou décochée → aucune demande de consentement", async () => {
+    await POST(enrollReq(VALID));
+    await POST(enrollReq({ ...VALID, marketingConsent: false }));
+    expect(consentCalls).toHaveLength(0);
+  });
+
+  it("valeur non booléenne (\"true\" en chaîne) → ignorée, jamais interprétée comme un oui", async () => {
+    await POST(enrollReq({ ...VALID, marketingConsent: "true" }));
+    await POST(enrollReq({ ...VALID, marketingConsent: 1 }));
+    expect(consentCalls).toHaveLength(0);
+  });
+
+  it("échec de l'enregistrement du consentement → l'enrôlement réussit quand même (best-effort)", async () => {
+    consentThrows = true;
+    const res = await POST(enrollReq({ ...VALID, marketingConsent: true }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).cardId).toBe("card-new");
+  });
+
+  it("client existant qui coche la case → demande rattachée au client existant", async () => {
+    state.existingCustomer = { id: "cust-existant" };
+    await POST(enrollReq({ ...VALID, marketingConsent: true }));
+    expect(consentCalls[0]).toMatchObject({ customerId: "cust-existant", merchantId: "merchant-1" });
   });
 });

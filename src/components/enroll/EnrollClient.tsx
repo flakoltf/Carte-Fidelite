@@ -27,6 +27,10 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, re
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  // Consentement aux offres par email : JAMAIS pré-coché (LPD/RGPD — le
+  // consentement doit être un acte positif), facultatif, confirmé ensuite par
+  // un email de double opt-in envoyé côté serveur.
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cardId, setCardId] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, re
       const res = await fetch("/api/enroll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, firstName, lastName, email }),
+        body: JSON.stringify({ slug, firstName, lastName, email, marketingConsent }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -186,6 +190,21 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, re
                   />
                 </div>
               </div>
+
+              <label className="flex items-start gap-3 text-sm text-galet-ink cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-line-warm accent-halo"
+                />
+                <span>
+                  J&apos;accepte de recevoir les offres de {shopName} par email.
+                  <span className="block text-xs text-galet mt-0.5">
+                    Facultatif. Un email vous demandera de confirmer ; vous pourrez vous désinscrire à tout moment.
+                  </span>
+                </span>
+              </label>
 
               <AnimatePresence>
                 {error && (
