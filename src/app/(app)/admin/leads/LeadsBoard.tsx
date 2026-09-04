@@ -188,6 +188,14 @@ export default function LeadsBoard({ leads }: { leads: PipelineLead[] }) {
                           <p className="mt-0.5 truncate text-xs text-galet-ink" title={l.contact}>
                             {[l.trade, l.contact].filter(Boolean).join(" · ")}
                           </p>
+                          {(l.contactName || l.phone) && (
+                            <p
+                              className="mt-0.5 truncate text-xs text-galet-ink"
+                              title={[l.contactName, l.phone].filter(Boolean).join(" · ")}
+                            >
+                              {[l.contactName, l.phone].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={() => setDeleting(l)}
@@ -197,6 +205,18 @@ export default function LeadsBoard({ leads }: { leads: PipelineLead[] }) {
                           <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         </button>
                       </div>
+
+                      {l.message && (
+                        <details className="mt-2 rounded-lg bg-calcaire px-2 py-1.5 text-xs text-galet-ink">
+                          <summary
+                            className="cursor-pointer list-none truncate marker:content-none"
+                            title="Déplier le message"
+                          >
+                            {l.message.length > 80 ? `${l.message.slice(0, 80)}…` : l.message}
+                          </summary>
+                          <p className="mt-1.5 whitespace-pre-wrap">{l.message}</p>
+                        </details>
+                      )}
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-galet">
                         <span>{new Date(l.createdAt).toLocaleDateString("fr-CH")}</span>

@@ -10,7 +10,7 @@ export async function fetchPipelineLeads(supabase: SupabaseClient): Promise<Pipe
     supabase
       .from("leads")
       .select(
-        "id, business_name, trade, contact, plan, source_path, status, next_followup_at, lost_reason, converted_merchant_id, created_at, updated_at"
+        "id, business_name, trade, contact, contact_name, phone, message, plan, source_path, status, next_followup_at, lost_reason, converted_merchant_id, created_at, updated_at"
       )
       .order("created_at", { ascending: false }),
     supabase.from("admin_notes").select("lead_id").not("lead_id", "is", null),
@@ -28,6 +28,9 @@ export async function fetchPipelineLeads(supabase: SupabaseClient): Promise<Pipe
     businessName: l.business_name as string,
     trade: (l.trade as string) ?? null,
     contact: l.contact as string,
+    contactName: (l.contact_name as string) ?? null,
+    phone: (l.phone as string) ?? null,
+    message: (l.message as string) ?? null,
     plan: (l.plan as string) ?? null,
     sourcePath: (l.source_path as string) ?? null,
     status: normalizeLeadStatus(l.status),
