@@ -1,4 +1,5 @@
 import { confirmToken, unsubscribeToken, type ConsentIds } from "./token";
+import { escapeHtml } from "@/lib/email/templates";
 
 // URLs des liens de consentement. Base JAMAIS dérivée du header Host en
 // production (même raison que signup/urls.ts : un Host forgé enverrait le jeton
@@ -38,4 +39,23 @@ export function buildUnsubscribeUrl(base: string, ids: ConsentIds): string {
   const u = new URL("/api/consent/unsubscribe", base);
   u.searchParams.set("t", unsubscribeToken(ids));
   return u.toString();
+}
+
+// Pied de page « Se désinscrire » — OBLIGATOIRE dans tout futur email marketing
+// (LPD art. 6 / RGPD art. 21 : retrait aussi simple que le consentement).
+// À concaténer au HTML/texte de l'email ; le lien est individuel (jeton signé
+// par client × commerce, sans expiration) et mène à GET /api/consent/unsubscribe.
+export interface UnsubscribeFooter {
+  html: string;
+  text: string;
+  unsubscribeUrl: string;
+}
+
+export function unsubscribeFooter(input: { baseUrl: string; ids: ConsentIds; shopName: string }): UnsubscribeFooter {
+  const unsubscribeUrl = buildUnsubscribeUrl(input.baseUrl, input.ids);
+  const s = escapeHtml(input.shopName);
+  const u = escapeHtml(unsubscribeUrl);
+  const html = `<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#9B9DA0;">Vous recevez cet email car vous avez accepté les offres de ${s}. <a href="${u}" style="color:#6E7073;text-decoration:underline;">Se désinscrire</a> — un clic, sans justification.</p>`;
+  const text = `\n\nVous recevez cet email car vous avez accepté les offres de ${input.shopName}.\nSe désinscrire (un clic) : ${unsubscribeUrl}`;
+  return { html, text, unsubscribeUrl };
 }
