@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { clientIp } from "@/lib/clientIp";
 import { logAuditEvent } from "@/lib/auditLog";
 import { validateLeadForm, type LeadFormValue } from "@/lib/leads/leadFormValidation";
-import { escapeHtml } from "@/lib/email/templates";
+import { escapeHtml, leadConfirmationEmail } from "@/lib/email/templates";
 
 // PostgREST signale une colonne inconnue (migration pas encore appliquée) par
 // PGRST204 ; 42703 est l'équivalent Postgres direct.
@@ -102,6 +102,11 @@ export async function submitLead(formData: FormData) {
     html: `<p><strong>${escapeHtml(lead.business)}</strong> (${lead.sector})<br/>Contact : ${escapeHtml(lead.contactName)} — ${escapeHtml(lead.email)}${lead.phone ? ` — ${escapeHtml(lead.phone)}` : ""}<br/>Palier envisagé : ${lead.plan || "—"}<br/>${lead.message ? "Message à lire dans l'admin (/admin/leads)." : "Sans message."}</p>`,
     text: `${lead.business} (${lead.sector})\nContact : ${lead.contactName} — ${lead.email}${lead.phone ? ` — ${lead.phone}` : ""}\nPalier envisagé : ${lead.plan || "—"}\n${lead.message ? "Message à lire dans l'admin (/admin/leads)." : "Sans message."}`,
   }).catch(() => {});
+
+  // Confirmation au prospect — best-effort : un échec (ou l'absence de clé
+  // Resend, cas actuel de la prod) n'empêche jamais le succès à l'écran.
+  const confirmation = leadConfirmationEmail({ businessName: lead.business });
+  await sendEmail({ to: lead.email, ...confirmation }).catch(() => {});
 
   redirect("/demarrer?ok=1");
 }

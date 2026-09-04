@@ -158,7 +158,28 @@ describe("submitLead — rate-limit", () => {
   });
 });
 
-describe("submitLead — notification fondateur best-effort", () => {
+describe("submitLead — emails best-effort", () => {
+  it("envoie la confirmation à l'adresse du prospect", async () => {
+    mockInsert(LEAD_OK);
+    await expectRedirect(submitLead(fd()), "/demarrer?ok=1");
+    const calls = mockedSendEmail.mock.calls.map(([input]) => input);
+    const confirmation = calls.find((c) => c.to === "anne@bourg.ch");
+    expect(confirmation).toBeDefined();
+    expect(confirmation!.subject).toMatch(/bien reçu/i);
+    expect(confirmation!.html).toContain("Boulangerie du Bourg");
+  });
+
+  it("ne re-cite le message libre du prospect dans AUCUN email (anti-relais spam)", async () => {
+    mockInsert(LEAD_OK);
+    const message = "TEXTE-ARBITRAIRE-DU-PROSPECT visitez https://spam.example";
+    await expectRedirect(submitLead(fd({ message })), "/demarrer?ok=1");
+    expect(mockedSendEmail.mock.calls.length).toBeGreaterThan(0);
+    for (const [input] of mockedSendEmail.mock.calls) {
+      expect(input.html).not.toContain("TEXTE-ARBITRAIRE-DU-PROSPECT");
+      expect(input.text ?? "").not.toContain("TEXTE-ARBITRAIRE-DU-PROSPECT");
+    }
+  });
+
   it("un échec d'envoi (ou clé absente) n'empêche ni le lead ni le succès", async () => {
     mockInsert(LEAD_OK);
     mockedSendEmail.mockRejectedValue(new Error("Resend down"));

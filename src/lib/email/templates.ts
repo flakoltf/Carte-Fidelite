@@ -117,6 +117,30 @@ Une question ? Répondez à cet email. HaloCard · halocard.ch`;
   return { subject: `Bienvenue chez HaloCard — vos accès pour ${shopName}`, html, text };
 }
 
+// Confirmation au prospect après le formulaire /demarrer. Volontairement sobre :
+// on ne re-cite JAMAIS le message libre saisi (un formulaire public qui renvoie
+// du texte arbitraire par email servirait de relais à spam).
+export function leadConfirmationEmail({ businessName }: { businessName: string }): RenderedEmail {
+  const s = escapeHtml(businessName);
+
+  const html = haloShell(`
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">Nous avons bien reçu votre demande</h1>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Merci pour votre intérêt pour la carte de fidélité de <strong>${s}</strong>.</p>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">On revient vers vous sous un jour ouvré avec une maquette de votre carte. D'ici là, rien à faire — et rien à payer.</p>
+            <p style="margin:0;font-size:15px;line-height:1.5;">À très vite,<br/>L'équipe HaloCard</p>`);
+
+  const text = `Nous avons bien reçu votre demande
+
+Merci pour votre intérêt pour la carte de fidélité de ${businessName}.
+
+On revient vers vous sous un jour ouvré avec une maquette de votre carte. D'ici là, rien à faire — et rien à payer.
+
+À très vite,
+L'équipe HaloCard · halocard.ch`;
+
+  return { subject: "Nous avons bien reçu votre demande — HaloCard", html, text };
+}
+
 // ── Parcours self-service (Agent C) ─────────────────────────────────────────
 
 function haloShell(inner: string): string {
