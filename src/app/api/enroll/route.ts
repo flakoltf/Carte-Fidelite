@@ -4,6 +4,8 @@ import { rateLimit } from "@/lib/rateLimit";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { initialStampsForEnroll } from "@/lib/loyalty/engine";
+import { requestMarketingConsent } from "@/lib/consent/request";
+import { consentBaseUrl } from "@/lib/consent/links";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,7 +26,13 @@ export async function POST(req: Request) {
   try {
     const meta = extractRequestMeta(req);
 
-    let body: { slug?: unknown; firstName?: unknown; lastName?: unknown; email?: unknown };
+    let body: {
+      slug?: unknown;
+      firstName?: unknown;
+      lastName?: unknown;
+      email?: unknown;
+      marketingConsent?: unknown;
+    };
     try {
       body = await req.json();
     } catch {
@@ -35,6 +43,9 @@ export async function POST(req: Request) {
     const firstName = cleanName(body.firstName);
     const lastName = cleanName(body.lastName);
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    // Consentement marketing : SEUL un booléen strict `true` vaut « oui » (une
+    // chaîne "true" ou un 1 ne sont jamais interprétés comme un consentement).
+    const marketingConsent = body.marketingConsent === true;
 
     if (!SLUG_RE.test(slug)) {
       return NextResponse.json({ error: "Lien d'enrôlement invalide" }, { status: 400 });
@@ -58,7 +69,7 @@ export async function POST(req: Request) {
     // Identifier le marchand via son slug public
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id, suspended_at, loyalty_type, loyalty_config, stamp_goal")
+      .select("id, shop_name, suspended_at, loyalty_type, loyalty_config, stamp_goal")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -109,6 +120,25 @@ export async function POST(req: Request) {
         }
       } else {
         customerId = inserted.id;
+      }
+    }
+
+    // Case « offres par email » cochée : preuve (horodatage + IP) + état « en
+    // attente de confirmation ». BEST-EFFORT : un échec (colonnes absentes,
+    // panne) ne doit JAMAIS empêcher la création de la carte.
+    if (marketingConsent) {
+      try {
+        await requestMarketingConsent({
+          customerId,
+          merchantId: merchant.id,
+          email,
+          ip: meta.ip_address,
+          userAgent: meta.user_agent,
+          shopName: merchant.shop_name,
+          baseUrl: consentBaseUrl(req),
+        });
+      } catch (e) {
+        console.error("Marketing consent request failed:", e instanceof Error ? e.message : e);
       }
     }
 

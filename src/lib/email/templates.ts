@@ -310,3 +310,67 @@ HaloCard · interne`;
 
   return { subject: `[Concierge] Carte à personnaliser — ${shopName}`, html, text };
 }
+
+// ── Consentement email du client final (LPD / RGPD) ─────────────────────────
+
+// Email de double opt-in envoyé au client qui a coché « offres par email » à
+// l'enrôlement. Expéditeur affiché : « {commerce} via HaloCard » (fromName,
+// modèle B). Le lien porte un jeton signé à durée limitée (7 jours) — jamais
+// d'enrollment_token. Tant que le clic n'a pas eu lieu, aucun envoi marketing
+// n'est autorisé (cf. src/lib/consent/recipients.ts).
+export function marketingConsentConfirmEmail({
+  shopName,
+  confirmUrl,
+}: {
+  shopName: string;
+  confirmUrl: string;
+}): RenderedEmail {
+  const s = escapeHtml(shopName);
+  const u = escapeHtml(confirmUrl);
+
+  const html = merchantShell(
+    s,
+    `
+            <h1 style="margin:0 0 12px;font-size:20px;color:#0D6B5E;">Confirmez votre inscription aux offres de ${s}</h1>
+            <p style="margin:0 0 20px;font-size:15px;line-height:1.5;">Vous avez accepté de recevoir les offres de <strong>${s}</strong> par email. Un clic suffit pour confirmer — sans cela, vous ne recevrez rien.</p>
+            <p style="margin:0 0 20px;">
+              <a href="${u}" style="display:inline-block;background:#0D6B5E;color:#FFFFFF;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:14px;">Je confirme</a>
+            </p>
+            <p style="margin:0;font-size:13px;color:#6E7073;line-height:1.5;">Ce lien est valable 7 jours. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email : rien ne vous sera envoyé. Vous pourrez vous désinscrire à tout moment depuis chaque email.</p>`,
+  );
+
+  const text = `Confirmez votre inscription aux offres de ${shopName}
+
+Vous avez accepté de recevoir les offres de ${shopName} par email. Un clic suffit pour confirmer — sans cela, vous ne recevrez rien :
+
+${confirmUrl}
+
+Ce lien est valable 7 jours. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email : rien ne vous sera envoyé. Vous pourrez vous désinscrire à tout moment depuis chaque email.
+
+${shopName} · via HaloCard (halocard.ch)`;
+
+  return { subject: `Confirmez votre inscription aux offres de ${shopName}`, html, text };
+}
+
+// Gabarit « au nom du commerce » : en-tête au nom (déjà échappé) du marchand,
+// pied de page HaloCard discret. `escapedShopName` DOIT déjà être échappé.
+function merchantShell(escapedShopName: string, inner: string): string {
+  return `<!doctype html>
+<html lang="fr">
+  <body style="margin:0;background:#F3F0E9;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0E0F11;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">
+      <tr><td align="center">
+        <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:10px;overflow:hidden;">
+          <tr><td style="padding:24px 32px;border-bottom:1px solid #E8E4DA;">
+            <span style="font-size:14px;color:#6E7073;">${escapedShopName}</span>
+          </td></tr>
+          <tr><td style="padding:32px;">${inner}</td></tr>
+          <tr><td style="padding:20px 32px;border-top:1px solid #E8E4DA;font-size:12px;color:#9B9DA0;">
+            Email envoyé par ${escapedShopName} via HaloCard · halocard.ch
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}

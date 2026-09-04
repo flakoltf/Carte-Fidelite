@@ -66,6 +66,10 @@ export const AUDIT_ACTIONS = [
   // Carte à points — expiration de cycle (cron quotidien) — migration jumelle :
   // supabase/migrations/20260826_audit_actions_points.sql
   'POINTS_EXPIRED',
+  // Chaîne de consentement email client (LPD/RGPD) — PAS de nouvelle valeur :
+  // déjà présente dans le CHECK prod (patch hors repo, préservée par
+  // 20260826_audit_actions_points.sql). On l'expose seulement au type.
+  'MARKETING_CONSENT_UPDATED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
