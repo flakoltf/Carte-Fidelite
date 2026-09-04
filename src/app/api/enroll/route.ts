@@ -5,6 +5,7 @@ import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { initialStampsForEnroll } from "@/lib/loyalty/engine";
 import { requestMarketingConsent } from "@/lib/consent/request";
+import { consentBaseUrl } from "@/lib/consent/links";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
     // Identifier le marchand via son slug public
     const { data: merchant, error: merchError } = await supabaseAdmin
       .from("merchants")
-      .select("id, suspended_at, loyalty_type, loyalty_config, stamp_goal")
+      .select("id, shop_name, suspended_at, loyalty_type, loyalty_config, stamp_goal")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -133,6 +134,8 @@ export async function POST(req: Request) {
           email,
           ip: meta.ip_address,
           userAgent: meta.user_agent,
+          shopName: merchant.shop_name,
+          baseUrl: consentBaseUrl(req),
         });
       } catch (e) {
         console.error("Marketing consent request failed:", e instanceof Error ? e.message : e);

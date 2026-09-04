@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { notificationEmail, leadConfirmationEmail } from "../templates";
+import { notificationEmail, leadConfirmationEmail, marketingConsentConfirmEmail } from "../templates";
 
 describe("notificationEmail", () => {
   const base = { title: "Récompense débloquée", body: "Votre café offert vous attend !", merchantName: "Café Lumen" };
@@ -50,5 +50,34 @@ describe("leadConfirmationEmail", () => {
     const { html } = leadConfirmationEmail({ businessName: "<img src=x onerror=alert(1)>" });
     expect(html).not.toContain("<img src=x");
     expect(html).toContain("&lt;img");
+  });
+});
+
+describe("marketingConsentConfirmEmail — double opt-in (LPD/RGPD)", () => {
+  const input = { shopName: "Café du Rhône", confirmUrl: "https://halocard.ch/api/consent/confirm?t=abc.def" };
+
+  it("objet : nomme le commerce et parle de confirmation", () => {
+    const { subject } = marketingConsentConfirmEmail(input);
+    expect(subject).toContain("Café du Rhône");
+    expect(subject).toMatch(/confirm/i);
+  });
+
+  it("le lien de confirmation figure dans le HTML (href) et dans le texte", () => {
+    const { html, text } = marketingConsentConfirmEmail(input);
+    expect(html).toContain(`href="${input.confirmUrl}"`);
+    expect(text).toContain(input.confirmUrl);
+  });
+
+  it("annonce la validité de 7 jours et rassure si ce n'est pas le destinataire", () => {
+    const { html, text } = marketingConsentConfirmEmail(input);
+    expect(html).toMatch(/7 jours/);
+    expect(text).toMatch(/7 jours/);
+    expect(html).toMatch(/ignorez/i);
+  });
+
+  it("échappe le nom du commerce (saisie marchand)", () => {
+    const { html } = marketingConsentConfirmEmail({ ...input, shopName: "A & B <Co>" });
+    expect(html).toContain("A &amp; B &lt;Co&gt;");
+    expect(html).not.toContain("<Co>");
   });
 });

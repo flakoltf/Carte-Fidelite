@@ -147,6 +147,7 @@ const VALID = { slug: "boulangerie-paquis", firstName: "Nadia", lastName: "Khan"
 beforeEach(() => {
   state.merchant = {
     id: "merchant-1",
+    shop_name: "Boulangerie des Pâquis",
     suspended_at: null,
     loyalty_type: "stamp_card",
     loyalty_config: { goal: 10, welcome_stamps: 1 },
@@ -341,6 +342,8 @@ describe("POST /api/enroll — consentement marketing (case à cocher)", () => {
       merchantId: "merchant-1",
       ip: "203.0.113.7",
       email: "nadia@example.ch",
+      shopName: "Boulangerie des Pâquis",
+      baseUrl: "https://app.halocard.ch",
     });
   });
 
