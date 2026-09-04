@@ -21,7 +21,7 @@ export const company = {
   ide: "CHE-242.720.495" as string | null,
   emailContact: "contact@halocard.ch", // domaine halocard.ch acquis (juin 2026)
   emailDpo: "contact@halocard.ch",
-  telephone: "+41 79 939 24 69",
+  telephone: "+41 76 737 42 13", // numéro de l'entreprise
   responsablePublication: "HALOCARD - Letaief",
   siteWeb: "https://halocard.ch" as string | null,
   dateMaj: "4 septembre 2026",
