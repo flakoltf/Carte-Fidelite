@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { company } from "@/content/legal/company";
 import TryItQR from "@/components/site/TryItQR";
 import { submitLead } from "./actions";
+import { LEAD_SECTORS } from "@/lib/leads/leadFormValidation";
 
 export const metadata: Metadata = {
   title: "Démarrer ma carte de fidélité",
@@ -14,18 +15,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/demarrer" },
 };
 
-const TRADES = [
-  "Café",
-  "Restaurant / Pizzeria",
-  "Boulangerie",
-  "Coiffeur / Beauté",
-  "Boutique",
-  "Sport / Studio",
-  "Autre",
-];
-
 const ERRORS: Record<string, string> = {
-  champs: "Le nom du commerce et un moyen de contact sont requis.",
+  champs: "Merci de remplir les champs marqués d'une étoile.",
+  email: "Cette adresse email ne semble pas valide. Vérifiez-la, puis réessayez.",
+  telephone: "Ce numéro de téléphone ne semble pas valide. Vérifiez-le, ou laissez le champ vide.",
+  message: "Votre message dépasse 1000 caractères. Raccourcissez-le, puis réessayez.",
   limite: "Trop de demandes depuis votre connexion. Réessayez dans une heure.",
   technique: "Une erreur technique est survenue. Réessayez, ou écrivez-nous directement.",
 };
@@ -61,7 +55,9 @@ export default async function Page({
             <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-halo text-white">
               <Check className="h-6 w-6" aria-hidden />
             </span>
-            <h1 className="font-display text-3xl font-light tracking-tight">Demande reçue.</h1>
+            <h1 className="font-display text-3xl font-light tracking-tight">
+              Nous avons bien reçu votre demande.
+            </h1>
             <p className="mt-4 text-galet-ink">
               On revient vers vous sous un jour ouvré avec une maquette de <em>votre</em> carte.
               D&apos;ici là, rien à faire — et rien à payer.
@@ -98,18 +94,18 @@ export default async function Page({
                   name="business"
                   required
                   maxLength={120}
-                  placeholder="ex. Café du Marché"
+                  placeholder="ex. Boulangerie du Bourg"
                   className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="trade" className="ml-1 text-sm font-medium text-galet-ink">
-                  Votre métier *
+                <label htmlFor="sector" className="ml-1 text-sm font-medium text-galet-ink">
+                  Secteur d&apos;activité *
                 </label>
                 <select
-                  id="trade"
-                  name="trade"
+                  id="sector"
+                  name="sector"
                   required
                   defaultValue=""
                   className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all focus:border-halo"
@@ -117,43 +113,84 @@ export default async function Page({
                   <option value="" disabled>
                     Choisissez…
                   </option>
-                  {TRADES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                  {LEAD_SECTORS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="contact" className="ml-1 text-sm font-medium text-galet-ink">
-                  Téléphone ou email *
+                <label htmlFor="contactName" className="ml-1 text-sm font-medium text-galet-ink">
+                  Prénom et nom *
                 </label>
                 <input
-                  id="contact"
-                  name="contact"
+                  id="contactName"
+                  name="contactName"
                   required
                   maxLength={160}
-                  placeholder="079 … ou vous@commerce.ch"
+                  autoComplete="name"
+                  placeholder="ex. Anne Favre"
                   className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="plan" className="ml-1 text-sm font-medium text-galet-ink">
-                  Palier envisagé <span className="text-galet-deep">(facultatif)</span>
+                <label htmlFor="email" className="ml-1 text-sm font-medium text-galet-ink">
+                  Email *
                 </label>
-                <select
-                  id="plan"
-                  name="plan"
-                  defaultValue={plan && ["essentiel", "croissance", "premium"].includes(plan) ? plan : ""}
-                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all focus:border-halo"
-                >
-                  <option value="">Je ne sais pas encore</option>
-                  <option value="essentiel">Essentiel — 69 CHF/mois</option>
-                  <option value="croissance">Croissance — 129 CHF/mois</option>
-                  <option value="premium">Premium — 199 CHF/mois</option>
-                </select>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  maxLength={254}
+                  autoComplete="email"
+                  placeholder="vous@commerce.ch"
+                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="phone" className="ml-1 text-sm font-medium text-galet-ink">
+                  Téléphone <span className="text-galet-deep">(facultatif)</span>
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  maxLength={30}
+                  autoComplete="tel"
+                  placeholder="079 555 12 34"
+                  className="w-full rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="message" className="ml-1 text-sm font-medium text-galet-ink">
+                  Parlez-nous de votre commerce et de ce que vous cherchez{" "}
+                  <span className="text-galet-deep">(facultatif)</span>
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="ex. Un salon de quartier, on aimerait récompenser les habitués sans carte en carton."
+                  className="w-full resize-y rounded-2xl border border-line-warm bg-surface px-4 py-3.5 outline-none transition-all placeholder:text-galet-deep focus:border-halo"
+                />
+              </div>
+
+              {/* Palier venu du pricing (?plan=…) : simple attribution, pas un champ visible. */}
+              {plan && ["essentiel", "croissance", "premium"].includes(plan) && (
+                <input type="hidden" name="plan" value={plan} />
+              )}
+
+              {/* Honeypot anti-bots : invisible et hors tabulation ; un humain ne le remplit jamais. */}
+              <div aria-hidden="true" className="sr-only">
+                <label htmlFor="website">Votre site web</label>
+                <input id="website" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               </div>
 
               <button

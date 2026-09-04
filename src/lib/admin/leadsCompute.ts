@@ -19,6 +19,10 @@ export interface PipelineLead {
   businessName: string;
   trade: string | null;
   contact: string;
+  /** Prénom et nom saisis sur /demarrer (null pour les leads d'avant 2026-09 ou terrain). */
+  contactName: string | null;
+  phone: string | null;
+  message: string | null;
   plan: string | null;
   sourcePath: string | null;
   status: LeadStatus;
