@@ -12,19 +12,19 @@
 // ────────────────────────────────────────────────────────────────────────
 
 export const company = {
-  raisonSociale: "HaloCard-Letaief", // nom de société décidé (juin 2026)
+  raisonSociale: "HALOCARD - Letaief", // raison sociale officielle (registre du commerce)
   formeJuridique: "Raison individuelle",
   adresse: "Genève", // ⚠️ pas de rue+numéro fournis — à préciser si nécessaire
   npa: "1223",
   localite: "Cologny",
   pays: "Suisse",
-  ide: null as string | null, // ex. « CHE-123.456.789 »
+  ide: "CHE-242.720.495" as string | null,
   emailContact: "contact@halocard.ch", // domaine halocard.ch acquis (juin 2026)
   emailDpo: "contact@halocard.ch",
-  telephone: "+41 79 939 24 69",
-  responsablePublication: "HaloCard-Letaief",
-  siteWeb: null as string | null, // ex. « https://halo.swiss »
-  dateMaj: "6 juin 2026",
+  telephone: "+41 76 737 42 13", // numéro de l'entreprise
+  responsablePublication: "HALOCARD - Letaief",
+  siteWeb: "https://halocard.ch" as string | null,
+  dateMaj: "4 septembre 2026",
 };
 
 // Correspondance jeton ([…] dans les .md) → champ + libellé pour le marqueur.
