@@ -23,8 +23,8 @@ export const company = {
   emailDpo: "contact@halocard.ch",
   telephone: "+41 79 939 24 69",
   responsablePublication: "HaloCard-Letaief",
-  siteWeb: null as string | null, // ex. « https://halo.swiss »
-  dateMaj: "6 juin 2026",
+  siteWeb: "https://halocard.ch" as string | null,
+  dateMaj: "4 septembre 2026",
 };
 
 // Correspondance jeton ([…] dans les .md) → champ + libellé pour le marqueur.
