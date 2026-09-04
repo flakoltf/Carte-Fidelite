@@ -3,14 +3,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import StudioClient from "../StudioClient";
 
-// Régression Important 1 (revue finale cartes-à-points) : la porte à sens unique
-// points→stamps. Un marchand dont merchants.loyalty_type vaut encore "points"
-// republie un design TAMPONS (cardType: 'stamps') sans jamais faire basculer le
-// programme côté serveur — comptoir points + pass tampons restaient incohérents,
-// sans retour self-serve. StudioClient doit désormais envoyer un `program`
-// stamp_card explicite dans CE cas précis, et dans ce cas SEULEMENT (jamais pour
-// un marchand déjà stamp_card/visit_based/tiered, sous peine d'écraser
-// welcome_stamps/intermediate_milestone/milestones existants).
+// Régression Important 1 (revue finale cartes-à-points), révisée « règles
+// complètes » : le Studio expose désormais les 5 mécaniques du moteur et publie
+// TOUJOURS un `program` explicite, reconstruit depuis loyalty_config avec
+// toutes ses clés (welcome_stamps, intermediate_milestone, milestones, tiers…
+// cf. StudioProgramRules.test.tsx). La porte à sens unique points→stamps est
+// conservée : un design TAMPONS chargé alors que merchants.loyalty_type vaut
+// encore "points" repart sur des règles stamp_card, publiées explicitement.
 //
 // Régression Minor 6 : l'aperçu Studio d'une carte à points affiche désormais
 // « x / maxThreshold » (fidèle au pass réel), jamais un nombre brut.
@@ -106,7 +105,7 @@ function publishCallBody(): Record<string, unknown> | undefined {
 }
 
 describe("StudioClient — publication d'une carte à tampons (Important 1)", () => {
-  it("marchand déjà stamp_card : republier des tampons n'envoie AUCUN `program`", async () => {
+  it("marchand déjà stamp_card : republier des tampons envoie un `program` stamp_card explicite (objectif du design)", async () => {
     setupFetch("stamp_card");
     render(<StudioClient />);
     await screen.findByText(/studio de carte/i);
@@ -114,7 +113,7 @@ describe("StudioClient — publication d'une carte à tampons (Important 1)", ()
     fireEvent.click(publishBtn);
     await waitFor(() => expect(publishCallBody()).toBeTruthy());
     const body = publishCallBody()!;
-    expect(body.program).toBeUndefined();
+    expect(body.program).toMatchObject({ type: "stamp_card", goal: 10 });
   });
 
   it("marchand encore « points » : republier des tampons envoie un `program` stamp_card (bascule explicite)", async () => {
@@ -125,7 +124,7 @@ describe("StudioClient — publication d'une carte à tampons (Important 1)", ()
     fireEvent.click(publishBtn);
     await waitFor(() => expect(publishCallBody()).toBeTruthy());
     const body = publishCallBody()!;
-    expect(body.program).toEqual({ type: "stamp_card", goal: 10 });
+    expect(body.program).toMatchObject({ type: "stamp_card", goal: 10 });
   });
 });
 
@@ -228,12 +227,9 @@ describe("StudioClient — statut client (statusTiers)", () => {
     const body = publishCallBody()!;
     const program = body.program as { type: string; config: { statusTiers?: unknown } };
     expect(program.type).toBe("points");
-    // L'état UI normalise benefit à "" quand absent — validateLoyaltyProgram
-    // omet les avantages vides à l'écriture : aucune perte de données.
-    expect(program.config.statusTiers).toEqual([
-      { threshold: 0, label: "Bronze", benefit: "" },
-      { threshold: 50, label: "Argent", benefit: "5% de réduction" },
-    ]);
+    // Aller-retour FIDÈLE : un avantage vide n'est pas inventé, un avantage
+    // renseigné est conservé tel quel.
+    expect(program.config.statusTiers).toEqual(STATUS_TIERS);
   });
 
   it("sample {statut} des previews = plus haut statut configuré", async () => {

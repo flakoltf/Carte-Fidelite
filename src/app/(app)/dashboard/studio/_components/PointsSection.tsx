@@ -8,35 +8,18 @@
 
 import { Plus, Trash2 } from 'lucide-react';
 
-export type PointsTierState = { threshold: number; reward: string };
+// Types et défauts : module pur partagé (lib/loyalty/studioProgramState) —
+// ré-exportés ici pour les imports historiques.
+import {
+  DEFAULT_POINTS_RULES,
+  type PointsExpirationState,
+  type PointsRulesState,
+  type PointsTierState,
+  type StatusTierState,
+} from '@/lib/loyalty/studioProgramState';
 
-// Statut client (Bronze/Argent/Or…) : cumul de points À VIE, purement informatif.
-// `benefit` = texte libre affiché sur la carte (jamais interprété par le moteur).
-export type StatusTierState = { threshold: number; label: string; benefit: string };
-
-export type PointsExpirationState =
-  | { type: 'none' }
-  | { type: 'fixed_date'; month: number; day: number }
-  | { type: 'rolling'; months: number };
-
-export type PointsRulesState = {
-  pointsPerScan: number;
-  tiers: PointsTierState[];
-  expiration: PointsExpirationState;
-  // Optionnel (vide = statuts désactivés) — reste optionnel pour tolérer un
-  // état hérité sans la clé.
-  statusTiers?: StatusTierState[];
-};
-
-export const DEFAULT_POINTS_RULES: PointsRulesState = {
-  pointsPerScan: 10,
-  tiers: [
-    { threshold: 100, reward: '10% de réduction' },
-    { threshold: 200, reward: 'Un article offert' },
-  ],
-  expiration: { type: 'none' },
-  statusTiers: [],
-};
+export { DEFAULT_POINTS_RULES };
+export type { PointsExpirationState, PointsRulesState, PointsTierState, StatusTierState };
 
 const POINTS_PER_SCAN_MIN = 1;
 const POINTS_PER_SCAN_MAX = 1000;
@@ -161,6 +144,9 @@ export default function PointsSection({
       {/* Expiration */}
       <div>
         <label className="text-xs font-medium text-galet-ink mb-1.5 block">Expiration des points</label>
+        <p className="text-[11px] text-galet-ink mb-2">
+          À l&apos;échéance, le solde du cycle repart à zéro. Les statuts clients, eux, ne se perdent jamais.
+        </p>
         <select
           value={value.expiration.type}
           onChange={(e) => {
@@ -178,8 +164,8 @@ export default function PointsSection({
           className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-all"
         >
           <option value="none">Aucune expiration</option>
-          <option value="fixed_date">Chaque année à date fixe</option>
-          <option value="rolling">Après une durée d&apos;ancienneté</option>
+          <option value="fixed_date">Remise à zéro chaque année à date fixe</option>
+          <option value="rolling">Glissante : N mois après le premier passage</option>
         </select>
 
         {value.expiration.type === 'rolling' && (

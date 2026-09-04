@@ -32,7 +32,17 @@ import { validateStudioDesign } from '@/lib/cardDesign/studioValidation';
 import TemplateGallery from './_components/TemplateGallery';
 import ColorsSection from './_components/ColorsSection';
 import StampsSection from './_components/StampsSection';
-import PointsSection, { DEFAULT_POINTS_RULES, type PointsRulesState } from './_components/PointsSection';
+import ProgramSection, { PROGRAM_LABELS } from './_components/ProgramSection';
+import {
+  cardTypeForProgram,
+  defaultProgramRules,
+  programRulesFromMerchant,
+  programRulesToStudioInput,
+  validateProgramRules,
+  type PointsRulesState,
+  type ProgramRulesState,
+} from '@/lib/loyalty/studioProgramState';
+import type { LoyaltyType } from '@/lib/loyalty/types';
 import FieldsSection from './_components/FieldsSection';
 import BarcodeSection from './_components/BarcodeSection';
 import ImageUploadField from './_components/ImageUploadField';
@@ -63,50 +73,6 @@ type StudioPayload = {
   } | null;
 };
 
-// Reconstruit un PointsRulesState valide depuis merchants.loyalty_config —
-// tolérant à une config absente/incomplète (repli sur les défauts studio).
-function pointsRulesFromLoyaltyConfig(config: Record<string, unknown> | null | undefined): PointsRulesState {
-  if (!config) return DEFAULT_POINTS_RULES;
-  const pointsPerScan =
-    typeof config.pointsPerScan === 'number' && Number.isInteger(config.pointsPerScan)
-      ? config.pointsPerScan
-      : DEFAULT_POINTS_RULES.pointsPerScan;
-  const rawTiers = Array.isArray(config.tiers) ? config.tiers : [];
-  const tiers = rawTiers
-    .map((t) => {
-      const threshold = (t as Record<string, unknown>)?.threshold;
-      const reward = (t as Record<string, unknown>)?.reward;
-      if (typeof threshold !== 'number' || typeof reward !== 'string') return null;
-      return { threshold, reward };
-    })
-    .filter((t): t is { threshold: number; reward: string } => t !== null);
-  const exp = config.expiration as Record<string, unknown> | undefined;
-  let expiration: PointsRulesState['expiration'] = { type: 'none' };
-  if (exp?.type === 'rolling' && typeof exp.months === 'number') {
-    expiration = { type: 'rolling', months: exp.months };
-  } else if (exp?.type === 'fixed_date' && typeof exp.month === 'number' && typeof exp.day === 'number') {
-    expiration = { type: 'fixed_date', month: exp.month, day: exp.day };
-  }
-  // Statuts clients : round-trip fidèle — une publication qui ne touche pas aux
-  // statuts NE DOIT JAMAIS les effacer (le publish renvoie tout pointsRules).
-  const rawStatus = Array.isArray(config.statusTiers) ? config.statusTiers : [];
-  const statusTiers = rawStatus
-    .map((s) => {
-      const threshold = (s as Record<string, unknown>)?.threshold;
-      const label = (s as Record<string, unknown>)?.label;
-      const benefit = (s as Record<string, unknown>)?.benefit;
-      if (typeof threshold !== 'number' || typeof label !== 'string') return null;
-      return { threshold, label, benefit: typeof benefit === 'string' ? benefit : '' };
-    })
-    .filter((s): s is { threshold: number; label: string; benefit: string } => s !== null);
-  return {
-    pointsPerScan,
-    tiers: tiers.length > 0 ? tiers : DEFAULT_POINTS_RULES.tiers,
-    expiration,
-    statusTiers,
-  };
-}
-
 // Aperçu fidèle du jeton {points} d'une carte à POINTS (Minor 6, revue finale) :
 // le vrai pass affiche « solde / dernier palier » (resolvePointsPassState) —
 // jamais un nombre brut comme l'ancien `sampleStamps * 12`. On affiche une
@@ -124,6 +90,46 @@ function pointsSampleLabel(rules: PointsRulesState): string {
 function progressionSampleLabel(rules: PointsRulesState): string {
   const first = rules.tiers.length > 0 ? rules.tiers[0].threshold : 0;
   return `${Math.round(first / 2)}/${first} points`;
+}
+
+// Prochain seuil (palier de visites / niveau) que le client fictif n'a pas
+// encore atteint — repli sur le dernier quand tout est atteint.
+function nextThreshold(thresholds: number[], count: number): number {
+  const sorted = [...thresholds].sort((a, b) => a - b);
+  return sorted.find((t) => count < t) ?? sorted[sorted.length - 1] ?? 0;
+}
+
+// Échantillons statiques des jetons selon la mécanique (aperçu cohérent avec
+// les règles, sans refonte du système d'aperçu). `count` = client fictif.
+function programSample(rules: ProgramRulesState, count: number, stampGoal: number): Partial<SampleData> {
+  switch (rules.type) {
+    case 'stamp_card': {
+      const c = Math.min(count, stampGoal);
+      return { points: `${c} / ${stampGoal}`, progression: `${c}/${stampGoal} tampons` };
+    }
+    case 'visit_based':
+      return { points: String(count), visites: String(count), progression: `${count}/${nextThreshold(rules.milestones, count)} visites` };
+    case 'tiered': {
+      const top = [...rules.tiers].sort((a, b) => a.at - b.at).filter((t) => t.name.trim());
+      return {
+        points: String(count),
+        visites: String(count),
+        progression: `${count}/${nextThreshold(rules.tiers.map((t) => t.at), count)} visites`,
+        // Aspirationnel : plus haut niveau configuré (comme {statut}).
+        ...(top.length > 0 ? { palier: top[top.length - 1].name } : {}),
+      };
+    }
+    case 'amount_points': {
+      const mid = Math.round(rules.rewardThreshold / 2);
+      return { points: `${mid} / ${rules.rewardThreshold}`, progression: `${mid}/${rules.rewardThreshold} points` };
+    }
+    case 'points':
+      return {
+        points: pointsSampleLabel(rules),
+        progression: progressionSampleLabel(rules),
+        ...((rules.statusTiers?.length ?? 0) > 0 ? { statut: rules.statusTiers![rules.statusTiers!.length - 1].label } : {}),
+      };
+  }
 }
 
 type Feedback = { kind: 'ok' | 'partial' | 'error'; messages: string[] };
@@ -191,7 +197,16 @@ export default function StudioClient({ express = false }: { express?: boolean })
   const [publishing, setPublishing] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [sampleStamps, setSampleStamps] = useState(7);
-  const [pointsRules, setPointsRules] = useState<PointsRulesState>(DEFAULT_POINTS_RULES);
+  // Règles du programme (merchants.loyalty_type/loyalty_config) — les 5
+  // mécaniques du moteur, round-trippées intégralement à la publication.
+  const [programRules, setProgramRules] = useState<ProgramRulesState>(() => defaultProgramRules('stamp_card'));
+  // Mémoire des règles saisies par mécanique : changer d'avis puis revenir ne
+  // perd pas la saisie (ni la config chargée depuis la base).
+  const rulesByType = useRef<Partial<Record<LoyaltyType, ProgramRulesState>>>({});
+  // Objectif de tampons du moteur tel que chargé (loyalty_config.goal, repli
+  // stamp_goal) — utilisé quand la grille n'est pas éditable (visuel « points »
+  // avec mécanique stamp_card, ex. kits démo) pour ne JAMAIS republier le défaut.
+  const [loadedStampGoal, setLoadedStampGoal] = useState(10);
   // Référence du dernier état persisté (brouillon ou publication) pour le dirty-tracking.
   const lastPersisted = useRef<string>(JSON.stringify(DEFAULT_CARD_DESIGN));
   // Mode express : récompense (merchants.reward_label, hors design), repli de
@@ -225,9 +240,22 @@ export default function StudioClient({ express = false }: { express?: boolean })
         setMerchant(payload.merchant);
         setAssets(payload.assetUrls ?? {});
         setSampleStamps(Math.min(7, (initial.stamps?.goal ?? 10) - 1));
-        if (payload.merchant?.loyaltyType === 'points') {
-          setPointsRules(pointsRulesFromLoyaltyConfig(payload.merchant.loyaltyConfig));
-        }
+        // Porte points→stamps (Important 1, revue finale) : un design TAMPONS
+        // publié alors que merchants.loyalty_type vaut encore "points" (comptoir
+        // + pass restés sur l'ancien programme) doit refermer la bascule — on
+        // part donc sur des règles stamp_card, ce que le sélecteur affiche.
+        const rules =
+          (initial.cardType ?? 'stamps') === 'stamps' && payload.merchant?.loyaltyType === 'points'
+            ? defaultProgramRules('stamp_card')
+            : programRulesFromMerchant(payload.merchant?.loyaltyType, payload.merchant?.loyaltyConfig);
+        rulesByType.current[rules.type] = rules;
+        setProgramRules(rules);
+        const cfgGoal = (payload.merchant?.loyaltyConfig as { goal?: unknown } | null)?.goal;
+        setLoadedStampGoal(
+          typeof cfgGoal === 'number' && Number.isInteger(cfgGoal) && cfgGoal >= 1 && cfgGoal <= 50
+            ? cfgGoal
+            : payload.merchant?.stampGoal ?? 10
+        );
       })
       .catch(() => !cancelled && setLoadError(true))
       .finally(() => !cancelled && setLoading(false));
@@ -254,36 +282,31 @@ export default function StudioClient({ express = false }: { express?: boolean })
     };
   }, []);
 
-  const validation = useMemo(() => validateStudioDesign(design), [design]);
-  const dirty = JSON.stringify(design) !== lastPersisted.current;
   const cardType: CardTypeKey = design.cardType ?? 'stamps';
   const stamps: StampsConfig = design.stamps ?? DEFAULT_STAMPS_CONFIG;
+  // Objectif du PROGRAMME : la grille quand elle est éditable (visuel tampons),
+  // sinon l'objectif chargé — source unique pour validation, aperçu et publication.
+  const programStampGoal = cardType === 'stamps' ? stamps.goal : loadedStampGoal;
+  // Design (studioValidation) + règles du programme (même moteur que le serveur :
+  // validateLoyaltyProgram via validateProgramRules — jamais dupliqué ici).
+  const validation = useMemo(() => {
+    const v = validateStudioDesign(design);
+    return { errors: [...v.errors, ...validateProgramRules(programRules, programStampGoal)], warnings: v.warnings };
+  }, [design, programRules, programStampGoal]);
+  const dirty = JSON.stringify(design) !== lastPersisted.current;
 
   const sample: SampleData = useMemo(
     () => ({
-      points:
-        cardType === 'stamps'
-          ? `${Math.min(sampleStamps, stamps.goal)} / ${stamps.goal}`
-          : cardType === 'points'
-            ? pointsSampleLabel(pointsRules)
-            : String(sampleStamps * 12),
+      // Repli statique (jetons non pilotés par la mécanique) — déterministe, testable.
       nom: 'Sarah M.',
       palier: 'Argent',
       visites: '12',
-      // Statique (pas de new Date()) : aperçu déterministe, testable.
       derniere_visite: '14.08.2026',
-      progression:
-        cardType === 'points'
-          ? progressionSampleLabel(pointsRules)
-          : `${Math.min(sampleStamps, stamps.goal)}/${stamps.goal} tampons`,
-      // {statut} : plus haut statut configuré (l'aperçu « aspirationnel ») ;
-      // repli statique quand la carte n'a pas de statuts (tampons, config vide).
-      statut:
-        cardType === 'points' && (pointsRules.statusTiers?.length ?? 0) > 0
-          ? pointsRules.statusTiers![pointsRules.statusTiers!.length - 1].label
-          : 'Or',
+      // {statut} : plus haut statut configuré (aspirationnel), sinon « Or ».
+      statut: 'Or',
+      ...programSample(programRules, sampleStamps, programStampGoal),
     }),
-    [cardType, sampleStamps, stamps.goal, pointsRules]
+    [sampleStamps, programStampGoal, programRules]
   );
 
   // ── Mutations locales ───────────────────────────────────────────────────────
@@ -292,6 +315,21 @@ export default function StudioClient({ express = false }: { express?: boolean })
     setDesign((d) => ({ ...d, ...patch }));
     setFeedback(null);
   }, []);
+
+  // Changement de mécanique : restaure la saisie mémorisée (ou les défauts) et
+  // aligne le visuel de la carte (même mapping que les templates).
+  const selectProgramType = (type: LoyaltyType) => {
+    if (type === programRules.type) return;
+    rulesByType.current[programRules.type] = programRules;
+    setProgramRules(rulesByType.current[type] ?? defaultProgramRules(type));
+    const nextCardType = cardTypeForProgram(type);
+    update({ cardType: nextCardType, ...(nextCardType === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) });
+  };
+
+  const changeProgramRules = (rules: ProgramRulesState) => {
+    setProgramRules(rules);
+    setFeedback(null);
+  };
 
   const mergeAssets = (incoming: LogoAssets) => {
     setDesign((d) => ({
@@ -337,35 +375,18 @@ export default function StudioClient({ express = false }: { express?: boolean })
     setPublishing(true);
     setFeedback(null);
     try {
-      // B — Règles du programme : envoyées pour une carte à points
-      // (buildLoyaltyUpdate, Task 4). reward_label reprend la valeur existante
-      // (pré-remplie ci-dessus) pour ne jamais l'écraser silencieusement — et,
-      // depuis Important 2 (revue finale), son ABSENCE dans le body préserve la
-      // valeur en base côté serveur (plus besoin que le prefetch ait résolu).
-      //
-      // Porte points→stamps (Important 1, revue finale) : si le marchand publie
-      // un design TAMPONS alors que merchants.loyalty_type vaut encore "points"
-      // (comptoir + pass restés sur l'ancien programme), on envoie explicitement
-      // un programme stamp_card pour refermer la bascule — sinon l'incohérence
-      // reste invisible et sans retour self-serve (comptoir points, pass tampons).
-      // On n'envoie CE programme QUE dans ce cas précis de bascule : ne JAMAIS
-      // toucher au programme d'un marchand déjà stamp_card/visit_based/tiered,
-      // sous peine d'écraser welcome_stamps/intermediate_milestone/milestones
-      // existants (buildLoyaltyUpdate reconstruit la config, il ne la fusionne pas).
-      const program =
-        cardType === 'points'
-          ? {
-              type: 'points' as const,
-              config: pointsRules,
-              ...(reward.trim() !== '' ? { reward_label: reward.trim() } : {}),
-            }
-          : cardType === 'stamps' && merchant?.loyaltyType === 'points'
-            ? { type: 'stamp_card' as const, goal: stamps.goal }
-            : undefined;
+      // Règles du programme : TOUJOURS envoyées, pour les 5 mécaniques, avec
+      // toutes leurs clés (round-trip garanti par studioProgramState — une clé
+      // perdue ici serait un effacement silencieux en base). L'objectif de la
+      // carte à tampons est celui du design (source unique côté Studio) : la
+      // publication aligne ainsi loyalty_config.goal ET merchants.stamp_goal.
+      // reward_label : absent du body quand vide → préservé côté serveur
+      // (Important 2, revue finale).
+      const program = programRulesToStudioInput(programRules, programStampGoal, reward.trim() !== '' ? reward.trim() : undefined);
       const res = await fetch('/api/merchant/card-design/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ design, ...(program ? { program } : {}) }),
+        body: JSON.stringify({ design, program }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         version?: number;
@@ -664,46 +685,21 @@ export default function StudioClient({ express = false }: { express?: boolean })
             <ColorsSection colors={design.colors} onChange={(colors) => update({ colors })} />
           </section>
 
-          {/* Type de carte + tampons */}
+          {/* Programme de fidélité : mécanique + règles, puis visuel des tampons */}
           <section className={sectionCls}>
             <SectionHeader
               icon={Stamp}
-              title="Programme & tampons"
-              sub="Tampons à l'ancienne ou points cumulés — choisissez la mécanique de fidélité."
+              title="Programme de fidélité"
+              sub="Choisissez la mécanique, puis réglez toutes ses règles — le comptoir et les cartes suivent dès la publication."
             />
-            <div className="flex flex-wrap gap-2 mb-6">
-              {(['stamps', 'points'] as CardTypeKey[]).map((t) => {
-                // Le mode express ne persiste que reward_label/couleur + brouillon
-                // (validateAndContinue) : il n'appelle jamais /publish, seul chemin
-                // qui écrit merchants.loyalty_type/loyalty_config. Choisir « points »
-                // ici saisirait une config silencieusement jetée à la validation —
-                // on verrouille donc ce type en express, réglable dans le studio complet.
-                if (express && t === 'points') {
-                  return (
-                    <span
-                      key={t}
-                      title="Points par passage, paliers et expiration : à régler dans le studio complet"
-                      className={`rounded-xl border px-4 py-2 text-sm font-medium cursor-not-allowed select-none ${
-                        cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-dashed border-line-warm text-galet-ink'
-                      }`}
-                    >
-                      {CARD_TYPE_LABELS[t]} · studio complet
-                    </span>
-                  );
-                }
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => update({ cardType: t, ...(t === 'stamps' && !design.stamps ? { stamps: DEFAULT_STAMPS_CONFIG } : {}) })}
-                    className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-                      cardType === t ? 'border-halo bg-halo/5 text-onyx' : 'border-line-warm text-galet-ink hover:border-halo/60'
-                    }`}
-                  >
-                    {CARD_TYPE_LABELS[t]}
-                  </button>
-                );
-              })}
+            <ProgramSection
+              rules={programRules}
+              onChange={changeProgramRules}
+              onSelectType={selectProgramType}
+              stampGoal={programStampGoal}
+              express={express}
+            />
+            <div className="mt-6 flex flex-wrap gap-2">
               {(['cashback', 'subscription'] as CardTypeKey[]).map((t) => (
                 <span
                   key={t}
@@ -714,39 +710,29 @@ export default function StudioClient({ express = false }: { express?: boolean })
                 </span>
               ))}
             </div>
-            {cardType === 'stamps' ? (
-              <StampsSection
-                stamps={stamps}
-                onChange={(s) => update({ stamps: s })}
-                background={design.colors.background}
-                filledUrl={assets.stampFilled}
-                emptyUrl={assets.stampEmpty}
-                onFilledUploaded={(path, previewUrl) => {
-                  update({ stamps: { ...stamps, filledAssetPath: path } });
-                  setAssets((a) => ({ ...a, stampFilled: previewUrl }));
-                }}
-                onEmptyUploaded={(path, previewUrl) => {
-                  update({ stamps: { ...stamps, emptyAssetPath: path } });
-                  setAssets((a) => ({ ...a, stampEmpty: previewUrl }));
-                }}
-              />
-            ) : express ? (
-              // Verrouillé en express (voir le gate du sélecteur ci-dessus) : ce cas ne
-              // se produit que si le design chargé était déjà « points » (config faite
-              // précédemment dans le studio complet) — jamais éditable ici, pour ne
-              // jamais laisser croire qu'une saisie express sera persistée.
-              <p className="text-sm text-galet-ink">
-                Cette carte utilise déjà un programme à points. Réglez les points par passage, les
-                paliers et l&apos;expiration dans le studio complet — ouvrez-le depuis le tableau de
-                bord une fois l&apos;essentiel validé ici.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-galet-ink">
-                  Carte à points : le champ principal affiche le solde de points du client (jeton{' '}
-                  <code className="rounded bg-calcaire px-1.5 py-0.5 text-onyx">{'{points}'}</code>).
+            {cardType === 'stamps' && (
+              <div className="mt-8 border-t border-line-warm pt-6">
+                <h3 className="mb-1 text-sm font-bold text-onyx">Tampons</h3>
+                <p className="mb-5 text-xs text-galet-ink">
+                  {programRules.type === 'stamp_card'
+                    ? "Objectif, icône et forme des alvéoles — l'objectif est aussi celui du programme."
+                    : `Visuel de la grille sur la page client (mécanique « ${PROGRAM_LABELS[programRules.type]} »).`}
                 </p>
-                <PointsSection value={pointsRules} onChange={setPointsRules} />
+                <StampsSection
+                  stamps={stamps}
+                  onChange={(s) => update({ stamps: s })}
+                  background={design.colors.background}
+                  filledUrl={assets.stampFilled}
+                  emptyUrl={assets.stampEmpty}
+                  onFilledUploaded={(path, previewUrl) => {
+                    update({ stamps: { ...stamps, filledAssetPath: path } });
+                    setAssets((a) => ({ ...a, stampFilled: previewUrl }));
+                  }}
+                  onEmptyUploaded={(path, previewUrl) => {
+                    update({ stamps: { ...stamps, emptyAssetPath: path } });
+                    setAssets((a) => ({ ...a, stampEmpty: previewUrl }));
+                  }}
+                />
               </div>
             )}
           </section>
