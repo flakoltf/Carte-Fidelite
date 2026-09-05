@@ -8,6 +8,7 @@ import { applyScan } from "@/lib/loyalty/engine";
 import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { fetchMerchantConfig } from "@/lib/merchant-config/fetch";
 import { crossedPointsTiers, maxPointsThreshold, parseRedeemedTiers, redeemablePointsTiers } from "@/lib/loyalty/points";
+import { currentAuthSession } from "@/lib/auth/currentMerchant";
 
 type AtomicScan = { status: "incremented" | "cooldown" | "full" | "notfound"; newCount: number };
 
@@ -34,10 +35,12 @@ async function atomicScan(cardId: string, cap: number, cooldownSeconds: number):
 export async function POST(req: Request) {
   try {
     // --- SÉCURITÉ : Authentification ---
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    // Cookie (dashboard) OU jeton « Authorization: Bearer » (app mobile) — un
+    // seul chemin, src/lib/auth/currentMerchant.ts ; le marchand reste résolu
+    // par l'utilisateur authentifié (.eq("user_id")), jamais par un id fourni.
+    const session = await currentAuthSession({ request: req });
+    if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    const { user } = session;
 
     // Rate limiting: 200 scans par minute par merchant
     const rateLimitResult = await rateLimit(`scan:${user.id}`, 200, 60000);

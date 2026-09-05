@@ -9,7 +9,8 @@ import { getTrialBlockReason } from "@/lib/billing/guard";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const merchantId = await currentMerchantId();
+  // Cookie (dashboard) OU jeton Bearer (app mobile) : opt-in via { request }.
+  const merchantId = await currentMerchantId({ request: req });
   if (!merchantId) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   // 10 envois / heure par marchand (anti-spam APNs)
   const rl = await rateLimit(`notify:${merchantId}`, 10, 3600000);

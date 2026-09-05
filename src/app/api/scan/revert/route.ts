@@ -12,15 +12,16 @@ import { verifyQRCode } from "@/lib/qrSignature";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { REVERT_WINDOW_SECONDS, normalizeRevertStatus, revertStatusMessage } from "@/lib/loyalty/revert";
 import { UUID_RE } from "@/lib/validation/uuid";
+import { currentAuthSession } from "@/lib/auth/currentMerchant";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    // Cookie (dashboard) OU jeton Bearer (app mobile) — même chemin que /api/scan.
+    const session = await currentAuthSession({ request: req });
+    if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    const { user } = session;
 
     const rl = await rateLimit(`scan-revert:${user.id}`, 60, 60000);
     if (!rl.success) return NextResponse.json({ error: "Trop de demandes. Réessayez." }, { status: 429 });

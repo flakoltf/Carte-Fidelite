@@ -74,12 +74,12 @@ beforeEach(() => {
 
 describe("GET /api/merchant/segments", () => {
   it("non authentifié → 401", async () => {
-    expect((await GET()).status).toBe(401);
+    expect((await GET(new Request("https://app.halocard.ch/api/merchant/segments"))).status).toBe(401);
   });
   it("renvoie les seuils résolus (défauts si segment_config vide), vip_visits inclus", async () => {
     state.ctx = { merchantId: "m1", userId: "u1" };
     state.row = { segment_config: null };
-    const res = await GET();
+    const res = await GET(new Request("https://app.halocard.ch/api/merchant/segments"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ active_days: 30, at_risk_days: 90, vip_visits: 10 });
     expect(calls.selectedIds).toEqual(["m1"]);
@@ -88,7 +88,7 @@ describe("GET /api/merchant/segments", () => {
   it("renvoie le vip_visits personnalisé du marchand", async () => {
     state.ctx = { merchantId: "m1", userId: "u1" };
     state.row = { segment_config: { vip_visits: 25 } };
-    const res = await GET();
+    const res = await GET(new Request("https://app.halocard.ch/api/merchant/segments"));
     expect((await res.json()).vip_visits).toBe(25);
   });
 });
