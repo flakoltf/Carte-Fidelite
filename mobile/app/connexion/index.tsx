@@ -8,7 +8,8 @@ import { HaloMark } from "@/components/HaloMark";
 import { Screen } from "@/components/Screen";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { isValidEmail } from "@/lib/authFlow";
-import { colors, spacing, type } from "@/theme";
+import { useSessionNotice } from "@/lib/sessionNotice";
+import { colors, radius, spacing, type } from "@/theme";
 
 export default function ConnexionScreen() {
   const { status, signIn } = useAuth();
@@ -16,6 +17,8 @@ export default function ConnexionScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Posée par le client API sur un 401 en cours d'usage (session expirée).
+  const notice = useSessionNotice();
 
   if (status === "signed-in") return <Redirect href="/(tabs)/comptoir" />;
   if (status === "mfa-required") return <Redirect href="/connexion/code" />;
@@ -49,6 +52,13 @@ export default function ConnexionScreen() {
       </View>
 
       <View style={styles.form}>
+        {notice ? (
+          <View style={styles.notice} accessibilityRole="alert">
+            <Text testID="notice-session" style={styles.noticeTexte}>
+              {notice}
+            </Text>
+          </View>
+        ) : null}
         <Field
           testID="champ-email"
           tone="dark"
@@ -97,5 +107,14 @@ const styles = StyleSheet.create({
   wordmark: { ...type.h1, color: colors.calcaire, letterSpacing: 6 },
   tagline: { ...type.body, color: colors.galet, textAlign: "center" },
   form: { gap: spacing.md },
+  notice: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "rgba(31,184,154,0.45)",
+    backgroundColor: "rgba(31,184,154,0.12)",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
+  },
+  noticeTexte: { ...type.small, color: colors.calcaire },
   footnote: { ...type.caption, color: colors.galet, textAlign: "center" },
 });

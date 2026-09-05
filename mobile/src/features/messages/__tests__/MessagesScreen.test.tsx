@@ -102,15 +102,27 @@ describe("MessagesScreen", () => {
     expect(await screen.findByText("Trop d'envois. Réessayez plus tard.")).toBeTruthy();
   });
 
-  it("sans résumé (erreur de chargement) : le formulaire reste utilisable, sans tailles", async () => {
-    mockApi.get.mockRejectedValue(new Error("Connexion impossible. Vérifiez votre réseau."));
+  it("sans résumé (erreur de chargement) : le formulaire reste utilisable, sans tailles, et propose Réessayer", async () => {
+    mockApi.get.mockRejectedValueOnce(new Error("Connexion impossible. Vérifiez votre réseau."));
     mockApi.post.mockResolvedValue({ pushed: 1, reachable: 1 });
     await render(<MessagesScreen />);
 
     expect(await screen.findByText("Tous mes clients")).toBeTruthy();
     expect(screen.queryByText("7 clients")).toBeNull();
+    expect(await screen.findByText("Les tailles des groupes n'ont pas pu être chargées.")).toBeTruthy();
+
+    // Jamais une impasse : Réessayer recharge le résumé (mockApi.get répond désormais).
+    await fireEvent.press(screen.getByRole("button", { name: "Réessayer" }));
+    expect(await screen.findByText("7 clients")).toBeTruthy();
+
     await fillAndSend("Titre", "Corps");
     expect(await screen.findByText("Message envoyé à 1 client. (1 a la carte dans son téléphone.)")).toBeTruthy();
+  });
+
+  it("pendant le chargement du résumé : indication visible, pas de tailles muettes", async () => {
+    mockApi.get.mockReturnValue(new Promise(() => {}));
+    await render(<MessagesScreen />);
+    expect(screen.getByText("Chargement des groupes…")).toBeTruthy();
   });
 
   it("les audiences offrent une cible tactile d'au moins 44 pt", async () => {

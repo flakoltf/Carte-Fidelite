@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "@/components/Button";
@@ -27,6 +27,7 @@ import { sendMessage } from "./sendMessage";
  */
 export function MessagesScreen() {
   const [summary, setSummary] = useState<SegmentSummary | null>(null);
+  const [summaryState, setSummaryState] = useState<"loading" | "ready" | "error">("loading");
   const [audience, setAudience] = useState<AudienceKey>("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -35,19 +36,32 @@ export function MessagesScreen() {
   const [result, setResult] = useState<ResultMessage | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Résumé des groupes : sans lui le formulaire reste utilisable (les tailles
+  // sont absentes), mais on le dit et on propose de réessayer — jamais une
+  // information manquante en silence.
+  const loadSummary = useCallback(() => {
     let alive = true;
-    fetchSegmentSummary()
-      .then((s) => {
-        if (alive) setSummary(s);
-      })
-      .catch(() => {
-        // Sans résumé, le formulaire reste utilisable : les tailles sont simplement absentes.
-      });
+    fetchSegmentSummary().then(
+      (s) => {
+        if (!alive) return;
+        setSummary(s);
+        setSummaryState("ready");
+      },
+      () => {
+        if (alive) setSummaryState("error");
+      },
+    );
     return () => {
       alive = false;
     };
   }, []);
+
+  useEffect(() => loadSummary(), [loadSummary]);
+
+  const retrySummary = () => {
+    setSummaryState("loading");
+    loadSummary();
+  };
 
   const size = audienceSize(summary, audience);
 
@@ -85,7 +99,20 @@ export function MessagesScreen() {
         </Text>
       </View>
 
-      <Card title="À qui ?" subtitle={summary ? reachableLabel(summary) : undefined}>
+      <Card
+        title="À qui ?"
+        subtitle={
+          summary ? reachableLabel(summary) : summaryState === "loading" ? "Chargement des groupes…" : undefined
+        }
+      >
+        {summaryState === "error" ? (
+          <View style={styles.summaryError}>
+            <Text style={styles.summaryErrorText} accessibilityLiveRegion="polite">
+              {"Les tailles des groupes n'ont pas pu être chargées."}
+            </Text>
+            <Button label="Réessayer" variant="secondary" onPress={retrySummary} />
+          </View>
+        ) : null}
         <View style={styles.audiences} accessibilityRole="radiogroup">
           {AUDIENCE_KEYS.map((key) => {
             const n = audienceSize(summary, key);
@@ -192,6 +219,8 @@ const styles = StyleSheet.create({
   eyebrow: { ...type.eyebrow, color: colors.halo },
   title: { ...type.h1, color: colors.ink },
   description: { ...type.body, color: colors.inkMuted },
+  summaryError: { gap: spacing.sm, marginBottom: spacing.sm },
+  summaryErrorText: { ...type.small, color: colors.inkMuted },
   audiences: { gap: spacing.xs },
   audience: {
     minHeight: MIN_TOUCH_TARGET + 4,

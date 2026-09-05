@@ -6,6 +6,7 @@
 // suivantes n'appellent jamais `fetch` directement.
 
 import { getConfig } from "./config";
+import { markSessionExpired } from "./sessionNotice";
 import { getSupabase } from "./supabase";
 
 export type QueryValue = string | number | boolean | null | undefined;
@@ -30,9 +31,13 @@ export class ApiError extends Error {
     this.payload = payload;
   }
 
-  /** La session n'est plus valable : l'appelant doit renvoyer vers la connexion. */
+  /**
+   * La session n'est plus valable : l'appelant doit renvoyer vers la connexion.
+   * SEULEMENT 401 — un 403 est un refus métier (carte d'un autre commerce,
+   * compte suspendu, essai expiré) et ne doit jamais déconnecter.
+   */
   get isUnauthorized(): boolean {
-    return this.status === 401 || this.status === 403;
+    return this.status === 401;
   }
 }
 
@@ -41,7 +46,7 @@ export interface ApiClientOptions {
   /** Renvoie le jeton d'accès courant, ou null si personne n'est connecté. */
   getAccessToken: () => Promise<string | null>;
   fetchImpl?: typeof fetch;
-  /** Appelé sur 401/403 — branché sur la déconnexion dans l'app. */
+  /** Appelé sur 401 — branché sur la déconnexion dans l'app. */
   onUnauthorized?: () => void | Promise<void>;
 }
 
@@ -72,7 +77,8 @@ export function errorMessageFor(status: number, payload: unknown): string {
       (payload as { message?: unknown }).message;
     if (typeof candidate === "string" && candidate.trim().length > 0) return candidate;
   }
-  if (status === 401 || status === 403) return "Session expirée. Reconnectez-vous.";
+  if (status === 401) return "Session expirée. Reconnectez-vous.";
+  if (status === 403) return "Accès refusé.";
   if (status === 404) return "Ressource introuvable.";
   if (status === 429) return "Trop de requêtes. Patientez un instant.";
   if (status >= 500) return "Le service est momentanément indisponible. Réessayez.";
@@ -134,6 +140,22 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
 let defaultClient: ApiClient | null = null;
 
+/**
+ * Session expirée en cours d'usage (401) : on pose la notice pour l'écran de
+ * connexion, puis on ferme la session Supabase — l'AuthProvider observe ce
+ * changement et les onglets renvoient d'eux-mêmes vers la connexion. Ordre
+ * important : la notice AVANT la déconnexion, pour que l'écran la trouve.
+ */
+export async function expireSession(): Promise<void> {
+  markSessionExpired();
+  try {
+    await getSupabase().auth.signOut();
+  } catch {
+    // Déjà déconnecté ou réseau coupé : la session locale est de toute façon
+    // inutilisable, l'écran de connexion reprend la main.
+  }
+}
+
 /** Client de l'app, adossé à la session Supabase courante. */
 export function api(): ApiClient {
   if (!defaultClient) {
@@ -143,6 +165,7 @@ export function api(): ApiClient {
         const { data } = await getSupabase().auth.getSession();
         return data.session?.access_token ?? null;
       },
+      onUnauthorized: expireSession,
     });
   }
   return defaultClient;
