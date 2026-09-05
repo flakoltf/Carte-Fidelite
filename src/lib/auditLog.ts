@@ -70,6 +70,10 @@ export const AUDIT_ACTIONS = [
   // déjà présente dans le CHECK prod (patch hors repo, préservée par
   // 20260826_audit_actions_points.sql). On l'expose seulement au type.
   'MARKETING_CONSENT_UPDATED',
+  // Échéance glissante des cartes à tampons (cron quotidien) — migration jumelle :
+  // supabase/migrations/20260905_audit_actions_stamps_expired.sql
+  // (amount_points réutilise POINTS_EXPIRED avec details.loyalty_type.)
+  'STAMPS_EXPIRED',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
