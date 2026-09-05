@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { createRef } from "react";
+import type { TextInput } from "react-native";
 
 import { MIN_TOUCH_TARGET } from "@/theme";
 import { Field } from "../Field";
@@ -43,5 +45,13 @@ describe("Field", () => {
 
     const style = flattenStyle(screen.getByTestId("champ").props.style);
     expect(style.minHeight as number).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  });
+});
+
+describe("Field — enchaînement des champs", () => {
+  it("expose la référence du TextInput pour que « suivant » passe au champ d'après", async () => {
+    const ref = createRef<TextInput>();
+    await render(<Field ref={ref} label="Adresse e-mail" />);
+    expect(ref.current).not.toBeNull();
   });
 });

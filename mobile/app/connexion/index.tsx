@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { StyleSheet, Text, View, type TextInput } from "react-native";
 import { Redirect } from "expo-router";
 
 import { Button } from "@/components/Button";
@@ -17,6 +17,7 @@ export default function ConnexionScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
   // Posée par le client API sur un 401 en cours d'usage (session expirée).
   const notice = useSessionNotice();
 
@@ -72,9 +73,13 @@ export default function ConnexionScreen() {
           textContentType="username"
           placeholder="vous@votrecommerce.ch"
           returnKeyType="next"
+          // « Suivant » passe au mot de passe, clavier ouvert (C9).
+          submitBehavior="submit"
+          onSubmitEditing={() => passwordRef.current?.focus()}
           editable={!busy}
         />
         <Field
+          ref={passwordRef}
           testID="champ-mot-de-passe"
           tone="dark"
           label="Mot de passe"

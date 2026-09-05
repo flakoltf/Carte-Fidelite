@@ -32,3 +32,15 @@ describe("Écran de connexion — session expirée", () => {
     expect(screen.queryByTestId("notice-session")).toBeNull();
   });
 });
+
+describe("Écran de connexion — clavier", () => {
+  it("la touche « suivant » de l'e-mail passe au mot de passe sans fermer le clavier", async () => {
+    await render(<ConnexionScreen />);
+    const email = screen.getByTestId("champ-email");
+    expect(email.props.returnKeyType).toBe("next");
+    expect(email.props.submitBehavior).toBe("submit");
+    expect(typeof email.props.onSubmitEditing).toBe("function");
+    // Le mot de passe valide le formulaire depuis le clavier.
+    expect(screen.getByTestId("champ-mot-de-passe").props.returnKeyType).toBe("go");
+  });
+});

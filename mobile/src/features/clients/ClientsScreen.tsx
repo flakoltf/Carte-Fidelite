@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -77,7 +78,11 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
                 filter={key}
                 summary={summary}
                 selected={stage === key}
-                onPress={() => setStage(key)}
+                onPress={() => {
+                  // Tap hors champ : le clavier de recherche se replie (C9).
+                  Keyboard.dismiss();
+                  setStage(key);
+                }}
               />
             ))}
           </ScrollView>
@@ -101,6 +106,12 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
           contentContainerStyle={filtered.length === 0 ? styles.listEmpty : styles.listContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          // Virtualisation réglée pour une base de plusieurs centaines de
+          // clients : fenêtre courte, lots modestes, vues hors écran libérées.
+          initialNumToRender={14}
+          maxToRenderPerBatch={20}
+          windowSize={7}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.halo} />
           }
