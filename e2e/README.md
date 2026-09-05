@@ -29,6 +29,9 @@ démarré avec ce flag (sinon les seams sont inertes → specs en échec).
 | `comptoir-stamp.spec.ts` | E2E-2 — carte à tampons (stamp_card) |
 | `comptoir-amount-points.spec.ts` | E2E-3 — points au montant (amount_points) |
 | `comptoir-reward.spec.ts` | E2E-4 — récompense (OFFRIR) |
+| `dashboard-scroll.spec.ts` | régression « espace mort défilable / fond noir » (dashboard) |
+| `admin.setup.ts` | login admin (compte démo admin) → `storageState` admin — **skip** sans `E2E_ADMIN_PASSWORD` |
+| `admin-scroll.spec.ts` | même régression côté back-office (projet `Admin`, `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_ADMIN_MERCHANT_ID` facultatif) |
 
 ## Les SEAMS de test (gated `NEXT_PUBLIC_E2E === "1"`)
 

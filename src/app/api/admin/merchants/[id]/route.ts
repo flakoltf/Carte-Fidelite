@@ -41,7 +41,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Programme de fidélité (type + config). Additif : présent quand le formulaire l'envoie.
     if (body.loyaltyType !== undefined) {
       const { validateLoyaltyProgram } = await import("@/lib/loyalty/validate");
-      const v = validateLoyaltyProgram(body.loyaltyType, body.loyaltyConfig);
+      // GET-then-merge (même patron que segment_config) : la fiche admin n'édite
+      // qu'une partie des clés ; les options posées au Studio (welcome_stamps,
+      // intermediate_milestone, maxPointsPerScan, statusTiers, expiration…)
+      // survivent. Une clé envoyée explicitement à null/0 est bien effacée.
+      // Changement de mécanique → aucune fusion (pas de clés orphelines).
+      const merged = await mergeLoyaltyConfig(id, body.loyaltyType, body.loyaltyConfig);
+      const v = validateLoyaltyProgram(body.loyaltyType, merged);
       if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
       update.loyalty_type = v.program.type;
       update.loyalty_config = v.program.config;
@@ -90,4 +96,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     console.error("Admin update merchant error:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
+}
+
+async function mergeLoyaltyConfig(merchantId: string, type: unknown, incoming: unknown): Promise<Record<string, unknown>> {
+  const next = typeof incoming === "object" && incoming !== null ? (incoming as Record<string, unknown>) : {};
+  const { data: current } = await supabaseAdmin
+    .from("merchants")
+    .select("loyalty_type, loyalty_config")
+    .eq("id", merchantId)
+    .maybeSingle();
+  if (!current || current.loyalty_type !== type) return next;
+  const existing =
+    typeof current.loyalty_config === "object" && current.loyalty_config !== null
+      ? (current.loyalty_config as Record<string, unknown>)
+      : {};
+  return { ...existing, ...next };
 }

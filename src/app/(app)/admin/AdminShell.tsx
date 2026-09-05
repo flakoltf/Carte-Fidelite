@@ -72,7 +72,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const isActive = (href: string) => pathname === href || (href !== "/admin" && pathname.startsWith(href));
 
   return (
-    <div className="min-h-screen bg-calcaire text-onyx flex overflow-hidden">
+    // Même coque que DashboardShell (correctif « fond noir » PR #78) : la racine
+    // remplit la colonne 100dvh du layout, seule <main> défile.
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-calcaire text-onyx lg:flex-row">
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-72 flex-col border-r border-line-warm bg-surface p-6">
         <div className="flex items-center gap-3 mb-12 px-2">
@@ -118,8 +120,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
       </aside>
 
-      {/* Header mobile */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 border-b border-line-warm bg-calcaire/90 backdrop-blur-md flex items-center justify-between px-6 z-50">
+      {/* Header mobile — dans le flux (plus en `fixed`, qui forçait un pt-24 sur
+          <main> et laissait le document défiler sous la coque). */}
+      <div className="lg:hidden relative z-[60] flex h-16 shrink-0 items-center justify-between border-b border-line-warm bg-calcaire px-6">
         <div className="flex items-center gap-2">
           <HaloSymbol size={22} className="text-halo" />
           <span className="font-display tracking-[0.12em]">HALO</span>
@@ -134,7 +137,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
-            className="lg:hidden fixed inset-0 bg-calcaire z-40 p-6 pt-24"
+            className="lg:hidden absolute inset-0 bg-calcaire z-50 p-6 pt-24 overflow-y-auto"
           >
             <nav className="space-y-4">
               {navItems.map((item) => (
@@ -163,7 +166,10 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         )}
       </AnimatePresence>
 
-      <main className="flex-1 h-screen overflow-y-auto lg:p-10 pt-24 p-6">
+      {/* `relative` : les inputs fichier `sr-only` (Studio de carte admin) restent
+          DANS ce conteneur de défilement au lieu d'allonger le document (mesuré :
+          +117 px sur iPhone). `bg-calcaire` : le rebond montre le fond du thème. */}
+      <main className="relative min-h-0 flex-1 overflow-y-auto bg-calcaire p-6 lg:p-10">
         <div className="max-w-6xl mx-auto">{children}</div>
       </main>
     </div>
