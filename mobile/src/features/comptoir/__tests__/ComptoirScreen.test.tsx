@@ -29,17 +29,34 @@ jest.mock("expo-camera", () => {
 
 jest.mock("expo-haptics", () => ({
   notificationAsync: jest.fn().mockResolvedValue(undefined),
+  impactAsync: jest.fn().mockResolvedValue(undefined),
   NotificationFeedbackType: { Success: "success", Warning: "warning", Error: "error" },
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 
+// Focus d'onglet pilotable : l'onglet Comptoir perd le focus quand on change
+// d'onglet, la caméra doit s'éteindre.
+const mockFocus = { value: true, listeners: new Set<() => void>() };
 jest.mock("expo-router", () => {
   const React = require("react");
   return {
     useFocusEffect: (callback: () => void | (() => void)) => {
-      React.useEffect(callback, [callback]);
+      const focused = React.useSyncExternalStore(
+        (l: () => void) => {
+          mockFocus.listeners.add(l);
+          return () => mockFocus.listeners.delete(l);
+        },
+        () => mockFocus.value,
+      );
+      React.useEffect(() => (focused ? callback() : undefined), [callback, focused]);
     },
   };
 });
+const setFocus = (value: boolean) =>
+  act(() => {
+    mockFocus.value = value;
+    mockFocus.listeners.forEach((l) => l());
+  });
 
 jest.mock("@/lib/api", () => {
   const actual = jest.requireActual("@/lib/api");
@@ -80,6 +97,17 @@ jest.mock("react-native-safe-area-context", () => {
 // Importé APRÈS les mocks (les écrans les résolvent à l'import).
 // eslint-disable-next-line import/first
 import { ComptoirScreen } from "../ComptoirScreen";
+// eslint-disable-next-line import/first
+import { AppState, BackHandler, type AppStateStatus } from "react-native";
+
+let appStateHandlers: ((s: AppStateStatus) => void)[] = [];
+const emitAppState = (s: AppStateStatus) => act(() => appStateHandlers.forEach((h) => h(s)));
+
+// Bouton retour matériel (Android) : on capture les écouteurs posés par
+// l'écran et on simule l'appui ; « true » = l'écran a consommé le retour.
+type BackListener = (event?: unknown) => boolean | null | undefined;
+let backHandlers: BackListener[] = [];
+const pressBack = () => backHandlers.map((h) => h());
 
 const CREDIT = {
   success: true,
@@ -97,6 +125,74 @@ const scanner = async () => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockPermission = { granted: true, canAskAgain: true };
+  mockFocus.value = true;
+  appStateHandlers = [];
+  jest.spyOn(AppState, "addEventListener").mockImplementation((_type, handler) => {
+    appStateHandlers.push(handler as (s: AppStateStatus) => void);
+    return { remove: jest.fn() };
+  });
+  backHandlers = [];
+  jest.spyOn(BackHandler, "addEventListener").mockImplementation((_type, handler) => {
+    const listener = handler as BackListener;
+    backHandlers.push(listener);
+    return { remove: () => { backHandlers = backHandlers.filter((h) => h !== listener); } };
+  });
+});
+
+afterEach(() => jest.restoreAllMocks());
+
+describe("ComptoirScreen — cycle de vie de la caméra", () => {
+  it("éteint la caméra quand l'onglet perd le focus, la rallume au retour", async () => {
+    await render(<ComptoirScreen />);
+    expect(screen.getByTestId("camera-simulee")).toBeTruthy();
+
+    await setFocus(false);
+    expect(screen.queryByTestId("camera-simulee")).toBeNull();
+    expect(screen.getByTestId("camera-en-pause")).toBeTruthy();
+
+    await setFocus(true);
+    expect(screen.getByTestId("camera-simulee")).toBeTruthy();
+  });
+
+  it("éteint la caméra quand l'app passe en arrière-plan", async () => {
+    await render(<ComptoirScreen />);
+
+    await emitAppState("background");
+    expect(screen.queryByTestId("camera-simulee")).toBeNull();
+
+    await emitAppState("active");
+    expect(screen.getByTestId("camera-simulee")).toBeTruthy();
+  });
+
+  it("le bouton retour matériel ferme le résultat, jamais l'app", async () => {
+    mockPost.mockResolvedValue(CREDIT);
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+
+    let consomme: (boolean | null | undefined)[] = [];
+    await act(async () => {
+      consomme = pressBack();
+    });
+
+    // L'écran a consommé le retour (true) : Android ne ferme pas l'app.
+    expect(consomme).toEqual([true]);
+    expect(screen.queryByTestId("resultat-scan")).toBeNull();
+    // Résultat fermé → plus aucun écouteur : le retour reprend son sens normal.
+    expect(backHandlers).toHaveLength(0);
+  });
+
+  it("sans résultat ouvert, le bouton retour n'est pas intercepté", async () => {
+    await render(<ComptoirScreen />);
+    expect(backHandlers).toHaveLength(0);
+  });
+
+  it("le résultat indique discrètement qu'un toucher suffit pour continuer", async () => {
+    mockPost.mockResolvedValue(CREDIT);
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByText("Toucher pour continuer")).toBeTruthy());
+  });
 });
 
 describe("ComptoirScreen — permission caméra", () => {

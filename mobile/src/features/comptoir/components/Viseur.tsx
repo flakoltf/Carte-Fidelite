@@ -6,7 +6,8 @@ import { colors, radius, spacing, type } from "@/theme";
 /**
  * Viseur plein écran. La caméra reste montée pendant tout le passage sur
  * l'onglet : la rallumer entre deux clients coûterait une seconde à chaque fois.
- * C'est l'appelant qui décide d'ignorer ou non les lectures (`actif`).
+ * C'est l'appelant qui décide d'ignorer ou non les lectures (`actif`), et qui
+ * DÉMONTE le viseur dès que l'onglet n'est plus visible (useCameraActive).
  */
 export function Viseur({
   actif,
@@ -30,6 +31,7 @@ export function Viseur({
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
+        active
         enableTorch={torche}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
         onBarcodeScanned={handleScan}

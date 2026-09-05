@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { colors, radius, spacing, type } from "@/theme";
+import { colors, spacing, type } from "@/theme";
 
 import type { ScanOutcome, ScanOutcomeKind } from "../scanContract";
 
@@ -35,7 +35,7 @@ export function ResultatPleinEcran({
     <Pressable
       testID="resultat-scan"
       accessibilityRole="button"
-      accessibilityLabel={`${outcome.title}. Toucher pour scanner la carte suivante.`}
+      accessibilityLabel={`${outcome.title}. Toucher pour continuer.`}
       accessibilityLiveRegion="assertive"
       onPress={onFermer}
       style={[styles.plein, { backgroundColor: palette.fond }]}
@@ -68,9 +68,8 @@ export function ResultatPleinEcran({
         ) : null}
       </View>
 
-      <View style={[styles.reprendre, { borderColor: palette.texte }]}>
-        <Text style={[styles.reprendreTexte, { color: palette.texte }]}>Scanner la carte suivante</Text>
-      </View>
+      {/* Mention discrète : tout l'écran est le bouton (A2). */}
+      <Text style={[styles.reprendre, { color: palette.texte }]}>Toucher pour continuer</Text>
     </Pressable>
   );
 }
@@ -103,13 +102,5 @@ const styles = StyleSheet.create({
   detail: { fontSize: 32, lineHeight: 38, fontWeight: "600", textAlign: "center", opacity: 0.95 },
   client: { ...type.body, textAlign: "center", opacity: 0.9 },
   message: { ...type.body, textAlign: "center", opacity: 0.95, paddingHorizontal: spacing.md },
-  reprendre: {
-    minHeight: 52,
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    opacity: 0.85,
-  },
-  reprendreTexte: { ...type.bodyStrong },
+  reprendre: { ...type.small, opacity: 0.75, textAlign: "center" },
 });
