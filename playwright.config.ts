@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { STORAGE_STATE } from "./e2e/paths";
+import { ADMIN_STORAGE_STATE, STORAGE_STATE } from "./e2e/paths";
 
 // Garde-fou absolu : les tests E2E ne tournent QUE contre localhost.
 // On refuse de pointer vers la prod (halocard.ch) même via variable d'env.
@@ -27,12 +27,14 @@ export default defineConfig({
   },
   projects: [
     // Étape 0 : login marchand → storageState (cf. e2e/auth.setup.ts).
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "setup", testMatch: /(^|\/)auth\.setup\.ts$/ },
     {
       // « Mobile Safari » = forme du comptoir (iPhone 13). On force le moteur
       // chromium (installé en CI) ; le device fournit viewport + tactile + isMobile.
       name: "Mobile Safari",
       testMatch: /.*\.spec\.ts/,
+      // Les specs admin ont leur propre session (projet « Admin » ci-dessous).
+      testIgnore: /(^|\/)admin-[^/]*\.spec\.ts$/,
       dependencies: ["setup"],
       use: {
         ...devices["iPhone 13"],
@@ -46,6 +48,21 @@ export default defineConfig({
         launchOptions: {
           args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
         },
+      },
+    },
+    // Étape 0 bis : login admin → storageState admin (ignoré sans E2E_ADMIN_PASSWORD).
+    { name: "admin-setup", testMatch: /(^|\/)admin\.setup\.ts$/ },
+    {
+      // Back-office : mêmes device/moteur que le comptoir, session admin.
+      name: "Admin",
+      testMatch: /(^|\/)admin-[^/]*\.spec\.ts$/,
+      dependencies: ["admin-setup"],
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "chromium",
+        // Sans E2E_ADMIN_PASSWORD, admin.setup est ignoré et le fichier n'existe
+        // pas : on ne le référence pas (les specs admin se skippent d'elles-mêmes).
+        storageState: process.env.E2E_ADMIN_PASSWORD ? ADMIN_STORAGE_STATE : undefined,
       },
     },
   ],
