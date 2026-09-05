@@ -27,6 +27,15 @@ export function resolveLoyaltyProgram(row: MerchantProgramRow | null): LoyaltyPr
     if (cfg.welcome_stamps === 1) config.welcome_stamps = 1;
     const im = cfg.intermediate_milestone;
     if (typeof im === "number" && Number.isInteger(im) && im > 1 && im < resolvedGoal) config.intermediate_milestone = im;
+    // Échéance glissante : seules les valeurs saines traversent (mêmes bornes que validate) —
+    // le cron d'expiration lit le programme via CE résolveur.
+    const exp = cfg.expiration as Record<string, unknown> | undefined;
+    if (
+      typeof exp === "object" && exp !== null && exp.type === "rolling" &&
+      typeof exp.months === "number" && Number.isInteger(exp.months) && exp.months >= 1 && exp.months <= 60
+    ) {
+      config.expiration = { type: "rolling", months: exp.months };
+    }
     return { type: "stamp_card", config };
   }
   return fallback;

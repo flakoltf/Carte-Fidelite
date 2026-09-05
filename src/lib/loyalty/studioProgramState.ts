@@ -34,9 +34,13 @@ export type PointsRulesState = {
 
 export type TierState = { name: string; at: number };
 
+// Échéance glissante stamp_card / amount_points (sous-ensemble de l'expiration
+// points : pas de date fixe — remise à zéro si aucun passage pendant N mois).
+export type CycleExpirationState = { type: "none" } | { type: "rolling"; months: number };
+
 export type ProgramRulesState =
   // L'objectif (goal) vit dans design.stamps.goal — source unique côté Studio.
-  | { type: "stamp_card"; welcomeStamp: boolean; intermediateMilestone: number | null }
+  | { type: "stamp_card"; welcomeStamp: boolean; intermediateMilestone: number | null; expiration: CycleExpirationState }
   | { type: "visit_based"; milestones: number[] }
   | { type: "tiered"; tiers: TierState[] }
   | {
@@ -45,6 +49,7 @@ export type ProgramRulesState =
       rewardThreshold: number;
       rewardLabel: string;
       maxPointsPerScan: number | null; // null = défaut moteur (clé omise)
+      expiration: CycleExpirationState;
     }
   | ({ type: "points" } & PointsRulesState);
 
@@ -63,7 +68,7 @@ export const DEFAULT_POINTS_RULES: PointsRulesState = {
 export function defaultProgramRules(type: LoyaltyType): ProgramRulesState {
   switch (type) {
     case "stamp_card":
-      return { type: "stamp_card", welcomeStamp: false, intermediateMilestone: null };
+      return { type: "stamp_card", welcomeStamp: false, intermediateMilestone: null, expiration: { type: "none" } };
     case "visit_based":
       return { type: "visit_based", milestones: [5, 10, 20] };
     case "tiered":
@@ -76,7 +81,14 @@ export function defaultProgramRules(type: LoyaltyType): ProgramRulesState {
         ],
       };
     case "amount_points":
-      return { type: "amount_points", pointsPerChf: 1, rewardThreshold: 200, rewardLabel: "CHF 20 offerts", maxPointsPerScan: null };
+      return {
+        type: "amount_points",
+        pointsPerChf: 1,
+        rewardThreshold: 200,
+        rewardLabel: "CHF 20 offerts",
+        maxPointsPerScan: null,
+        expiration: { type: "none" },
+      };
     case "points":
       return { type: "points", ...DEFAULT_POINTS_RULES };
   }
@@ -90,6 +102,15 @@ export function cardTypeForProgram(type: LoyaltyType): CardTypeKey {
 
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+
+// Chargement tolérant de l'échéance glissante (jsonb libre) : tout ce qui n'est
+// pas un rolling sain → none (fixed_date n'existe pas pour ces mécaniques).
+function cycleExpirationFromConfig(exp: unknown): CycleExpirationState {
+  if (isObj(exp) && exp.type === "rolling" && typeof exp.months === "number") {
+    return { type: "rolling", months: exp.months };
+  }
+  return { type: "none" };
+}
 
 function pointsRulesFromConfig(config: Record<string, unknown>): PointsRulesState {
   const pointsPerScan = isInt(config.pointsPerScan) ? config.pointsPerScan : DEFAULT_POINTS_RULES.pointsPerScan;
@@ -118,7 +139,12 @@ export function programRulesFromMerchant(type: unknown, config: unknown): Progra
   switch (type) {
     case "stamp_card": {
       const im = cfg.intermediate_milestone;
-      return { type: "stamp_card", welcomeStamp: cfg.welcome_stamps === 1, intermediateMilestone: isInt(im) ? im : null };
+      return {
+        type: "stamp_card",
+        welcomeStamp: cfg.welcome_stamps === 1,
+        intermediateMilestone: isInt(im) ? im : null,
+        expiration: cycleExpirationFromConfig(cfg.expiration),
+      };
     }
     case "visit_based": {
       const milestones = (Array.isArray(cfg.milestones) ? cfg.milestones : []).filter(isInt);
@@ -138,6 +164,7 @@ export function programRulesFromMerchant(type: unknown, config: unknown): Progra
         rewardThreshold: isInt(cfg.rewardThreshold) ? cfg.rewardThreshold : d.rewardThreshold,
         rewardLabel: typeof cfg.rewardLabel === "string" ? cfg.rewardLabel : d.rewardLabel,
         maxPointsPerScan: isInt(cfg.maxPointsPerScan) ? cfg.maxPointsPerScan : null,
+        expiration: cycleExpirationFromConfig(cfg.expiration),
       };
     }
     case "points":
@@ -158,6 +185,9 @@ export function programRulesToStudioInput(rules: ProgramRulesState, stampGoal: n
         goal: stampGoal,
         welcome_stamps: rules.welcomeStamp ? 1 : 0,
         intermediate_milestone: rules.intermediateMilestone,
+        // « none » → clé (et config) omises : validate n'écrit l'expiration
+        // que quand une échéance est réellement configurée.
+        ...(rules.expiration.type !== "none" ? { config: { expiration: rules.expiration } } : {}),
       };
     case "visit_based":
       return { ...base, config: { milestones: rules.milestones } };
@@ -171,6 +201,7 @@ export function programRulesToStudioInput(rules: ProgramRulesState, stampGoal: n
           rewardThreshold: rules.rewardThreshold,
           rewardLabel: rules.rewardLabel,
           maxPointsPerScan: rules.maxPointsPerScan,
+          ...(rules.expiration.type !== "none" ? { expiration: rules.expiration } : {}),
         },
       };
     case "points": {

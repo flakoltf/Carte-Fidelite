@@ -1,11 +1,20 @@
 export type LoyaltyType = "stamp_card" | "visit_based" | "tiered" | "amount_points" | "points";
 
+// Échéance de cycle des mécaniques à cycle (stamp_card, amount_points, points) :
+// « glissante » = le cycle repart à zéro si aucun passage pendant N mois (1–60).
+// « none » n'est jamais persisté (clé omise). fixed_date reste réservé aux cartes
+// à points (décision produit 2026-09-05) — visit_based et tiered n'ont AUCUNE
+// expiration : leur progression est à vie, une échéance rétrograderait le client.
+export type CycleExpiration = { type: "none" } | { type: "rolling"; months: number };
+
 export type StampCardConfig = {
   goal: number;
   // Tampon de bienvenue offert à la création de la carte (0 = aucun, 1 = un tampon). Défaut 0.
   welcome_stamps?: 0 | 1;
   // Récompense intermédiaire : palier unique strictement compris entre 1 et goal. null/absent = aucune.
   intermediate_milestone?: number | null;
+  // Échéance glissante du cycle de tampons (absent = jamais). Remise à zéro par le cron.
+  expiration?: CycleExpiration;
 };
 export type VisitBasedConfig = { milestones: number[] };
 export type Tier = { name: string; at: number };
@@ -22,15 +31,18 @@ export type AmountPointsConfig = {
   rewardThreshold: number;
   rewardLabel: string;
   maxPointsPerScan?: number;
+  // Échéance glissante du solde de points (absent = jamais). Remise à zéro par le cron.
+  expiration?: CycleExpiration;
 };
 
 // Carte à points (points FIXES par scan — distinct d'amount_points).
 // Paliers cumulatifs strictement croissants ; le DERNIER = maximum (cap + reset).
 export type PointsTier = { threshold: number; reward: string };
+// Même forme qu'avant (none / fixed_date / rolling) — CycleExpiration en est le
+// sous-ensemble sans date fixe, partagé avec stamp_card et amount_points.
 export type PointsExpiration =
-  | { type: "none" }
-  | { type: "fixed_date"; month: number; day: number } // reset annuel récurrent
-  | { type: "rolling"; months: number }; // N mois après le 1er scan du cycle
+  | CycleExpiration
+  | { type: "fixed_date"; month: number; day: number }; // reset annuel récurrent
 // Statut client (Bronze/Argent/Or…) par cumul de points À VIE (lifetime_points,
 // jamais remis à zéro — distinct du cycle points_balance/redeemed_tiers).
 // Purement INFORMATIF : n'influence jamais le gain de points. `benefit` = texte

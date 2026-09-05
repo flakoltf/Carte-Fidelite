@@ -1,9 +1,26 @@
-import type { AmountPointsConfig, LoyaltyProgram, PointsConfig, PointsTier, StampCardConfig, StatusTier } from "./types";
+import type { AmountPointsConfig, CycleExpiration, LoyaltyProgram, PointsConfig, PointsTier, StampCardConfig, StatusTier } from "./types";
 
 export type ValidateResult = { ok: true; program: LoyaltyProgram } | { ok: false; error: string };
 
 const isInt = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v);
 const strictAsc = (xs: number[]): boolean => xs.every((x, i) => i === 0 || x > xs[i - 1]);
+
+// Échéance glissante partagée stamp_card / amount_points : même forme que points
+// ({ type, months }) mais fixed_date REFUSÉ (réservé aux cartes à points —
+// décision produit 2026-09-05). "none"/absent → { ok, value: undefined } : la
+// clé est omise de la config nettoyée.
+type CycleExpirationResult = { ok: true; value?: CycleExpiration } | { ok: false; error: string };
+function parseCycleExpiration(exp: unknown): CycleExpirationResult {
+  if (exp === undefined || exp === null) return { ok: true };
+  const e = exp as Record<string, unknown>;
+  if (e.type === "none") return { ok: true };
+  if (e.type === "rolling") {
+    if (!isInt(e.months) || e.months < 1 || e.months > 60) return { ok: false, error: "Expiration glissante : 1 à 60 mois." };
+    return { ok: true, value: { type: "rolling", months: e.months } };
+  }
+  if (e.type === "fixed_date") return { ok: false, error: "Expiration à date fixe : réservée aux cartes à points." };
+  return { ok: false, error: "Type d'expiration inconnu." };
+}
 
 export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateResult {
   const cfg = (raw ?? {}) as Record<string, unknown>;
@@ -25,6 +42,12 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
       if (!isInt(im) || im <= 1 || im >= goal) return { ok: false, error: "Récompense intermédiaire : un entier strictement supérieur à 1 et inférieur à l'objectif." };
       config.intermediate_milestone = im;
     }
+
+    // Échéance glissante du cycle — la config nettoyée DOIT la porter (les
+    // routes réécrivent loyalty_config depuis elle : clé perdue = effacée).
+    const exp = parseCycleExpiration(cfg.expiration);
+    if (!exp.ok) return exp;
+    if (exp.value) config.expiration = exp.value;
 
     return { ok: true, program: { type: "stamp_card", config } };
   }
@@ -78,6 +101,11 @@ export function validateLoyaltyProgram(type: unknown, raw: unknown): ValidateRes
       if (!isInt(mpps) || mpps < 1) return { ok: false, error: "Plafond de points par scan : un entier supérieur ou égal à 1." };
       config.maxPointsPerScan = mpps;
     }
+
+    // Échéance glissante du solde — même contrat de préservation que stamp_card.
+    const exp = parseCycleExpiration(cfg.expiration);
+    if (!exp.ok) return exp;
+    if (exp.value) config.expiration = exp.value;
 
     return { ok: true, program: { type: "amount_points", config } };
   }

@@ -14,10 +14,17 @@ import {
 // aller-retour chargement → état Studio → publish. Une clé perdue ici = un
 // effacement silencieux en base (leçon statusTiers).
 const FULL_CONFIGS: Record<string, Record<string, unknown>> = {
-  stamp_card: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5 },
+  stamp_card: { goal: 10, welcome_stamps: 1, intermediate_milestone: 5, expiration: { type: "rolling", months: 6 } },
   visit_based: { milestones: [5, 20, 50] },
   tiered: { tiers: [{ name: "Bronze", at: 1 }, { name: "Argent", at: 10 }, { name: "Or", at: 30 }] },
-  amount_points: { type: "amount_points", pointsPerChf: 1.5, rewardThreshold: 200, rewardLabel: "CHF 20 offerts", maxPointsPerScan: 300 },
+  amount_points: {
+    type: "amount_points",
+    pointsPerChf: 1.5,
+    rewardThreshold: 200,
+    rewardLabel: "CHF 20 offerts",
+    maxPointsPerScan: 300,
+    expiration: { type: "rolling", months: 12 },
+  },
   points: {
     pointsPerScan: 5,
     tiers: [{ threshold: 30, reward: "Café offert" }, { threshold: 80, reward: "Menu offert" }],
@@ -51,6 +58,13 @@ describe("studioProgramState — round-trip loyalty_config ↔ état Studio", ()
     expect(roundTrip("stamp_card", { goal: 8 }).loyalty_config).toEqual({ goal: 8 });
   });
 
+  it("stamp_card / amount_points sans échéance : la clé expiration reste absente", () => {
+    const stamp = roundTrip("stamp_card", { goal: 10 });
+    expect("expiration" in stamp.loyalty_config).toBe(false);
+    const amount = roundTrip("amount_points", { pointsPerChf: 1, rewardThreshold: 200, rewardLabel: "CHF 20 offerts" });
+    expect("expiration" in amount.loyalty_config).toBe(false);
+  });
+
   it("amount_points sans plafond : maxPointsPerScan reste absent", () => {
     const cfg = { type: "amount_points", pointsPerChf: 1, rewardThreshold: 100, rewardLabel: "Dessert offert" };
     expect(roundTrip("amount_points", cfg).loyalty_config).toEqual(cfg);
@@ -73,6 +87,7 @@ describe("studioProgramState — chargement tolérant", () => {
       type: "stamp_card",
       welcomeStamp: true,
       intermediateMilestone: null,
+      expiration: { type: "none" },
     });
   });
 
@@ -110,7 +125,7 @@ describe("studioProgramState — validation (réutilise validateLoyaltyProgram, 
     expect(validateProgramRules(rules, 10)).toEqual(["Seuils de niveaux strictement croissants et distincts."]);
   });
   it("stamp_card : récompense intermédiaire ≥ objectif → erreur", () => {
-    const rules = { type: "stamp_card" as const, welcomeStamp: false, intermediateMilestone: 10 };
+    const rules = { type: "stamp_card" as const, welcomeStamp: false, intermediateMilestone: 10, expiration: { type: "none" as const } };
     expect(validateProgramRules(rules, 10)).toHaveLength(1);
   });
 });

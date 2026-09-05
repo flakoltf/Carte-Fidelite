@@ -19,7 +19,7 @@ export type StudioRulesInput = {
     milestones?: unknown; // visit_based
     tiers?: unknown; // tiered / points
     pointsPerScan?: unknown; // points
-    expiration?: unknown; // points
+    expiration?: unknown; // points (none/fixed_date/rolling) ; stamp_card & amount_points (none/rolling)
     statusTiers?: unknown; // points
     pointsPerChf?: unknown; // amount_points
     rewardThreshold?: unknown; // amount_points
@@ -51,6 +51,8 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
     if (input.intermediate_milestone !== undefined && input.intermediate_milestone !== null) {
       cfg.intermediate_milestone = input.intermediate_milestone;
     }
+    // Échéance glissante du cycle de tampons (absent = jamais).
+    if (input.config?.expiration !== undefined) cfg.expiration = input.config.expiration;
     return cfg;
   }
   if (input.type === "visit_based") return { milestones: input.config?.milestones };
@@ -66,6 +68,8 @@ function configForType(input: StudioRulesInput): Record<string, unknown> {
     if (input.config?.maxPointsPerScan !== undefined && input.config?.maxPointsPerScan !== null) {
       cfg.maxPointsPerScan = input.config.maxPointsPerScan;
     }
+    // Échéance glissante du solde de points (absent = jamais).
+    if (input.config?.expiration !== undefined) cfg.expiration = input.config.expiration;
     return cfg;
   }
   if (input.type === "points") {
