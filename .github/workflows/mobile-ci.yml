@@ -33,6 +33,11 @@ jobs:
           cache: npm
           cache-dependency-path: mobile/package-lock.json
 
+      # Piège connexe (lock généré sur macOS) : sur Linux, npm résout la variante
+      # wasm32-wasi d'@unrs/resolver, qui réclame @emnapi/core et @emnapi/runtime
+      # absents du lock → « Missing @emnapi/core from lock file ». Remède retenu
+      # (les autres échouent) : ces deux paquets sont épinglés en devDependencies
+      # directes de mobile/package.json, donc présents au premier niveau du lock.
       - name: Install dependencies
         run: npm ci
 
