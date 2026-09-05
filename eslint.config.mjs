@@ -16,6 +16,9 @@ const eslintConfig = defineConfig([
     "scripts/**",
     // Worktrees et état local de Claude Code (contiennent des builds .next).
     ".claude/**",
+    // App mobile Expo : projet autonome, avec sa propre config ESLint/TS et sa
+    // propre CI (.github/workflows/mobile-ci.yml).
+    "mobile/**",
   ]),
   // Autorise les paramètres/variables préfixés `_` (intentionnellement inutilisés).
   {
