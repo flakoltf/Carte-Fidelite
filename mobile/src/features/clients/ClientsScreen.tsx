@@ -65,6 +65,9 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            // Un ScrollView s'étire (flexGrow: 1) dans une colonne : on l'en empêche,
+            // sinon la rangée de puces prend toute la hauteur libre.
+            style={styles.chipsRow}
             contentContainerStyle={styles.chips}
             keyboardShouldPersistTaps="handled"
           >
@@ -197,7 +200,8 @@ const styles = StyleSheet.create({
   eyebrow: { ...type.eyebrow, color: colors.halo },
   title: { ...type.h1, color: colors.ink },
   subtitle: { ...type.small, color: colors.inkMuted },
-  chips: { gap: spacing.sm, paddingVertical: spacing.xs },
+  chipsRow: { flexGrow: 0, flexShrink: 0 },
+  chips: { gap: spacing.sm, paddingVertical: spacing.xs, alignItems: "center" },
   chip: {
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: spacing.md,
