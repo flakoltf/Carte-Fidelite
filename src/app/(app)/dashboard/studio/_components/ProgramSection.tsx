@@ -8,7 +8,7 @@
 
 import { Plus, Trash2 } from 'lucide-react';
 import type { LoyaltyType } from '@/lib/loyalty/types';
-import { PROGRAM_TYPES, type ProgramRulesState, type TierState } from '@/lib/loyalty/studioProgramState';
+import { PROGRAM_TYPES, type CycleExpirationState, type ProgramRulesState, type TierState } from '@/lib/loyalty/studioProgramState';
 import PointsSection from './PointsSection';
 
 export const PROGRAM_LABELS: Record<LoyaltyType, string> = {
@@ -129,6 +129,65 @@ function ProgramRulesEditor({ rules, onChange, stampGoal }: { rules: ProgramRule
   }
 }
 
+// ─── Échéance glissante (stamp_card / amount_points) ─────────────────────────
+// Même copy que l'expiration des cartes à points, adaptée à l'ancre réelle :
+// ici le cycle repart à zéro après N mois SANS PASSAGE (dernier passage,
+// pas premier scan du cycle). La borne 1–60 est celle du moteur (validate).
+
+const ROLLING_MONTHS_MIN = 1;
+const ROLLING_MONTHS_MAX = 60;
+
+function CycleExpirationEditor({
+  id,
+  label,
+  help,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  help: string;
+  value: CycleExpirationState;
+  onChange: (v: CycleExpirationState) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-medium text-galet-ink mb-1.5 block">
+        {label}
+      </label>
+      <p className="text-[11px] text-galet-ink mb-2">{help}</p>
+      <select
+        id={id}
+        value={value.type}
+        onChange={(e) => onChange(e.target.value === 'rolling' ? { type: 'rolling', months: 12 } : { type: 'none' })}
+        className="w-full bg-surface border border-line-warm rounded-2xl py-3 px-4 text-onyx focus:border-halo outline-none transition-all"
+      >
+        <option value="none">Aucune expiration</option>
+        <option value="rolling">Glissante : remise à zéro après N mois sans passage</option>
+      </select>
+      {value.type === 'rolling' && (
+        <div className="mt-2 flex items-center gap-3">
+          <input
+            type="number"
+            min={ROLLING_MONTHS_MIN}
+            max={ROLLING_MONTHS_MAX}
+            value={value.months}
+            aria-label="Durée avant expiration en mois"
+            onChange={(e) =>
+              onChange({
+                type: 'rolling',
+                months: Math.max(ROLLING_MONTHS_MIN, Math.min(ROLLING_MONTHS_MAX, Number(e.target.value) || ROLLING_MONTHS_MIN)),
+              })
+            }
+            className={`${inputCls} w-20`}
+          />
+          <span className="text-xs text-galet-ink">mois après le dernier passage.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Carte à tampons : options au-delà de l'objectif ─────────────────────────
 
 function StampRulesEditor({
@@ -182,7 +241,13 @@ function StampRulesEditor({
         </select>
       </div>
 
-      <p className="text-[11px] text-galet-ink">Sans échéance : les tampons restent acquis jusqu&apos;à la carte pleine.</p>
+      <CycleExpirationEditor
+        id="stamp-expiration"
+        label="Expiration des tampons"
+        help="À l'échéance, les tampons du cycle repartent à zéro. Sans échéance, ils restent acquis jusqu'à la carte pleine."
+        value={rules.expiration}
+        onChange={(expiration) => onChange({ ...rules, expiration })}
+      />
     </div>
   );
 }
@@ -378,7 +443,13 @@ function AmountPointsEditor({
           className={`${inputCls} w-28`}
         />
       </div>
-      <p className="text-[11px] text-galet-ink">Sans échéance : les points restent acquis jusqu&apos;à la récompense.</p>
+      <CycleExpirationEditor
+        id="ap-expiration"
+        label="Expiration des points"
+        help="À l'échéance, le solde de points repart à zéro. Sans échéance, les points restent acquis jusqu'à la récompense."
+        value={rules.expiration}
+        onChange={(expiration) => onChange({ ...rules, expiration })}
+      />
     </div>
   );
 }

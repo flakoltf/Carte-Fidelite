@@ -123,6 +123,33 @@ describe("StudioClient — publication round-trip de TOUTES les mécaniques", ()
     expect(publishBody()!.program).toEqual({ type: "stamp_card", goal: 8, welcome_stamps: 1, intermediate_milestone: null });
   });
 
+  it("stamp_card : l'échéance glissante chargée ressort à la publication", async () => {
+    setup("stamp_card", { goal: 10, expiration: { type: "rolling", months: 6 } });
+    const program = await renderAndPublish();
+    expect(program).toMatchObject({ type: "stamp_card", goal: 10, config: { expiration: { type: "rolling", months: 6 } } });
+  });
+
+  it("stamp_card : activer l'échéance glissante au Studio → publiée", async () => {
+    setup("stamp_card", { goal: 10 });
+    render(<StudioClient />);
+    await screen.findByText(/studio de carte/i);
+    fireEvent.change(screen.getByRole("combobox", { name: /expiration des tampons/i }), { target: { value: "rolling" } });
+    fireEvent.change(screen.getByRole("spinbutton", { name: /durée avant expiration en mois/i }), { target: { value: "9" } });
+    fireEvent.click(screen.getByRole("button", { name: /publier la version/i }));
+    await waitFor(() => expect(publishBody()).toBeTruthy());
+    expect(publishBody()!.program).toMatchObject({ type: "stamp_card", config: { expiration: { type: "rolling", months: 9 } } });
+  });
+
+  it("amount_points : l'échéance glissante chargée ressort intacte", async () => {
+    setup(
+      "amount_points",
+      { type: "amount_points", pointsPerChf: 1, rewardThreshold: 200, rewardLabel: "CHF 20 offerts", expiration: { type: "rolling", months: 12 } },
+      "points"
+    );
+    const program = await renderAndPublish();
+    expect(program).toMatchObject({ type: "amount_points", config: { expiration: { type: "rolling", months: 12 } } });
+  });
+
   it("visit_based : les paliers chargés ressortent intacts", async () => {
     setup("visit_based", { milestones: [5, 20, 50] });
     const program = await renderAndPublish();
