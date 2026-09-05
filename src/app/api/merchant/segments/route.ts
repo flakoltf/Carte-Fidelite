@@ -14,8 +14,10 @@ import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const merchantId = await currentMerchantId();
+// Lecture ouverte au jeton Bearer (base clients de l'app mobile) ; le PATCH
+// reste cookie uniquement (réglage depuis le dashboard).
+export async function GET(req: Request) {
+  const merchantId = await currentMerchantId({ request: req });
   if (!merchantId) return NextResponse.json({ error: "non authentifié" }, { status: 401 });
 
   const { data, error } = await supabaseAdmin
