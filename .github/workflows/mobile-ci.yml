@@ -1,0 +1,61 @@
+name: CI mobile
+
+# Le projet Expo de `mobile/` est autonome : sa CI ne se déclenche que sur ses
+# propres fichiers, sans toucher au pipeline de l'app web.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Bug npm/cli#4828 : un package-lock.json généré sur macOS ne référence pas
+      # les binaires natifs Linux (@unrs/resolver pour eslint, lightningcss) →
+      # ils manquent sur le runner après `npm ci`. Même remède que la CI web :
+      # on ajoute les variantes Linux aux versions DÉJÀ figées dans le lock, la
+      # liste étant dérivée du lock lui-même (donc auto-maintenue).
+      - name: Ajoute les binaires natifs Linux manquants (npm/cli#4828)
+        run: |
+          PKGS=$(node -e 'const l=require("./package-lock.json").packages;const out=[];for(const k of Object.keys(l)){if(!k.endsWith("-darwin-arm64"))continue;const base=k.slice("node_modules/".length,-"-darwin-arm64".length);out.push((base.startsWith("@img/sharp")?base+"-linux-x64":base+"-linux-x64-gnu")+"@"+l[k].version);}process.stdout.write(out.join(" "));')
+          if [ -n "$PKGS" ]; then
+            echo "Binaires Linux ajoutés : $PKGS"
+            npm install --no-save --no-audit --no-fund $PKGS
+          else
+            echo "Aucun binaire natif à compléter."
+          fi
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests (Jest)
+        run: npm test
