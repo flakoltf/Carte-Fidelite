@@ -2,8 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Store, RefreshCw, Check, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { Loader2, Store, RefreshCw, Check, AlertCircle } from "lucide-react";
 import type { LoyaltyType } from "@/lib/loyalty/types";
+import {
+  defaultProgramRules,
+  programRulesFromMerchant,
+  programRulesToStudioInput,
+  validateProgramRules,
+  type ProgramRulesState,
+} from "@/lib/loyalty/studioProgramState";
+import { buildLoyaltyUpdate } from "@/lib/loyalty/studioRules";
+import AdminProgramRules from "./AdminProgramRules";
+
+function effectiveStampGoal(type: LoyaltyType, config: unknown, fallback: number): number {
+  if (type !== "stamp_card") return fallback;
+  const goal = (config as { goal?: unknown } | null)?.goal;
+  return typeof goal === "number" && Number.isInteger(goal) && goal >= 1 && goal <= 50 ? goal : fallback;
+}
 
 const BUSINESS_OPTIONS = ["cafe", "restaurant", "boulangerie", "boutique", "salon", "sport", "autre"];
 
@@ -18,33 +33,32 @@ interface Props {
     businessType: string;
     thresholds: { activeDays: number; atRiskDays: number; vipVisits: number; newTenureDays: number };
     address: string | null;
+    // Programme tel qu'en base : la fiche charge TOUTES les clés de
+    // loyalty_config (programRulesFromMerchant) et les renvoie intégralement.
     loyaltyType: LoyaltyType;
-    milestones: number[];
-    tiers: { name: string; at: number }[];
-    // amount_points (BETA) : config existante si le marchand est déjà sur ce type.
-    amountPoints?: { pointsPerChf: number; rewardThreshold: number; rewardLabel: string } | null;
+    loyaltyConfig: unknown;
   };
 }
-
-// Option « points par CHF » exposée dans l'UI uniquement en beta (flag) — mais le
-// SERVEUR la gère toujours : un compte déjà configuré ne casse pas si le flag tombe.
-const POINTS_BETA = process.env.NEXT_PUBLIC_POINTS_BETA === "1";
 
 export default function EditMerchantForm({ merchant }: Props) {
   const router = useRouter();
   const [shopName, setShopName] = useState(merchant.shopName);
   const [primaryColor, setPrimaryColor] = useState(merchant.primaryColor);
   const [logoUrl, setLogoUrl] = useState(merchant.logoUrl || "");
-  const [stampGoal, setStampGoal] = useState(merchant.stampGoal);
-  const [loyaltyType, setLoyaltyType] = useState<LoyaltyType>(merchant.loyaltyType);
-  const [milestonesStr, setMilestonesStr] = useState(merchant.milestones.join(", "));
-  const [tiers, setTiers] = useState<{ name: string; at: number }[]>(
-    merchant.tiers.length ? merchant.tiers : [{ name: "", at: 1 }]
+  // Objectif affiché = celui que le MOTEUR applique. resolveLoyaltyProgram lit
+  // loyalty_config.goal AVANT merchants.stamp_goal : en cas de dérive entre les
+  // deux colonnes, afficher stamp_goal ferait éditer un objectif fantôme — et
+  // la sauvegarde écrirait cette valeur périmée dans loyalty_config.goal.
+  const [stampGoal, setStampGoal] = useState(() => effectiveStampGoal(merchant.loyaltyType, merchant.loyaltyConfig, merchant.stampGoal));
+  // Règles du programme (5 mécaniques) — état typé partagé avec le Studio.
+  const [rules, setRules] = useState<ProgramRulesState>(() =>
+    programRulesFromMerchant(merchant.loyaltyType, merchant.loyaltyConfig),
   );
-  // amount_points (BETA) : prérempli depuis la config existante, sinon valeurs par défaut.
-  const [pointsPerChf, setPointsPerChf] = useState(merchant.amountPoints?.pointsPerChf ?? 1);
-  const [rewardThreshold, setRewardThreshold] = useState(merchant.amountPoints?.rewardThreshold ?? 200);
-  const [rewardLabel, setRewardLabel] = useState(merchant.amountPoints?.rewardLabel ?? "CHF 20 offerts");
+  // Changer de mécanique charge les défauts du moteur ; revenir au type en base
+  // restaure la config existante du marchand (rien n'est perdu par un aller-retour).
+  const selectType = (type: LoyaltyType) =>
+    setRules(type === merchant.loyaltyType ? programRulesFromMerchant(type, merchant.loyaltyConfig) : defaultProgramRules(type));
+  const ruleErrors = validateProgramRules(rules, stampGoal);
   const [scanCooldownSeconds, setScanCooldownSeconds] = useState(merchant.scanCooldownSeconds);
   const [businessType, setBusinessType] = useState(merchant.businessType);
   const [activeDays, setActiveDays] = useState(merchant.thresholds.activeDays);
@@ -63,26 +77,16 @@ export default function EditMerchantForm({ merchant }: Props) {
     setError("");
     setMsg("");
 
-    // Construit la config du programme selon le type choisi (la validation serveur fait foi).
-    let loyaltyConfig: Record<string, unknown>;
-    if (loyaltyType === "visit_based") {
-      const milestones = milestonesStr
-        .split(",")
-        .map((s) => Number(s.trim()))
-        .filter((n) => Number.isFinite(n));
-      loyaltyConfig = { milestones };
-    } else if (loyaltyType === "tiered") {
-      loyaltyConfig = { tiers: tiers.map((t) => ({ name: t.name.trim(), at: Number(t.at) })) };
-    } else if (loyaltyType === "amount_points") {
-      // La validation serveur (validateLoyaltyProgram) fait foi sur les bornes.
-      loyaltyConfig = {
-        pointsPerChf: Number(pointsPerChf),
-        rewardThreshold: Number(rewardThreshold),
-        rewardLabel: rewardLabel.trim(),
-      };
-    } else {
-      loyaltyConfig = { goal: stampGoal };
+    // Config du programme = état complet validé par le MOTEUR (buildLoyaltyUpdate
+    // → validateLoyaltyProgram) : même message qu'au serveur, aucune règle locale.
+    const built = buildLoyaltyUpdate(programRulesToStudioInput(rules, stampGoal));
+    if (!built.ok) {
+      setError(built.error);
+      setSaving(false);
+      return;
     }
+    const loyaltyType = built.update.loyalty_type;
+    const loyaltyConfig = built.update.loyalty_config;
 
     try {
       const res = await fetch(`/api/admin/merchants/${merchant.id}`, {
@@ -175,89 +179,20 @@ export default function EditMerchantForm({ merchant }: Props) {
 
       <h2 className="font-display font-bold text-onyx pt-2 border-t border-line-warm">Programme &amp; segmentation</h2>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-galet-ink ml-1">Type de programme</label>
-        <select value={loyaltyType} onChange={(e) => setLoyaltyType(e.target.value as LoyaltyType)} className={numInput}>
-          <option value="stamp_card">Carte à tampons (objectif)</option>
-          <option value="visit_based">Paliers de visites (récompenses successives)</option>
-          <option value="tiered">Niveaux de fidélité (statuts)</option>
-          {/* Beta : visible si flag activé, OU si le compte est déjà sur ce type
-              (pour ne jamais masquer une config existante). */}
-          {(POINTS_BETA || loyaltyType === "amount_points") && (
-            <option value="amount_points">Points par CHF dépensés (BETA)</option>
-          )}
-        </select>
-        <p className="text-xs text-galet ml-1">
-          {loyaltyType === "stamp_card" && "Cyclique : la carte se remplit jusqu'à l'objectif, puis se remet à zéro à l'encaissement."}
-          {loyaltyType === "visit_based" && "Cumulatif : une récompense est offerte à chaque palier de visites atteint, sans remise à zéro."}
-          {loyaltyType === "tiered" && "Cumulatif : le client gagne des niveaux permanents selon ses visites (pas d'encaissement)."}
-          {loyaltyType === "amount_points" && "Cumulatif : chaque encaissement crédite des points au prorata du montant dépensé ; récompense au seuil de points."}
-        </p>
-      </div>
-
-      {loyaltyType === "amount_points" && (
-        <div className="space-y-3">
+      <AdminProgramRules
+        rules={rules}
+        onChange={setRules}
+        onSelectType={selectType}
+        stampGoal={stampGoal}
+        errors={ruleErrors}
+        goalField={
           <div className="space-y-2">
-            <label className="text-sm font-medium text-galet-ink ml-1">Points par franc dépensé</label>
-            <input type="number" min={0} step="0.1" value={pointsPerChf}
-              onChange={(e) => setPointsPerChf(Number(e.target.value))} className={numInput} />
+            <label htmlFor="admin-stamp-goal" className="text-sm font-medium text-galet-ink ml-1">Objectif carte (tampons)</label>
+            <input id="admin-stamp-goal" type="number" min={1} max={50} value={stampGoal}
+              onChange={(e) => setStampGoal(Number(e.target.value))} className={numInput} />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-galet-ink ml-1">Seuil de récompense (points)</label>
-            <input type="number" min={1} value={rewardThreshold}
-              onChange={(e) => setRewardThreshold(Number(e.target.value))} className={numInput} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-galet-ink ml-1">Libellé de la récompense</label>
-            <input value={rewardLabel} maxLength={80} placeholder="Ex : CHF 20 offerts"
-              onChange={(e) => setRewardLabel(e.target.value)} className={numInput} />
-          </div>
-        </div>
-      )}
-
-      {loyaltyType === "stamp_card" && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-galet-ink ml-1">Objectif carte (tampons)</label>
-          <input type="number" min={1} max={50} value={stampGoal}
-            onChange={(e) => setStampGoal(Number(e.target.value))} className={numInput} />
-        </div>
-      )}
-
-      {loyaltyType === "visit_based" && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-galet-ink ml-1">Paliers de visites (séparés par des virgules)</label>
-          <input value={milestonesStr} onChange={(e) => setMilestonesStr(e.target.value)}
-            placeholder="Ex : 5, 20, 50" className={numInput} />
-          <p className="text-xs text-galet ml-1">Valeurs strictement croissantes, jusqu&apos;à 10 paliers.</p>
-        </div>
-      )}
-
-      {loyaltyType === "tiered" && (
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-galet-ink ml-1">Niveaux (nom + nombre de visites)</label>
-          {tiers.map((t, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input value={t.name} maxLength={40} placeholder="Nom (ex : Argent)"
-                onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
-                className={`${numInput} flex-1`} />
-              <input type="number" min={1} value={t.at} placeholder="Seuil"
-                onChange={(e) => setTiers(tiers.map((x, j) => (j === i ? { ...x, at: Number(e.target.value) } : x)))}
-                className={`${numInput} w-28`} />
-              <button type="button" aria-label="Retirer le niveau"
-                onClick={() => setTiers(tiers.length > 1 ? tiers.filter((_, j) => j !== i) : tiers)}
-                className="p-3 rounded-2xl bg-surface border border-line-warm hover:bg-calcaire text-galet-ink transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          {tiers.length < 6 && (
-            <button type="button" onClick={() => setTiers([...tiers, { name: "", at: (tiers[tiers.length - 1]?.at ?? 0) + 1 }])}
-              className="flex items-center gap-2 text-sm text-halo hover:text-halo-600 transition-colors ml-1">
-              <Plus className="w-4 h-4" /> Ajouter un niveau
-            </button>
-          )}
-        </div>
-      )}
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
