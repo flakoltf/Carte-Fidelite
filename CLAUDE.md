@@ -2,7 +2,7 @@
 
 # HaloCard — Guide Claude
 
-> Réécrit le 2026-06-10 (audit 360°). Ce fichier reflète l'état RÉEL du projet —
+> Mis à jour le 2026-09-06. Ce fichier reflète l'état RÉEL du projet —
 > ne pas re-scaffolder ce qui existe déjà. Toujours lire AGENTS.md (Next.js modifié :
 > consulter `node_modules/next/dist/docs/` avant d'écrire du code Next).
 
@@ -27,14 +27,15 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
 |---|---|---|
 | Framework | Next.js 16.2.x App Router (version modifiée — lire AGENTS.md) | route groups `(marketing)` / `(app)` |
 | UI | React 19, Tailwind 4, TS strict, framer-motion, lucide | tokens de marque : `docs/brand-guidelines.md`, `assets/design-tokens.css` |
-| DB / Auth | **Supabase** (Postgres + Auth + RLS) — ~30 migrations dans `supabase/migrations/` | projet prod « WalletCard » |
+| DB / Auth | **Supabase** (Postgres + Auth + RLS) — ~58 migrations dans `supabase/migrations/` | projet prod « WalletCard » |
 | Wallet Apple | `passkit-generator`, web service PassKit + APNs — **prod-ready**, certs valides 06/2027 | clés dans `certs/` (gitignoré) — ne jamais lire leur contenu |
-| Wallet Google | émission OK ; **publishing access en attente** (vertical loyalty uniquement) | bouton client gaté par `NEXT_PUBLIC_GOOGLE_WALLET_READY` |
-| Email | Resend via `src/lib/email/send.ts` (fetch direct, no-op sans `RESEND_API_KEY`) | |
+| Wallet Google | émission OK ; **publishing access demandé le 2026-09-05** (dossier en examen, vertical loyalty) | bouton client gaté par `NEXT_PUBLIC_GOOGLE_WALLET_READY` (encore false) |
+| Email | Resend **ACTIF en prod** via `src/lib/email/send.ts` (`RESEND_API_KEY` + `EMAIL_FROM` posées) — tout envoi part réellement | consentement client : double opt-in + `consentedRecipients` (seul chemin marketing) |
+| App mobile | **`mobile/`** : Expo + React Native (commerçant : Comptoir scan caméra, Clients, Messages, Menu) | auth par jeton Bearer (opt-in par route via `currentAuthSession`), MFA fail-closed ; CI dédiée `mobile-ci.yml` (tsc+eslint+jest) |
 | Rate-limit / idempotence | Upstash Redis (`src/lib/rateLimit.ts`) | |
 | Monitoring | Sentry scaffoldé (`instrumentation*.ts`, scrub PII) — inerte sans DSN | |
 | Déploiement | Vercel, projet `carte-fidelite` — **`main` = production** | domaine halocard.ch (DNS Infomaniak) |
-| Tests | Vitest — 310 tests colocalisés (`__tests__/`) ; CI GitHub Actions (piège lock mac→Linux géré) | `npx vitest run` avant tout commit |
+| Tests | Vitest — ~1640 tests colocalisés (`__tests__/`) + ~193 tests jest dans `mobile/` ; e2e Playwright (`e2e/`) ; CI GitHub Actions (piège lock mac→Linux géré, aussi pour `mobile/package-lock.json`) | `npx tsc --noEmit && npm run lint && npx vitest run` avant tout commit (dans `mobile/` : typecheck+lint+jest) |
 
 ## 3. Architecture
 
@@ -83,14 +84,22 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
 - Copy produit en français suisse (vouvoiement, ton direct artisan, pas de
   jargon SaaS) ; marque HALO/HaloCard, jamais « WalletCard » (ancien nom).
 
-## 6. État & chantiers (2026-06-10)
+## 6. État & chantiers (2026-09-06)
 
-- Audit 360° complet : `~/Projects/HALO/_audit-360/` (17 rapports + synthèse).
-- Faits ce jour : grille 69/129/199 partout, hygiène sécu (CHECK audit, UNIQUE
-  cartes, Next 16.2.9, token hors client), Google Wallet gaté + classe garantie,
-  funnel `/demarrer` + SEO (robots/sitemap/canonical/308), fondation billing
-  (`merchants.plan`, vue `billing_active_cards`, `billing_snapshots` + cron
-  mensuel), page « Ma carte », email de bienvenue marchand branché.
-- En attente : clés Resend/Sentry (codes prêts, inertes), publishing access
-  Google, application des migrations 20260610_* en prod, jauge « cartes
-  actives / palier » dans le dashboard, app mobile marchande (après le reste).
+- **Fait et en prod** : 5 mécaniques de fidélité entièrement configurables au
+  Studio (tampons avec bienvenue/intermédiaire, visites, niveaux, points/CHF,
+  points fixes + statuts Bronze/Argent/Or à vie + expiration de cycle par cron) ;
+  jetons de carte `{points|nom|palier|visites|derniere_visite|progression|statut}`
+  avec repli « jamais d'accolades » (registre `KNOWN_TOKENS`) ; chaîne de
+  consentement email LPD/RGPD (double opt-in, désinscription, garde-fou
+  `consentedRecipients`) ; formulaire `/demarrer` enrichi + email de confirmation ;
+  fiche admin GET-then-merge (n'efface plus `loyalty_config`) ; SEO logo/favicon/
+  og-image/Search Console ; pages légales complètes (IDE CHE-242.720.495) ;
+  app mobile commerçant M1-M4 (voir tableau stack).
+- **En attente** : réponse Google publishing access (dossier 05598252) →
+  ensuite `NEXT_PUBLIC_GOOGLE_WALLET_READY=true` + redeploy + test Android ;
+  polish mobile M5 ; publication App Store (EAS/TestFlight) ; Sentry (DSN
+  absent, code prêt) ; vieilles PRs #34-#60 à trier (périmées probables).
+- **Limitation documentée** : bannière de notification Apple sur écran
+  verrouillé = couche d'affichage Apple, capricieuse (docs/NOTIFICATIONS-WALLET.md)
+  — ne jamais promettre sa fiabilité.
