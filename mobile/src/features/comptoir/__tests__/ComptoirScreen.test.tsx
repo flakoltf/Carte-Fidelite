@@ -327,41 +327,36 @@ describe("ComptoirScreen — scan", () => {
     await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Pas de réseau"));
   });
 
+  // PAS de faux minuteurs dans ce fichier : RNTL v14 utilise de vrais timers
+  // dans render/fireEvent/waitFor — sous jest.useFakeTimers() la suite se
+  // bloque (timeout 5 s) et la fuite casse les tests suivants (constaté en CI
+  // Linux). On paie ~2 s de vrai temps, contre du déterminisme.
   it("garde la récompense à l'écran : elle appelle un geste du commerçant", async () => {
-    jest.useFakeTimers();
-    try {
-      mockPost.mockResolvedValue({ ...CREDIT, rewardReady: true, card: { stamps_count: 8 } });
-      await render(<ComptoirScreen />);
-      await scanner();
-      await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Récompense atteinte"));
+    mockPost.mockResolvedValue({ ...CREDIT, rewardReady: true, card: { stamps_count: 8 } });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Récompense atteinte"));
 
-      await act(async () => {
-        jest.advanceTimersByTime(5000);
-      });
-
-      expect(screen.getByTestId("resultat-scan")).toBeTruthy();
-    } finally {
-      jest.useRealTimers();
-    }
+    // Bien au-delà du délai de fermeture des crédits simples (1500 ms) :
+    // la récompense, elle, reste affichée.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 2200));
+    });
+    expect(screen.getByTestId("resultat-scan")).toBeTruthy();
   });
 
   it("rend la main au viseur tout seul après un crédit", async () => {
-    jest.useFakeTimers();
-    try {
-      mockPost.mockResolvedValue(CREDIT);
-      await render(<ComptoirScreen />);
-      await scanner();
-      await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+    mockPost.mockResolvedValue(CREDIT);
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
 
-      await act(async () => {
-        jest.advanceTimersByTime(1600);
-      });
-
-      expect(screen.queryByTestId("resultat-scan")).toBeNull();
-      expect(screen.getByTestId("viseur")).toBeTruthy();
-    } finally {
-      jest.useRealTimers();
-    }
+    // Fermeture automatique à 1500 ms (vrai temps — voir la note ci-dessus
+    // sur les faux minuteurs).
+    await waitFor(() => expect(screen.queryByTestId("resultat-scan")).toBeNull(), {
+      timeout: 4000,
+    });
+    expect(screen.getByTestId("viseur")).toBeTruthy();
   });
 
   it("se referme aussi au toucher, sans attendre", async () => {
