@@ -65,6 +65,10 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
    RLS) avec filtre `.eq("merchant_id", …)` manuel.** Tout nouvel endpoint DOIT
    poser ce filtre (résoudre le tenant via `currentMerchantId()` qui gère
    l'impersonation). Un `.eq()` oublié = fuite cross-tenant.
+   **Routes ouvertes au jeton Bearer (mobile)** : leurs lectures ne doivent
+   JAMAIS passer par `createClient()` (cookie) — sans cookie la RLS rend une
+   base vide. Utiliser `currentAuthSession().supabase` (client porteur) ou
+   `supabaseAdmin` + `.eq("merchant_id")`.
 4. **Le scan passe par la RPC atomique `scan_increment`** (FOR UPDATE, cooldown,
    plafond). Ne pas réintroduire de read-modify-write.
 5. **Aucun secret en clair** : `certs/`, `.env.local` gitignorés ; référencer les
@@ -98,8 +102,15 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
   app mobile commerçant M1-M4 (voir tableau stack).
 - **En attente** : réponse Google publishing access (dossier 05598252) →
   ensuite `NEXT_PUBLIC_GOOGLE_WALLET_READY=true` + redeploy + test Android ;
-  polish mobile M5 ; publication App Store (EAS/TestFlight) ; Sentry (DSN
-  absent, code prêt) ; vieilles PRs #34-#60 à trier (périmées probables).
+  polish mobile M5 (PR #87 draft) ; publication App Store (EAS/TestFlight) ;
+  Sentry (DSN absent, code prêt) ; vieilles PRs #34-#60 à trier (périmées
+  probables).
+- **BLOQUANT mobile (hérité de M1, à corriger avant tout usage réel des onglets
+  Clients/Messages)** : `loadClassified()` dans `src/lib/segments/fetch.ts` lit
+  `customers` et `scan_history` via le client cookie → sous Bearer,
+  `GET /api/segments*` renvoie une base VIDE et `POST /api/notifications/send`
+  ne joint personne (`pushed: 0`). Preuve : Café du Rhône = 7 clients en base,
+  smoke M1 sous Bearer = `total: 0`. Détail dans la PR #85.
 - **Limitation documentée** : bannière de notification Apple sur écran
   verrouillé = couche d'affichage Apple, capricieuse (docs/NOTIFICATIONS-WALLET.md)
   — ne jamais promettre sa fiabilité.
