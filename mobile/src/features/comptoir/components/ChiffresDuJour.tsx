@@ -23,8 +23,12 @@ export function ChiffresDuJour({ stats, chargement }: { stats: ComptoirStats | n
 function Chiffre({ valeur, libelle, testID }: { valeur: string; libelle: string; testID: string }) {
   return (
     <View style={styles.bloc} testID={testID} accessibilityLabel={`${valeur} ${libelle}`}>
-      <Text style={styles.valeur}>{valeur}</Text>
-      <Text style={styles.libelle}>{libelle}</Text>
+      <Text style={styles.valeur} maxFontSizeMultiplier={1.5}>
+        {valeur}
+      </Text>
+      <Text style={styles.libelle} numberOfLines={2} maxFontSizeMultiplier={1.6}>
+        {libelle}
+      </Text>
     </View>
   );
 }
@@ -32,13 +36,15 @@ function Chiffre({ valeur, libelle, testID }: { valeur: string; libelle: string;
 const styles = StyleSheet.create({
   rangee: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
     gap: spacing.lg,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  bloc: { alignItems: "center", minWidth: 96 },
+  // flex + minWidth 0 : en police agrandie les deux blocs se partagent la
+  // largeur et le libellé passe sur deux lignes au lieu de sortir de l'écran.
+  bloc: { flex: 1, minWidth: 0, maxWidth: 200, alignItems: "center" },
   valeur: { fontSize: 26, lineHeight: 32, fontWeight: "700", color: colors.calcaire },
   libelle: { ...type.caption, color: colors.galet, textAlign: "center" },
   separateur: { width: 1, height: 32, backgroundColor: "rgba(243,240,233,0.18)" },

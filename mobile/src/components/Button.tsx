@@ -62,7 +62,8 @@ export function Button({
         />
       ) : (
         <View style={styles.content}>
-          <Text style={[styles.label, styles[`${variant}Label` as const]]} numberOfLines={1}>
+          {/* Plafonné : l'intitulé reste sur une ligne, le bouton garde sa hauteur (D12). */}
+          <Text style={[styles.label, styles[`${variant}Label` as const]]} numberOfLines={1} maxFontSizeMultiplier={1.5}>
             {label}
           </Text>
         </View>

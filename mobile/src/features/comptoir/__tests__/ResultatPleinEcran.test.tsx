@@ -85,10 +85,11 @@ describe("ResultatPleinEcran", () => {
     expect(screen.getByTestId("resultat-message").props.children).toMatch(/ordinateur/);
   });
 
-  it("se referme au toucher, où qu'on touche", async () => {
+  it("se referme au toucher, où qu'on touche, et le dit discrètement", async () => {
     const onFermer = jest.fn();
     await render(<ResultatPleinEcran outcome={credit} onFermer={onFermer} />);
 
+    expect(screen.getByText("Toucher pour continuer")).toBeTruthy();
     await fireEvent.press(screen.getByTestId("resultat-scan"));
 
     expect(onFermer).toHaveBeenCalledTimes(1);

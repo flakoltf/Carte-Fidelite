@@ -27,9 +27,11 @@ export function ClientSheet({
         <View testID="fiche-client" style={styles.sheet} accessibilityViewIsModal>
           <View style={styles.handle} />
           <View style={[styles.avatar, { backgroundColor: STAGE_STYLE[client.stage].color }]}>
-            <Text style={styles.avatarText}>{client.initials}</Text>
+            <Text style={styles.avatarText} maxFontSizeMultiplier={1.2}>
+              {client.initials}
+            </Text>
           </View>
-          <Text accessibilityRole="header" style={styles.name}>
+          <Text accessibilityRole="header" style={styles.name} maxFontSizeMultiplier={1.4}>
             {client.name}
           </Text>
 
@@ -52,8 +54,12 @@ export function ClientSheet({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <Text style={styles.rowLabel} maxFontSizeMultiplier={1.6}>
+        {label}
+      </Text>
+      <Text style={styles.rowValue} maxFontSizeMultiplier={1.6}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -78,6 +84,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
     minHeight: 44,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,

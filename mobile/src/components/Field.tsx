@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,6 +14,8 @@ import { colors, MIN_TOUCH_TARGET, radius, spacing, type } from "@/theme";
 
 export interface FieldProps extends Omit<TextInputProps, "style"> {
   label: string;
+  /** Référence du TextInput natif — pour enchaîner les champs depuis le clavier. */
+  ref?: Ref<TextInput>;
   /** Message d'erreur sous le champ ; colore aussi la bordure. */
   error?: string | null;
   hint?: string;
@@ -24,6 +26,7 @@ export interface FieldProps extends Omit<TextInputProps, "style"> {
 }
 
 export function Field({
+  ref,
   label,
   error,
   hint,
@@ -43,12 +46,15 @@ export function Field({
       <Text
         style={[styles.label, dark && styles.labelDark]}
         nativeID={testID ? `${testID}-label` : undefined}
+        maxFontSizeMultiplier={1.6}
       >
         {label}
       </Text>
       <TextInput
+        ref={ref}
         testID={testID}
         accessibilityLabel={label}
+        maxFontSizeMultiplier={1.6}
         accessibilityHint={hint}
         placeholderTextColor={colors.galet}
         onFocus={(event) => {

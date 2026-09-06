@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Keyboard,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -42,11 +43,17 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
   return (
     <Screen testID="ecran-clients" contentStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>CLIENTS</Text>
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text style={styles.eyebrow} maxFontSizeMultiplier={1.3}>
+          CLIENTS
+        </Text>
+        <Text accessibilityRole="header" style={styles.title} maxFontSizeMultiplier={1.4}>
           Votre clientèle
         </Text>
-        {summary ? <Text style={styles.subtitle}>{countLabel(summary.total)}</Text> : null}
+        {summary ? (
+          <Text style={styles.subtitle} maxFontSizeMultiplier={1.6}>
+            {countLabel(summary.total)}
+          </Text>
+        ) : null}
       </View>
 
       {state.status === "ready" ? (
@@ -77,7 +84,11 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
                 filter={key}
                 summary={summary}
                 selected={stage === key}
-                onPress={() => setStage(key)}
+                onPress={() => {
+                  // Tap hors champ : le clavier de recherche se replie (C9).
+                  Keyboard.dismiss();
+                  setStage(key);
+                }}
               />
             ))}
           </ScrollView>
@@ -101,6 +112,12 @@ export function ClientsScreen({ now = () => new Date() }: { now?: () => Date }) 
           contentContainerStyle={filtered.length === 0 ? styles.listEmpty : styles.listContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          // Virtualisation réglée pour une base de plusieurs centaines de
+          // clients : fenêtre courte, lots modestes, vues hors écran libérées.
+          initialNumToRender={14}
+          maxToRenderPerBatch={20}
+          windowSize={7}
+          removeClippedSubviews
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.halo} />
           }
@@ -155,7 +172,7 @@ function Chip({
       style={({ pressed }) => [styles.chip, selected && styles.chipSelected, pressed && styles.chipPressed]}
     >
       {dot ? <View style={[styles.dot, { backgroundColor: dot }]} /> : null}
-      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
+      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]} maxFontSizeMultiplier={1.4}>
         {label}
         {count !== null ? ` · ${count}` : ""}
       </Text>
@@ -175,20 +192,30 @@ function ClientLine({ row, now, onPress }: { row: ClientRow; now: () => Date; on
       style={({ pressed }) => [styles.line, pressed && styles.linePressed]}
     >
       <View style={[styles.avatar, { backgroundColor: style.color }]}>
-        <Text style={styles.avatarText}>{row.initials}</Text>
+        <Text style={styles.avatarText} maxFontSizeMultiplier={1.2}>
+          {row.initials}
+        </Text>
       </View>
       <View style={styles.lineBody}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={1} maxFontSizeMultiplier={1.6}>
           {row.name}
         </Text>
         <View style={styles.meta}>
-          <Text style={styles.metaText}>{formatLastVisit(row.lastScan, now())}</Text>
-          <Text style={styles.metaDot}>·</Text>
-          <Text style={styles.metaText}>{visitsLabel(row.visits)}</Text>
+          <Text style={styles.metaText} maxFontSizeMultiplier={1.6}>
+            {formatLastVisit(row.lastScan, now())}
+          </Text>
+          <Text style={styles.metaDot} maxFontSizeMultiplier={1.6}>
+            ·
+          </Text>
+          <Text style={styles.metaText} maxFontSizeMultiplier={1.6}>
+            {visitsLabel(row.visits)}
+          </Text>
         </View>
       </View>
       <View style={[styles.tag, { borderColor: style.color }]}>
-        <Text style={[styles.tagText, { color: style.color }]}>{style.label}</Text>
+        <Text style={[styles.tagText, { color: style.color }]} maxFontSizeMultiplier={1.4}>
+          {style.label}
+        </Text>
       </View>
     </Pressable>
   );
@@ -234,7 +261,7 @@ const styles = StyleSheet.create({
   avatarText: { ...type.bodyStrong, color: colors.white },
   lineBody: { flex: 1, gap: 2 },
   name: { ...type.bodyStrong, color: colors.ink },
-  meta: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  meta: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
   metaText: { ...type.small, color: colors.inkMuted },
   metaDot: { ...type.small, color: colors.galet },
   tag: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },

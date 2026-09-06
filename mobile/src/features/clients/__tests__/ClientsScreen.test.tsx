@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { Keyboard } from "react-native";
 
 import { ClientsScreen } from "../ClientsScreen";
 
@@ -141,5 +142,36 @@ describe("ClientsScreen", () => {
     expect(row.minHeight as number).toBeGreaterThanOrEqual(44);
     const chip = flatten(screen.getByTestId("segment-vip").props.style);
     expect(chip.minHeight as number).toBeGreaterThanOrEqual(44);
+  });
+
+  it("500 clients : liste virtualisée — seule une fenêtre de lignes est rendue", async () => {
+    const many = Array.from({ length: 500 }, (_, i) => ({
+      customerId: `c${i}`,
+      name: `Client ${String(i).padStart(3, "0")}`,
+      lastScan: i % 3 === 0 ? null : new Date(NOW.getTime() - i * 3_600_000).toISOString(),
+      visits: i % 20,
+      stamps: i % 10,
+    }));
+    mockApi.get.mockImplementation(async (path: string) => {
+      if (path === "/api/segments") return { data: { ...summary, total: 500 } };
+      return { data: path.endsWith("/regulier") ? many : [] };
+    });
+    await render(<ClientsScreen now={() => NOW} />);
+
+    expect(await screen.findByText("500 clients")).toBeTruthy();
+    const rendered = screen.getAllByTestId(/^client-c\d+$/);
+    expect(rendered.length).toBeGreaterThan(0);
+    expect(rendered.length).toBeLessThan(60);
+  });
+
+  it("choisir un segment referme le clavier (tap hors champ)", async () => {
+    const dismiss = jest.spyOn(Keyboard, "dismiss").mockImplementation(() => {});
+    serve(BASE);
+    await render(<ClientsScreen now={() => NOW} />);
+    await screen.findByText("Anna Roux");
+
+    await fireEvent.press(screen.getByTestId("segment-vip"));
+    expect(dismiss).toHaveBeenCalled();
+    dismiss.mockRestore();
   });
 });

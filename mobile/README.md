@@ -6,9 +6,10 @@ rien. Ce dossier est un **projet Expo autonome** : son propre `package.json`,
 son `tsconfig`, ses tests, sa CI. Il ne partage rien avec l'app Next.js de la
 racine — seulement la même base Supabase et les mêmes routes `/api`.
 
-Cette mission (M2) livre **le socle, pas le métier** : connexion, navigation,
-design system, client API. Les écrans Comptoir / Clients / Messages sont des
-écrans d'attente assumés, remplis aux missions M3 et M4.
+Quatre onglets : **Comptoir** (scan caméra, résultat plein écran, annulation),
+**Clients** (base par segments, recherche, fiche), **Messages** (envoi d'un
+message Wallet à un groupe) et **Menu**. Le socle (connexion, session, client
+API, design system) et le polish de plateforme sont décrits plus bas.
 
 ## Démarrer
 
@@ -52,7 +53,11 @@ préfixe `sb_secret_`). `.env.local` est ignoré par git.
 
 | Connexion | Comptoir | Clients | Menu |
 |---|---|---|---|
-| ![Connexion](docs/captures/01-connexion.png) | ![Comptoir](docs/captures/02-comptoir.png) | ![Clients](docs/captures/03-clients.png) | ![Menu](docs/captures/04-menu.png) |
+| ![Connexion](docs/captures/01-connexion.png) | ![Comptoir](docs/captures/m5-apres-comptoir.png) | ![Clients](docs/captures/05-clients.png) | ![Menu](docs/captures/04-menu.png) |
+
+Autres captures dans `docs/captures/` : fiche client, Messages (audiences,
+formulaire, validation), états du comptoir, et les paires `m5-avant-*` /
+`m5-apres-*` du polish de plateforme (barre de statut, police agrandie).
 
 La pastille bleue en haut à droite est le bouton de menu développeur d'Expo Go,
 pas un élément de l'app.
@@ -69,14 +74,16 @@ mobile/
 │   │   └── code.tsx           Défi TOTP (comptes avec double authentification)
 │   └── (tabs)/                Barre d'onglets, accessible session complète uniquement
 │       ├── _layout.tsx        Les 4 onglets + garde de navigation
-│       ├── comptoir.tsx       (M3) scan et crédit
-│       ├── clients.tsx        (M4) clientèle
-│       ├── messages.tsx       (M4) relances Wallet
+│       ├── comptoir.tsx       scan et crédit → src/features/comptoir
+│       ├── clients.tsx        clientèle → src/features/clients
+│       ├── messages.tsx       relances Wallet → src/features/messages
 │       └── menu.tsx           Commerce, déconnexion, renvoi vers l'ordinateur
 ├── src/
-│   ├── components/            Design system : Button, Card, Field, Screen, HaloMark, TabIcon
+│   ├── components/            Design system : Button, Card, Field, Screen, FocusedStatusBar, HaloMark, TabIcon
+│   ├── features/              Métier par onglet (comptoir, clients, messages) + tests
 │   ├── lib/
-│   │   ├── api.ts             ⭐ client API central (Bearer sur chaque appel)
+│   │   ├── api.ts             ⭐ client API central (Bearer sur chaque appel, 401 → déconnexion)
+│   │   ├── sessionNotice.ts   notice « session expirée » lue par l'écran de connexion
 │   │   ├── config.ts          lecture et validation des variables publiques
 │   │   ├── supabase.ts        client Supabase + rafraîchissement de session
 │   │   ├── secureStorage.ts   session stockée dans le trousseau, en tranches
@@ -117,11 +124,14 @@ const clients = await api().get<Client[]>("/api/clients", { query: { q: "Dupont"
 await api().post("/api/scan", { carte: cardId });
 ```
 
-> ⚠️ **Prérequis côté serveur** : les routes `/api` de l'app Next lisent
-> aujourd'hui la session dans un **cookie**. Elles doivent accepter l'en-tête
-> `Authorization: Bearer` pour que l'app mobile puisse les appeler — c'est le
-> sujet d'une PR distincte (jeton Bearer API mobile). Le socle est prêt, les
-> écrans métier attendent ce feu vert.
+Les routes du cœur mobile acceptent `Authorization: Bearer` depuis la PR #82
+(scan, annulation, segments, envoi de message). **Session expirée** : sur un
+`401` en cours d'usage, le client pose une notice (`sessionNotice.ts`) puis
+ferme la session Supabase ; l'`AuthProvider` observe la déconnexion, les
+onglets renvoient vers la connexion, qui affiche « Votre session a expiré.
+Reconnectez-vous. » une seule fois. Un `403` est un refus métier (carte d'un
+autre commerce, compte suspendu, essai expiré) : il s'affiche, il ne
+déconnecte jamais.
 
 ## Design system
 
@@ -138,12 +148,36 @@ Règles tenues par les composants et vérifiées par les tests :
 - intitulés, rôles et erreurs annoncés aux lecteurs d'écran ;
 - copy en français suisse, vouvoiement, ton direct.
 
+## Standards de plateforme (polish M5)
+
+- **Caméra** : démontée dès que l'onglet Comptoir perd le focus ou que l'app
+  passe en arrière-plan (`useCameraActive`), rallumée au retour. Jamais de
+  capture hors écran.
+- **Résultat de scan** : tout l'écran se ferme d'un tap (« Toucher pour
+  continuer ») ; le bouton retour Android ferme le résultat, jamais l'app.
+- **Permission caméra refusée** : explication + « Ouvrir les réglages ».
+- **Aucune impasse** : chaque erreur a un « Réessayer », chaque état vide dit
+  quoi faire, chaque attente a son indicateur.
+- **Clavier** : `KeyboardAvoidingView` sur les formulaires, « suivant »
+  enchaîne e-mail → mot de passe, tap hors champ ou choix d'un segment replie
+  le clavier.
+- **Listes** : `FlatList` virtualisée (test à 500 clients).
+- **Barre de statut** : claire sur fond sombre, sombre sur fond clair, posée
+  seulement par l'écran au focus (`FocusedStatusBar`).
+- **Haptiques** : crédit = impact léger, récompense = succès, doublon =
+  avertissement, refus = erreur — un seul retour par résultat.
+- **Police dynamique** : plafonds sur les titres et textes géants, mises en
+  page qui passent à la ligne ; vérifié en « accessibility-extra-large »
+  (`xcrun simctl ui booted content_size accessibility-extra-large`).
+- **Icône et splash** : recadrage du logo HALO identique au favicon web
+  (`assets/source/ICONS.md`).
+
 ## Qualité
 
 ```bash
 npm run lint        # eslint (config Expo)
 npm run typecheck   # tsc --noEmit, TypeScript strict
-npm test            # jest (preset jest-expo) — 70 tests, aucun appel réseau
+npm test            # jest (preset jest-expo) — 227 tests, aucun appel réseau
 ```
 
 Les trois commandes tournent aussi en CI sur toute modification de `mobile/`

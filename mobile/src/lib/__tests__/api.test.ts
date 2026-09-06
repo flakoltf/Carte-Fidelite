@@ -1,4 +1,16 @@
-import { ApiError, buildUrl, createApiClient, errorMessageFor } from "../api";
+import { ApiError, api, buildUrl, createApiClient, errorMessageFor, resetApiClient } from "../api";
+import { takeSessionNotice } from "../sessionNotice";
+
+// Supabase factice pour le client par défaut : une session, et un signOut observable.
+const mockSignOut = jest.fn().mockResolvedValue({ error: null });
+jest.mock("../supabase", () => ({
+  getSupabase: () => ({
+    auth: {
+      getSession: async () => ({ data: { session: { access_token: "jeton-courant" } } }),
+      signOut: mockSignOut,
+    },
+  }),
+}));
 
 const BASE = "https://app.halocard.ch";
 
@@ -96,6 +108,25 @@ describe("createApiClient", () => {
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 
+  it("un 403 est un REFUS métier (carte d'un autre commerce, compte suspendu), jamais une session expirée", async () => {
+    const onUnauthorized = jest.fn();
+    const fetchImpl = jest.fn().mockResolvedValue(
+      jsonResponse({ error: "Cette carte appartient à un autre établissement" }, 403),
+    );
+
+    await expect(client({ fetchImpl, onUnauthorized }).post("/api/scan", {})).rejects.toMatchObject({
+      status: 403,
+      message: "Cette carte appartient à un autre établissement",
+      isUnauthorized: false,
+    });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("403 sans message serveur → « Accès refusé. », pas « Session expirée »", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(jsonResponse({}, 403));
+    await expect(client({ fetchImpl }).get("/api/x")).rejects.toMatchObject({ message: "Accès refusé." });
+  });
+
   it("ne déclenche pas la déconnexion sur une erreur serveur", async () => {
     const onUnauthorized = jest.fn();
     const fetchImpl = jest.fn().mockResolvedValue(jsonResponse({}, 500));
@@ -118,6 +149,34 @@ describe("createApiClient", () => {
   it("accepte une réponse vide (204)", async () => {
     const fetchImpl = jest.fn().mockResolvedValue(jsonResponse(undefined, 204));
     await expect(client({ fetchImpl }).del("/api/cartes/c1")).resolves.toBeNull();
+  });
+});
+
+describe("api() — client par défaut de l'app", () => {
+  it("branche le 401 de bout en bout : notice « session expirée » + déconnexion Supabase", async () => {
+    resetApiClient();
+    const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({}, 401));
+
+    await expect(api().get("/api/segments")).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchSpy.mock.calls[0]?.[1]).toMatchObject({ headers: expect.objectContaining({ Authorization: "Bearer jeton-courant" }) });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(takeSessionNotice()).toMatch(/session a expiré/);
+    fetchSpy.mockRestore();
+    resetApiClient();
+  });
+
+  it("un 403 métier ne déconnecte PAS", async () => {
+    resetApiClient();
+    mockSignOut.mockClear();
+    const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Compte suspendu" }, 403));
+
+    await expect(api().post("/api/scan", {})).rejects.toMatchObject({ status: 403 });
+
+    expect(mockSignOut).not.toHaveBeenCalled();
+    expect(takeSessionNotice()).toBeNull();
+    fetchSpy.mockRestore();
+    resetApiClient();
   });
 });
 

@@ -1,6 +1,7 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Redirect } from "expo-router";
 
+import { FocusedStatusBar } from "@/components/FocusedStatusBar";
 import { HaloMark } from "@/components/HaloMark";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { colors, spacing } from "@/theme";
@@ -12,6 +13,7 @@ export default function Index() {
   if (status === "loading") {
     return (
       <View style={styles.splash}>
+        <FocusedStatusBar style="light" />
         <HaloMark size={64} />
         <ActivityIndicator color={colors.glow} />
       </View>

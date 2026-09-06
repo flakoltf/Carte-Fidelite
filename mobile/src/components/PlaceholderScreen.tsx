@@ -24,8 +24,10 @@ export function PlaceholderScreen({
   return (
     <Screen testID={testID} scroll>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text>
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text style={styles.eyebrow} maxFontSizeMultiplier={1.3}>
+          {eyebrow.toUpperCase()}
+        </Text>
+        <Text accessibilityRole="header" style={styles.title} maxFontSizeMultiplier={1.4}>
           {title}
         </Text>
         <Text style={styles.description}>{description}</Text>

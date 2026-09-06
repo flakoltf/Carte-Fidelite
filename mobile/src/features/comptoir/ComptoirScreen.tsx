@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, BackHandler, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 
+import { FocusedStatusBar } from "@/components/FocusedStatusBar";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { colors, radius, spacing, type } from "@/theme";
 
@@ -15,6 +16,7 @@ import { Viseur } from "./components/Viseur";
 import { revertSecondsLeft, type RevertableLoyaltyType } from "./revertRules";
 import { submitRevert, submitScan } from "./scanApi";
 import type { ScanOutcome, ScanOutcomeKind } from "./scanContract";
+import { useCameraActive } from "./useCameraActive";
 import { useComptoirStats } from "./useComptoirStats";
 
 // Un crédit disparaît tout seul : zéro tap entre deux clients (le web fait de
@@ -40,6 +42,8 @@ export function ComptoirScreen() {
   const { merchant } = useAuth();
   const [permission, demanderPermission] = useCameraPermissions();
   const { stats, chargement, rafraichir } = useComptoirStats(merchant?.id);
+  // Caméra allumée SEULEMENT onglet visible + app au premier plan (A1).
+  const cameraActive = useCameraActive();
 
   const [enCoursDeScan, setEnCoursDeScan] = useState(false);
   const [resultat, setResultat] = useState<ScanOutcome | null>(null);
@@ -78,9 +82,14 @@ export function ComptoirScreen() {
       setResultat(outcome);
       setEnCoursDeScan(false);
 
-      if (outcome.kind === "credit" || outcome.kind === "reward") {
+      // Un seul retour par résultat, jamais en rafale (D11) : crédit = impact
+      // léger (le geste ordinaire), récompense = succès marqué, doublon =
+      // avertissement, refus = erreur — trois sensations distinctes.
+      if (outcome.kind === "credit") {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        void rafraichir();
+      } else if (outcome.kind === "reward") {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (outcome.kind === "credit") void rafraichir();
       } else if (outcome.kind === "cooldown") {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } else {
@@ -95,6 +104,16 @@ export function ComptoirScreen() {
     // La lecture suivante redevient possible immédiatement (hors même QR).
     occupe.current = false;
   }, []);
+
+  // Android : le bouton retour matériel ferme le résultat, jamais l'app (A4).
+  useEffect(() => {
+    if (!resultat) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      fermerResultat();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [resultat, fermerResultat]);
 
   // Fermeture automatique des états qui n'appellent aucune décision.
   useEffect(() => {
@@ -132,12 +151,12 @@ export function ComptoirScreen() {
     setNoteAnnulation(resultatAnnulation.message);
     setAnnulable(null);
     setAnnulationEnCours(false);
-    void Haptics.notificationAsync(
-      resultatAnnulation.ok
-        ? Haptics.NotificationFeedbackType.Success
-        : Haptics.NotificationFeedbackType.Error,
-    );
-    if (resultatAnnulation.ok) void rafraichir();
+    if (resultatAnnulation.ok) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void rafraichir();
+    } else {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }, [annulable, annulationEnCours, rafraichir]);
 
   const secondesRestantes = annulable ? revertSecondsLeft(annulable.at, new Date()) : 0;
@@ -146,6 +165,7 @@ export function ComptoirScreen() {
   if (!permission) {
     return (
       <View style={styles.attente} testID="ecran-comptoir">
+        <FocusedStatusBar style="light" />
         <ActivityIndicator color={colors.glow} />
       </View>
     );
@@ -154,6 +174,7 @@ export function ComptoirScreen() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={styles.racine} edges={["top", "left", "right"]} testID="ecran-comptoir">
+        <FocusedStatusBar style="light" />
         <DemandePermission
           refuseeDefinitivement={!permission.canAskAgain}
           onDemander={() => void demanderPermission()}
@@ -164,17 +185,26 @@ export function ComptoirScreen() {
 
   return (
     <View style={styles.racine} testID="ecran-comptoir">
+      <FocusedStatusBar style="light" />
       <SafeAreaView edges={["top", "left", "right"]}>
         <ChiffresDuJour stats={stats} chargement={chargement} />
       </SafeAreaView>
 
       <View style={styles.zoneCamera}>
-        <Viseur
-          actif={!enCoursDeScan && resultat === null}
-          torche={torche}
-          onBasculerTorche={() => setTorche((t) => !t)}
-          onCodeLu={(valeur) => void traiterCode(valeur)}
-        />
+        {cameraActive ? (
+          <Viseur
+            actif={!enCoursDeScan && resultat === null}
+            torche={torche}
+            onBasculerTorche={() => setTorche((t) => !t)}
+            onCodeLu={(valeur) => void traiterCode(valeur)}
+          />
+        ) : (
+          // Onglet quitté ou app en arrière-plan : la caméra est DÉMONTÉE
+          // (pas seulement masquée) — aucune capture hors écran.
+          <View style={styles.pause} testID="camera-en-pause">
+            <Text style={styles.pauseTexte}>Caméra en pause</Text>
+          </View>
+        )}
 
         <View style={styles.surcouche} pointerEvents="box-none">
           {noteAnnulation ? (
@@ -206,6 +236,8 @@ const styles = StyleSheet.create({
   racine: { flex: 1, backgroundColor: colors.onyx },
   attente: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.onyx },
   zoneCamera: { flex: 1, overflow: "hidden" },
+  pause: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.onyx },
+  pauseTexte: { ...type.small, color: colors.galet },
   surcouche: { position: "absolute", top: spacing.md, left: 0, right: 0, alignItems: "center" },
   verification: {
     position: "absolute",
