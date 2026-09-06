@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
+import { FocusedStatusBar } from "@/components/FocusedStatusBar";
 import { colors, spacing } from "@/theme";
 
 export interface ScreenProps {
@@ -38,6 +39,8 @@ export function Screen({
 
   return (
     <SafeAreaView testID={testID} edges={edges} style={[styles.safe, { backgroundColor: background }]}>
+      {/* Fond sombre → texte clair dans la barre de statut, et inversement (D10). */}
+      <FocusedStatusBar style={tone === "dark" ? "light" : "dark"} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

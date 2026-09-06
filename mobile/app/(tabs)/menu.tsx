@@ -22,8 +22,10 @@ export default function MenuScreen() {
   return (
     <Screen scroll testID="ecran-menu">
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>COMMERCE</Text>
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text style={styles.eyebrow} maxFontSizeMultiplier={1.3}>
+          COMMERCE
+        </Text>
+        <Text accessibilityRole="header" style={styles.title} maxFontSizeMultiplier={1.4}>
           {shopName}
         </Text>
         {merchant?.email ? <Text style={styles.email}>{merchant.email}</Text> : null}

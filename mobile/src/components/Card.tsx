@@ -16,13 +16,21 @@ export interface CardProps {
 export function Card({ title, eyebrow, subtitle, children, style, testID }: CardProps) {
   return (
     <View testID={testID} style={[styles.card, style]}>
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}
+      {eyebrow ? (
+        <Text style={styles.eyebrow} maxFontSizeMultiplier={1.3}>
+          {eyebrow.toUpperCase()}
+        </Text>
+      ) : null}
       {title ? (
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text accessibilityRole="header" style={styles.title} maxFontSizeMultiplier={1.5}>
           {title}
         </Text>
       ) : null}
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      {subtitle ? (
+        <Text style={styles.subtitle} maxFontSizeMultiplier={1.6}>
+          {subtitle}
+        </Text>
+      ) : null}
       {children ? <View style={styles.body}>{children}</View> : null}
     </View>
   );

@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 
+import { FocusedStatusBar } from "@/components/FocusedStatusBar";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { colors, radius, spacing, type } from "@/theme";
 
@@ -81,9 +82,14 @@ export function ComptoirScreen() {
       setResultat(outcome);
       setEnCoursDeScan(false);
 
-      if (outcome.kind === "credit" || outcome.kind === "reward") {
+      // Un seul retour par résultat, jamais en rafale (D11) : crédit = impact
+      // léger (le geste ordinaire), récompense = succès marqué, doublon =
+      // avertissement, refus = erreur — trois sensations distinctes.
+      if (outcome.kind === "credit") {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        void rafraichir();
+      } else if (outcome.kind === "reward") {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (outcome.kind === "credit") void rafraichir();
       } else if (outcome.kind === "cooldown") {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } else {
@@ -145,12 +151,12 @@ export function ComptoirScreen() {
     setNoteAnnulation(resultatAnnulation.message);
     setAnnulable(null);
     setAnnulationEnCours(false);
-    void Haptics.notificationAsync(
-      resultatAnnulation.ok
-        ? Haptics.NotificationFeedbackType.Success
-        : Haptics.NotificationFeedbackType.Error,
-    );
-    if (resultatAnnulation.ok) void rafraichir();
+    if (resultatAnnulation.ok) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void rafraichir();
+    } else {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   }, [annulable, annulationEnCours, rafraichir]);
 
   const secondesRestantes = annulable ? revertSecondsLeft(annulable.at, new Date()) : 0;
@@ -159,6 +165,7 @@ export function ComptoirScreen() {
   if (!permission) {
     return (
       <View style={styles.attente} testID="ecran-comptoir">
+        <FocusedStatusBar style="light" />
         <ActivityIndicator color={colors.glow} />
       </View>
     );
@@ -167,6 +174,7 @@ export function ComptoirScreen() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={styles.racine} edges={["top", "left", "right"]} testID="ecran-comptoir">
+        <FocusedStatusBar style="light" />
         <DemandePermission
           refuseeDefinitivement={!permission.canAskAgain}
           onDemander={() => void demanderPermission()}
@@ -177,6 +185,7 @@ export function ComptoirScreen() {
 
   return (
     <View style={styles.racine} testID="ecran-comptoir">
+      <FocusedStatusBar style="light" />
       <SafeAreaView edges={["top", "left", "right"]}>
         <ChiffresDuJour stats={stats} chargement={chargement} />
       </SafeAreaView>

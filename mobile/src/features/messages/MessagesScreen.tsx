@@ -90,11 +90,13 @@ export function MessagesScreen() {
   return (
     <Screen testID="ecran-messages" scroll>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>MESSAGES</Text>
-        <Text accessibilityRole="header" style={styles.title}>
+        <Text style={styles.eyebrow} maxFontSizeMultiplier={1.3}>
+          MESSAGES
+        </Text>
+        <Text accessibilityRole="header" style={styles.title} maxFontSizeMultiplier={1.4}>
           Relancer vos clients
         </Text>
-        <Text style={styles.description}>
+        <Text style={styles.description} maxFontSizeMultiplier={1.6}>
           {"Une offre, une nouveauté, un rappel : le message s'affiche sur le téléphone de vos clients, sans SMS ni frais."}
         </Text>
       </View>
@@ -130,8 +132,14 @@ export function MessagesScreen() {
                 <View style={[styles.radio, selected && styles.radioSelected]}>
                   {selected ? <View style={styles.radioDot} /> : null}
                 </View>
-                <Text style={[styles.audienceLabel, selected && styles.audienceLabelSelected]}>{audienceLabel(key)}</Text>
-                {n !== null ? <Text style={styles.audienceCount}>{sizeLabel(n)}</Text> : null}
+                <Text style={[styles.audienceLabel, selected && styles.audienceLabelSelected]} maxFontSizeMultiplier={1.6}>
+                  {audienceLabel(key)}
+                </Text>
+                {n !== null ? (
+                  <Text style={styles.audienceCount} maxFontSizeMultiplier={1.6}>
+                    {sizeLabel(n)}
+                  </Text>
+                ) : null}
               </Pressable>
             );
           })}
@@ -226,6 +234,8 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET + 4,
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
+    paddingVertical: spacing.xs,
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.lg,

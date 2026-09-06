@@ -46,6 +46,7 @@ export function Field({
       <Text
         style={[styles.label, dark && styles.labelDark]}
         nativeID={testID ? `${testID}-label` : undefined}
+        maxFontSizeMultiplier={1.6}
       >
         {label}
       </Text>
@@ -53,6 +54,7 @@ export function Field({
         ref={ref}
         testID={testID}
         accessibilityLabel={label}
+        maxFontSizeMultiplier={1.6}
         accessibilityHint={hint}
         placeholderTextColor={colors.galet}
         onFocus={(event) => {

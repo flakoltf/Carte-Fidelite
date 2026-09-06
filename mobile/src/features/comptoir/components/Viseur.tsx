@@ -37,15 +37,19 @@ export function Viseur({
         onBarcodeScanned={handleScan}
       />
 
-      {/* Cadre de visée : quatre coins, rien qui masque l'image. */}
-      <View style={styles.cadre} pointerEvents="none">
-        <View style={[styles.coin, styles.coinHautGauche]} />
-        <View style={[styles.coin, styles.coinHautDroit]} />
-        <View style={[styles.coin, styles.coinBasGauche]} />
-        <View style={[styles.coin, styles.coinBasDroit]} />
+      {/* Cadre de visée : quatre coins, rien qui masque l'image. Mise en page
+          en colonne (cadre, consigne, lampe) : rien ne se chevauche, quelle
+          que soit la taille de police (D12). */}
+      <View style={styles.zoneCadre} pointerEvents="none">
+        <View style={styles.cadre}>
+          <View style={[styles.coin, styles.coinHautGauche]} />
+          <View style={[styles.coin, styles.coinHautDroit]} />
+          <View style={[styles.coin, styles.coinBasGauche]} />
+          <View style={[styles.coin, styles.coinBasDroit]} />
+        </View>
       </View>
 
-      <Text style={styles.consigne} pointerEvents="none">
+      <Text style={styles.consigne} pointerEvents="none" numberOfLines={2} maxFontSizeMultiplier={1.6}>
         Présentez le QR code de la carte
       </Text>
 
@@ -57,7 +61,7 @@ export function Viseur({
         onPress={onBasculerTorche}
         style={({ pressed }) => [styles.torche, torche && styles.torcheActive, pressed && styles.torchePressee]}
       >
-        <Text style={[styles.torcheTexte, torche && styles.torcheTexteActif]}>
+        <Text style={[styles.torcheTexte, torche && styles.torcheTexteActif]} maxFontSizeMultiplier={1.5}>
           {torche ? "Lampe allumée" : "Lampe"}
         </Text>
       </Pressable>
@@ -69,11 +73,13 @@ const TAILLE_COIN = 44;
 const EPAISSEUR = 4;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.onyx, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: colors.onyx, alignItems: "center", paddingBottom: spacing.lg },
+  zoneCadre: { flex: 1, width: "100%", alignItems: "center", justifyContent: "center", minHeight: 120 },
   cadre: {
     width: "72%",
     aspectRatio: 1,
     maxWidth: 320,
+    maxHeight: "100%",
   },
   coin: { position: "absolute", width: TAILLE_COIN, height: TAILLE_COIN, borderColor: colors.glow },
   coinHautGauche: { top: 0, left: 0, borderTopWidth: EPAISSEUR, borderLeftWidth: EPAISSEUR, borderTopLeftRadius: 12 },
@@ -82,17 +88,14 @@ const styles = StyleSheet.create({
   coinBasDroit: { bottom: 0, right: 0, borderBottomWidth: EPAISSEUR, borderRightWidth: EPAISSEUR, borderBottomRightRadius: 12 },
   consigne: {
     ...type.body,
-    position: "absolute",
-    bottom: spacing.xxl + spacing.xl,
     color: colors.calcaire,
     textAlign: "center",
     paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
     textShadowColor: "rgba(0,0,0,0.6)",
     textShadowRadius: 6,
   },
   torche: {
-    position: "absolute",
-    bottom: spacing.lg,
     alignSelf: "center",
     minHeight: 52,
     minWidth: 160,

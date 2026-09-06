@@ -375,3 +375,47 @@ describe("ComptoirScreen — scan", () => {
     expect(screen.queryByTestId("resultat-scan")).toBeNull();
   });
 });
+
+describe("ComptoirScreen — retours haptiques", () => {
+  const haptics = () => require("expo-haptics") as { impactAsync: jest.Mock; notificationAsync: jest.Mock };
+
+  it("crédit : impact LÉGER, une seule fois", async () => {
+    mockPost.mockResolvedValue(CREDIT);
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+
+    expect(haptics().impactAsync).toHaveBeenCalledTimes(1);
+    expect(haptics().impactAsync).toHaveBeenCalledWith("light");
+    expect(haptics().notificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("récompense : notification de SUCCÈS marquée", async () => {
+    mockPost.mockResolvedValue({ ...CREDIT, rewardReady: true, card: { stamps_count: 8 } });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+
+    expect(haptics().notificationAsync).toHaveBeenCalledTimes(1);
+    expect(haptics().notificationAsync).toHaveBeenCalledWith("success");
+    expect(haptics().impactAsync).not.toHaveBeenCalled();
+  });
+
+  it("refus : notification d'ERREUR, distincte du doublon (avertissement)", async () => {
+    mockPost.mockRejectedValueOnce(new ApiError("Carte invalide ou introuvable", 404));
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+    expect(haptics().notificationAsync).toHaveBeenCalledWith("error");
+  });
+});
+
+describe("ComptoirScreen — police dynamique", () => {
+  it("le titre géant du résultat plafonne son agrandissement pour rester lisible", async () => {
+    mockPost.mockResolvedValue(CREDIT);
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("resultat-titre")).toBeTruthy());
+    expect(screen.getByTestId("resultat-titre").props.maxFontSizeMultiplier).toBeLessThanOrEqual(1.5);
+  });
+});

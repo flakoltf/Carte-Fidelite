@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 import { colors, spacing, type } from "@/theme";
 
@@ -40,36 +41,43 @@ export function ResultatPleinEcran({
       onPress={onFermer}
       style={[styles.plein, { backgroundColor: palette.fond }]}
     >
+      {/* Le résultat couvre tout, barre de statut comprise : sa couleur suit le fond (D10). */}
+      <StatusBar style={palette.texte === colors.onyx ? "dark" : "light"} />
       <View style={styles.contenu}>
         <View style={[styles.pastille, { borderColor: palette.texte }]}>
-          <Text style={[styles.signe, { color: palette.texte }]} accessibilityElementsHidden>
+          <Text style={[styles.signe, { color: palette.texte }]} accessibilityElementsHidden maxFontSizeMultiplier={1.2}>
             {palette.signe}
           </Text>
         </View>
 
-        <Text testID="resultat-titre" style={[styles.titre, { color: palette.texte }]}>
+        {/* Déjà énormes : plafonnés pour tenir sur l'écran en police agrandie (D12). */}
+        <Text testID="resultat-titre" style={[styles.titre, { color: palette.texte }]} maxFontSizeMultiplier={1.3}>
           {outcome.title}
         </Text>
 
         {outcome.detail ? (
-          <Text testID="resultat-detail" style={[styles.detail, { color: palette.texte }]}>
+          <Text testID="resultat-detail" style={[styles.detail, { color: palette.texte }]} maxFontSizeMultiplier={1.3}>
             {outcome.detail}
           </Text>
         ) : null}
 
         {outcome.customerName ? (
-          <Text style={[styles.client, { color: palette.texte }]}>{outcome.customerName}</Text>
+          <Text style={[styles.client, { color: palette.texte }]} maxFontSizeMultiplier={1.6}>
+            {outcome.customerName}
+          </Text>
         ) : null}
 
         {sousTitre ? (
-          <Text testID="resultat-message" style={[styles.message, { color: palette.texte }]}>
+          <Text testID="resultat-message" style={[styles.message, { color: palette.texte }]} maxFontSizeMultiplier={1.6}>
             {sousTitre}
           </Text>
         ) : null}
       </View>
 
       {/* Mention discrète : tout l'écran est le bouton (A2). */}
-      <Text style={[styles.reprendre, { color: palette.texte }]}>Toucher pour continuer</Text>
+      <Text style={[styles.reprendre, { color: palette.texte }]} maxFontSizeMultiplier={1.6}>
+        Toucher pour continuer
+      </Text>
     </Pressable>
   );
 }

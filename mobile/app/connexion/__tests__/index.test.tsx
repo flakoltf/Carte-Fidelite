@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react-native";
 
 import { _resetSessionNotice, markSessionExpired } from "@/lib/sessionNotice";
 
-jest.mock("expo-router", () => ({ Redirect: () => null }));
+jest.mock("expo-router");
 jest.mock("@/lib/auth/AuthContext", () => ({
   useAuth: () => ({
     status: "signed-out",
