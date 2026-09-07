@@ -3,7 +3,7 @@
     "name": "HALO Comptoir",
     "slug": "halocard-mobile",
     "scheme": "halocard",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,10 +15,12 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "ch.halocard.comptoir"
+      "bundleIdentifier": "ch.halocard.comptoir",
+      "buildNumber": "1"
     },
     "android": {
       "package": "ch.halocard.comptoir",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0C0B0E",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -31,7 +33,20 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La caméra sert uniquement à lire le QR code de la carte de fidélité de votre client. Aucune photo n'est prise ni enregistrée.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

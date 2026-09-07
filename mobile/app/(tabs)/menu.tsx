@@ -1,4 +1,5 @@
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import Constants from "expo-constants";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -10,6 +11,9 @@ import { colors, spacing, type } from "@/theme";
 export default function MenuScreen() {
   const { merchant, signOut } = useAuth();
   const shopName = merchant?.shopName?.trim() || "Votre commerce";
+  // Version lue dans app.json (jamais recopiée à la main : elle changerait à
+  // chaque livraison sans que l'écran suive).
+  const version = Constants.expoConfig?.version ?? "—";
   const dashboardUrl = `${getConfig().apiBaseUrl}/dashboard`;
 
   const confirmSignOut = () => {
@@ -54,7 +58,7 @@ export default function MenuScreen() {
         />
       </Card>
 
-      <Text style={styles.version}>HALO Comptoir — version 0.1.0</Text>
+      <Text style={styles.version}>HALO Comptoir — version {version}</Text>
     </Screen>
   );
 }
