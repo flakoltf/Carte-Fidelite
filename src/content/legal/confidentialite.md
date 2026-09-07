@@ -62,7 +62,19 @@ Conformément à la LPD (et au RGPD le cas échéant), vous disposez des droits 
 
 Le Service permet l'envoi de **notifications push, y compris géolocalisées**, déclenchées par la proximité d'un établissement. Lorsque ce traitement repose sur la géolocalisation d'un client final, il est mis en œuvre **par le commerçant** sur la base du **consentement** de la personne, qui peut le retirer à tout moment (réglages de l'appareil ou suppression de la carte). HALO ne prend pas de décision individuelle automatisée produisant des effets juridiques sur les personnes.
 
-## 12. Modifications
+## 12. Application mobile « HALO Comptoir »
+
+L'application **HALO Comptoir** (iOS et Android) est un outil de travail réservé aux **commerçants** clients de HALO. Elle n'est pas destinée aux clients finaux : ceux‑ci n'installent aucune application, leur carte vit dans Apple Wallet ou Google Wallet.
+
+**Ce que l'application traite.** Votre adresse e‑mail et votre mot de passe, saisis pour vous connecter à votre compte existant — l'application ne permet pas d'en créer un. Une fois la connexion établie, elle conserve un **jeton de session** dans le **trousseau sécurisé du téléphone** (Keychain sur iOS, stockage chiffré sur Android), qui est exclu des sauvegardes automatiques de l'appareil. Les informations que vous consultez ensuite — votre clientèle, vos cartes, vos messages — proviennent des mêmes serveurs que le tableau de bord, sous les mêmes règles que celles décrites plus haut ; l'application n'en conserve aucune copie durable sur le téléphone.
+
+**La caméra.** L'application demande l'accès à la caméra dans un seul but : lire le QR code de la carte de fidélité présentée par votre client, au comptoir. La lecture se fait **sur votre téléphone** : **aucune photo n'est prise, aucune image n'est transmise, aucune image n'est enregistrée**. Seul le code lu est envoyé à nos serveurs pour créditer la carte. Vous pouvez refuser cet accès : l'application vous l'explique et vous laisse le rétablir depuis les réglages du téléphone.
+
+**Ce que l'application ne fait pas.** Elle ne demande ni votre position, ni l'accès au microphone, ni à vos contacts, ni à vos photos. Elle ne contient **aucun traceur publicitaire, aucun outil de mesure d'audience tiers, aucun identifiant publicitaire**, et ne suit votre activité ni entre applications ni entre sites.
+
+**Effacement.** Vous déconnecter, ou désinstaller l'application, supprime le jeton de session conservé sur le téléphone. La suppression du compte commerçant lui‑même et des données associées se demande par écrit à **[EMAIL PROTECTION DONNÉES]** (voir section 10).
+
+## 13. Modifications
 
 Nous pouvons modifier la présente politique. La version applicable est celle publiée sur [SITE WEB], avec sa date de mise à jour.
 

@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "A_REMPLIR_AVANT_SUBMIT_email_du_compte_apple",
+        "ascAppId": "A_REMPLIR_APRES_CREATION_DE_LA_FICHE_APP_STORE_CONNECT",
+        "appleTeamId": "A_REMPLIR_identifiant_equipe_apple"
+      }
+    }
+  }
+}
