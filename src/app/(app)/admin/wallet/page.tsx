@@ -37,7 +37,7 @@ export default async function AdminWallet() {
     <div className="space-y-8">
       <PageHeader
         title="Opérations Wallet"
-        subtitle="Les deux canaux du produit : Apple Wallet (production) et Google Wallet (publishing en cours)."
+        subtitle="Les deux canaux du produit, tous deux en production : Apple Wallet et Google Wallet."
       />
 
       {/* ── Alerte certificats ───────────────────────────────────────── */}
@@ -87,7 +87,7 @@ export default async function AdminWallet() {
           </div>
         </Section>
 
-        <Section title="Google Wallet" description="Émission OK — mises à jour désactivées tant que le publishing n'est pas accordé.">
+        <Section title="Google Wallet" description="Publishing accordé le 07.09.2026 — émission active. Les objets déjà émis ne sont pas encore mis à jour après un scan (chantier connu).">
           <div className="space-y-3 text-sm">
             <StatusLine
               ok={publishing.status === "approuve"}

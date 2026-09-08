@@ -9,11 +9,16 @@ import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 
 export async function POST(req: Request) {
   try {
-    // --- GATE Google Wallet : tant que le publishing access n'est pas accordé,
-    // la voie Google est fermée côté serveur (même garde que GET /api/enroll/[cardId]).
-    // Placé EN TÊTE : aucune création (customer/carte) ne doit avoir lieu si fermé.
+    // --- GATE Google Wallet. Le publishing access est accordé (2026-09-07) : en
+    // production la variable est posée et cette garde ne se déclenche pas. Elle
+    // reste comme garde-fou d'environnement (preview, variable oubliée), au même
+    // titre que GET /api/enroll/[cardId]. Placée EN TÊTE : aucune création
+    // (customer/carte) ne doit avoir lieu si la voie est fermée.
     if (process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY !== "true") {
-      return NextResponse.json({ error: "Google Wallet n'est pas encore disponible" }, { status: 503 });
+      return NextResponse.json(
+        { error: "Google Wallet est momentanément indisponible sur cet environnement" },
+        { status: 503 },
+      );
     }
 
     // --- SÉCURITÉ : Authentification + Rate limiting ---

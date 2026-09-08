@@ -52,4 +52,6 @@ Les champs texte du design partent dans la **classe** Google, partagée entre
 tous les clients d'un marchand : un jeton par-client y est irrésolvable par
 construction. Le vrai correctif est de porter ces champs sur l'**objet**
 par-client (résolus à l'émission, puis mis à jour au scan via GET-then-merge) —
-chantier déjà listé au reste-à-faire, dépendant du publishing access Google.
+chantier déjà listé au reste-à-faire. Le publishing access Google est accordé
+depuis le 07.09.2026 : le blocage restant est la mise à jour des objets
+(`GoogleChannel` est encore un stub).
