@@ -81,13 +81,17 @@ describe('validateStudioDesign', () => {
   });
 });
 
-describe('validateStudioDesign — compteur de tampons obligatoire', () => {
-  it('bloque une carte à tampons dont aucun champ ne contient {points}', () => {
+describe('validateStudioDesign — compteur : bloquant pour les points, libre pour les tampons', () => {
+  // Décision produit (2026-09-08) : sur une carte à TAMPONS, le compteur n'est
+  // plus imposé — la grille porte la progression. L'ancienne erreur bloquante
+  // est devenue un avertissement (cf. « tampons sans champ imposé » plus bas).
+  it('n’exige plus {points} sur une carte à tampons, mais le signale', () => {
     const d = base({
       fields: [{ id: 'p1', zone: 'primary', label: 'BIENVENUE', value: 'Chez nous', order: 0 }],
     });
-    const { errors } = validateStudioDesign(d);
-    expect(errors.some((e) => e.includes('{points}'))).toBe(true);
+    const { errors, warnings } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(false);
+    expect(warnings.some((w) => w.includes('grille'))).toBe(true);
   });
 
   it('exige aussi {points} pour une carte à points (solde affiché au comptoir)', () => {
@@ -106,5 +110,82 @@ describe('validateStudioDesign — compteur de tampons obligatoire', () => {
     });
     const { errors } = validateStudioDesign(d);
     expect(errors.some((e) => e.includes('{points}'))).toBe(false);
+  });
+});
+
+// ── Carte à TAMPONS : ni compteur ni champ principal imposés ────────────────
+// Décision produit : sur une carte à tampons, la grille porte déjà la
+// progression (strip généré à chaque émission, cf. applePass.ts). Le commerçant
+// doit pouvoir publier une carte SANS aucun texte imposé. Les deux règles
+// deviennent des avertissements — elles ne disparaissent pas.
+describe('validateStudioDesign — tampons sans champ imposé', () => {
+  it('publie une carte à tampons dont aucun champ ne contient {points}', () => {
+    const d = base({
+      fields: [{ id: 'p1', zone: 'primary', label: 'BIENVENUE', value: 'Chez nous', order: 0 }],
+    });
+    const { errors, warnings } = validateStudioDesign(d);
+    expect(errors).toEqual([]);
+    expect(warnings.some((w) => w.includes('grille'))).toBe(true);
+  });
+
+  it('publie une carte à tampons SANS AUCUN champ', () => {
+    const { errors } = validateStudioDesign(base({ fields: [] }));
+    expect(errors).toEqual([]);
+  });
+
+  it('avertit deux fois sur une carte à tampons sans champ : compteur et champ principal', () => {
+    const { warnings } = validateStudioDesign(base({ fields: [] }));
+    expect(warnings.some((w) => w.includes('grille'))).toBe(true);
+    expect(warnings.some((w) => w.includes('champ principal'))).toBe(true);
+  });
+
+  it('garde toutes les autres règles bloquantes sur une carte à tampons', () => {
+    const d = base({ fields: [] });
+    d.programName = '   ';
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('nom du programme'))).toBe(true);
+  });
+
+  it('un champ vide reste bloquant, même sur une carte à tampons', () => {
+    const d = base({ fields: [{ id: 'x', zone: 'secondary', label: '', value: '', order: 0 }] });
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('champ est vide'))).toBe(true);
+  });
+});
+
+describe('validateStudioDesign — les autres types ne bougent pas', () => {
+  it('carte à POINTS sans {points} : toujours refusée (sans grille, rien ne s’afficherait)', () => {
+    const d = base({
+      cardType: 'points',
+      fields: [{ id: 'p1', zone: 'primary', label: 'STATUT', value: '{palier}', order: 0 }],
+    });
+    const { errors } = validateStudioDesign(d);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(true);
+  });
+
+  it('carte à POINTS sans aucun champ : refusée deux fois (champ principal + {points})', () => {
+    const { errors } = validateStudioDesign(base({ cardType: 'points', fields: [] }));
+    expect(errors.some((e) => e.includes('champ principal'))).toBe(true);
+    expect(errors.some((e) => e.includes('{points}'))).toBe(true);
+  });
+
+  it('carte CASHBACK sans aucun champ : le champ principal reste obligatoire', () => {
+    const { errors } = validateStudioDesign(base({ cardType: 'cashback', fields: [] }));
+    expect(errors.some((e) => e.includes('champ principal'))).toBe(true);
+  });
+
+  it('carte ABONNEMENT sans aucun champ : le champ principal reste obligatoire', () => {
+    const { errors } = validateStudioDesign(base({ cardType: 'subscription', fields: [] }));
+    expect(errors.some((e) => e.includes('champ principal'))).toBe(true);
+  });
+
+  it('cashback et abonnement ne sont pas soumis à la règle {points}', () => {
+    for (const cardType of ['cashback', 'subscription'] as const) {
+      const d = base({
+        cardType,
+        fields: [{ id: 'p1', zone: 'primary', label: 'SOLDE', value: 'CHF 12.—', order: 0 }],
+      });
+      expect(validateStudioDesign(d).errors).toEqual([]);
+    }
   });
 });

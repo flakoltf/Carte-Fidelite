@@ -466,3 +466,78 @@ describe("buildPassJson — couche identité commerce (Feature 1)", () => {
     expect(p.storeCard.backFields.length).toBeLessThanOrEqual(10);
   });
 });
+
+// ── Design SANS AUCUN CHAMP (carte à tampons « grille seule ») ──────────────
+// Le studio autorise désormais une carte à tampons sans le moindre champ : le
+// pass doit rester structurellement valide, sans libellé orphelin ni exception.
+describe("buildPassJson — design sans aucun champ", () => {
+  const design = (overrides: Partial<CardDesign> = {}): CardDesign => ({
+    programName: "Café du Rhône",
+    colors: { background: "#0D6B5E", foreground: "#FFFFFF", label: "#FFFFFF" },
+    fields: [],
+    barcode: { type: "QR", source: "card" },
+    cardType: "stamps",
+    ...overrides,
+  } as CardDesign);
+
+  const input = {
+    cardId: "c", customerName: "Alice", stamps: 3, stampGoal: 10, orgName: "Café",
+    backgroundColor: "rgb(0,0,0)", passTypeIdentifier: "pass.x", teamIdentifier: "T",
+    barcodeMessage: "sig",
+  };
+
+  it("ne jette pas et produit un pass complet", () => {
+    const p = buildPassJson({ ...input, design: design() });
+    expect(p.formatVersion).toBe(1);
+    expect(p.serialNumber).toBe("c");
+    // PassJson est un Record<string, unknown> : on type l'accès au code-barres.
+    const barcodes = p.barcodes as { message: string }[];
+    expect(barcodes[0].message).toBe("sig");
+  });
+
+  it("ne laisse aucun libellé orphelin issu du design", () => {
+    const p = buildPassJson({ ...input, design: design() });
+    const all = [
+      ...p.storeCard.headerFields, ...p.storeCard.primaryFields,
+      ...p.storeCard.secondaryFields, ...p.storeCard.auxiliaryFields,
+      // `message` exclu : champ de structure posé sur TOUS les pass, y compris
+      // hors design — voir le test de caractérisation ci-dessous.
+      ...p.storeCard.backFields.filter((f) => f.key !== "message"),
+    ];
+    for (const f of all) expect(String(f.value ?? "").trim()).not.toBe("");
+  });
+
+  // CARACTÉRISATION (constat d'audit, comportement PRÉEXISTANT) : le champ de
+  // dos « INFO » est posé sur tous les pass, avec une valeur vide quand aucun
+  // message commerçant n'est en attente — chemin design comme chemin legacy.
+  // Hors périmètre de cette PR (rendu des passes) ; signalé au superviseur.
+  it("le champ de dos INFO existe même vide (préexistant, tous chemins)", () => {
+    const p = buildPassJson({ ...input, design: design() });
+    const info = p.storeCard.backFields.find((f) => f.key === "message")!;
+    expect(info.label).toBe("INFO");
+    expect(info.value).toBe("");
+    // Même constat sans aucun design (chemin legacy) : ce n'est pas lié au studio.
+    const legacy = buildPassJson(input);
+    expect(legacy.storeCard.backFields.find((f) => f.key === "message")!.value).toBe("");
+  });
+
+  it("les zones non alimentées restent des tableaux (jamais undefined)", () => {
+    const p = buildPassJson({ ...input, design: design() });
+    for (const zone of ["headerFields", "primaryFields", "secondaryFields", "auxiliaryFields", "backFields"] as const) {
+      expect(Array.isArray(p.storeCard[zone])).toBe(true);
+    }
+  });
+
+  // CARACTÉRISATION (comportement ACTUEL, pas un souhait) : buildPassJson pose
+  // un filet — sans jeton {points} dans le design, il réinjecte un champ
+  // « TAMPONS n / objectif ». Conséquence : une carte publiée sans aucun champ
+  // affiche QUAND MÊME ce compteur sur le pass Apple. Ce test verrouille le
+  // constat pour que le jour où l'on voudra une carte réellement sans texte, on
+  // sache exactement quelle ligne bouger (cf. PR « tampons sans champ forcé »).
+  it("filet actuel : un compteur TAMPONS est réinjecté malgré l'absence de champ", () => {
+    const p = buildPassJson({ ...input, design: design() });
+    const injected = p.storeCard.primaryFields.find((f) => f.key === "stamps");
+    expect(injected).toBeDefined();
+    expect(injected!.value).toBe("3 / 10");
+  });
+});
