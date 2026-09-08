@@ -4,7 +4,7 @@
 
 import type { CardDesign, CardZone } from './types';
 import { APPLE_ZONE_LIMITS } from './types';
-import { validateDesign, type ValidationResult } from './validation';
+import { validateDesign, PRIMARY_FIELD_REQUIRED, type ValidationResult } from './validation';
 import { contrastRatio } from './color';
 import { isNoStampIcon, isValidStampIcon } from './stampLibrary';
 
@@ -30,9 +30,27 @@ const ZONE_LABELS: Record<CardZone, string> = {
  *   seulement non conforme WCAG).
  */
 export function validateStudioDesign(design: CardDesign): ValidationResult {
+  const cardType = design.cardType ?? 'stamps';
+  // Sur une carte à TAMPONS, la grille est générée à chaque émission (strip
+  // Apple : photo + grille, ou grille sur fond couleur) : la progression est
+  // visible SANS aucun champ. Le commerçant doit donc pouvoir publier une carte
+  // sans le moindre texte imposé. Les deux règles socle/studio correspondantes
+  // sont rétrogradées en avertissements — jamais supprimées, et jamais pour les
+  // autres types : sans grille, une carte à points sans compteur n'affiche rien.
+  const stampsGridCarriesProgress = cardType === 'stamps';
+
   const base = validateDesign(design);
-  const errors = [...base.errors];
+  const errors: string[] = [];
   const warnings = [...base.warnings];
+  for (const error of base.errors) {
+    if (stampsGridCarriesProgress && error === PRIMARY_FIELD_REQUIRED) {
+      warnings.push(
+        "Aucun champ principal : votre carte n'affichera que la grille de tampons et votre code. C'est un choix valide."
+      );
+      continue;
+    }
+    errors.push(error);
+  }
 
   for (const field of design.fields) {
     if (!field.label.trim() && !field.value.trim()) {
@@ -63,16 +81,19 @@ export function validateStudioDesign(design: CardDesign): ValidationResult {
     );
   }
 
-  const cardType = design.cardType ?? 'stamps';
-  // Une carte à tampons OU à points sans compteur visible est cassée au
-  // comptoir : le pass n'affiche plus la progression. Le jeton {points} doit
-  // survivre à l'édition, quel que soit le type de programme.
-  if ((cardType === 'stamps' || cardType === 'points') && !design.fields.some((f) => f.value.includes('{points}'))) {
-    errors.push(
-      cardType === 'points'
-        ? 'Votre carte n’affiche plus le solde de points : gardez un champ contenant le jeton {points} (ex. « POINTS » en zone principale).'
-        : 'Votre carte n’affiche plus le compteur de tampons : gardez un champ contenant le jeton {points} (ex. « TAMPONS » en zone principale).'
-    );
+  // Compteur visible : bloquant pour les POINTS (rien ne l'afficherait sinon),
+  // simple avertissement pour les TAMPONS (la grille porte la progression).
+  const hasPointsToken = design.fields.some((f) => f.value.includes('{points}'));
+  if (!hasPointsToken) {
+    if (cardType === 'points') {
+      errors.push(
+        'Votre carte n’affiche plus le solde de points : gardez un champ contenant le jeton {points} (ex. « POINTS » en zone principale).'
+      );
+    } else if (stampsGridCarriesProgress) {
+      warnings.push(
+        "Aucun champ n’affiche le compteur : c’est la grille de tampons qui montrera la progression au client."
+      );
+    }
   }
   if (cardType === 'stamps' && design.stamps) {
     const { goal, icon } = design.stamps;
