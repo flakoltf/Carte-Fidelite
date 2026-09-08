@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, User, Mail, Store, Download, Smartphone, AlertCircle, Check } from "lucide-react";
 import { readableTextOn } from "@/lib/cardDesign/color";
 
-// Tant que le publishing access Google Wallet n'est pas approuvé, le bouton
-// mènerait à un échec opaque au comptoir. Le jour de l'approbation : passer
-// NEXT_PUBLIC_GOOGLE_WALLET_READY=true dans Vercel et redéployer.
+// Publishing access Google accordé le 2026-09-07 : le bouton est actif en
+// production (NEXT_PUBLIC_GOOGLE_WALLET_READY=true). Le drapeau reste comme
+// garde-fou d'environnement — si la variable venait à manquer, mieux vaut un
+// message honnête qu'un bouton qui échoue au comptoir.
 const GOOGLE_WALLET_READY = process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY === "true";
 
 interface Props {
@@ -301,11 +302,11 @@ export default function EnrollClient({ slug, shopName, primaryColor, logoUrl, re
                 <div className="flex flex-col items-center justify-center gap-1 bg-surface border border-dashed border-line-warm text-galet py-4 px-4 rounded-2xl text-center">
                   <span className="flex items-center gap-2 font-bold">
                     <Smartphone className="w-5 h-5" />
-                    Google Wallet — bientôt disponible
+                    Google Wallet momentanément indisponible
                   </span>
                   <span className="text-xs">
-                    Votre carte est créée et vos tampons comptent déjà. Vous pourrez l&apos;ajouter à
-                    Google Wallet très prochainement.
+                    Votre carte est bien créée et vos passages sont comptés. Réessayez dans un
+                    instant depuis ce lien.
                   </span>
                 </div>
               )}

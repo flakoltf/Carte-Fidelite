@@ -142,7 +142,7 @@ export function integrationStatuses(env: NodeJS.ProcessEnv = process.env): Integ
       key: "google_wallet",
       label: "Google Wallet (bouton client)",
       configured: env.NEXT_PUBLIC_GOOGLE_WALLET_READY === "true",
-      missingImpact: "Bouton Google Wallet masqué (publishing access en attente).",
+      missingImpact: "Bouton Google Wallet masqué — variable absente sur cet environnement.",
     },
   ];
 }

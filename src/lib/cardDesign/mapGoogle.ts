@@ -4,7 +4,7 @@ import { KNOWN_TOKENS } from './types';
 // La CLASSE Google est PARTAGÉE par tous les clients d'un marchand : un jeton
 // par-client ({nom}, {palier}…) y est irrésolvable par construction. Repli
 // couche 1 : on retire les jetons CONNUS (jamais d'accolades sur une carte
-// Android le jour où le publishing access sera accordé) ; un jeton INCONNU
+// Android, publishing accordé le 2026-09-07) ; un jeton INCONNU
 // (faute de frappe) reste visible. Vrai fix (reste-à-faire connu) : porter ces
 // champs sur l'OBJET par-client, résolus à l'émission.
 function stripKnownTokens(value: string): string {

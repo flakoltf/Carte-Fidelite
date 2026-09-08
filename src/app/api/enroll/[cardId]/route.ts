@@ -58,10 +58,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ cardId: 
     if (merchant.suspended_at) {
       return NextResponse.json({ error: "Carte introuvable" }, { status: 404 });
     }
-    // Le gate client (bouton masqué) doit aussi tenir côté serveur : tant que le
-    // publishing access Google n'est pas accordé, la voie google est fermée.
+    // Le gate client (bouton masqué) doit aussi tenir côté serveur. Publishing
+    // accordé le 2026-09-07 : en production la variable est posée. La garde reste
+    // pour les environnements où elle ne l'est pas.
     if (wallet === "google" && process.env.NEXT_PUBLIC_GOOGLE_WALLET_READY !== "true") {
-      return NextResponse.json({ error: "Google Wallet n'est pas encore disponible" }, { status: 503 });
+      return NextResponse.json(
+        { error: "Google Wallet est momentanément indisponible sur cet environnement" },
+        { status: 503 },
+      );
     }
 
     const { data: customer } = await supabaseAdmin

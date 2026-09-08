@@ -101,9 +101,8 @@ export function GooglePublishingEditor({ current, note }: { current: string; not
       </div>
       {error && <span className="text-sm text-red-700">{error}</span>}
       <p className="text-xs text-galet">
-        Quand Google accorde le publishing : statut « Approuvé » ici, puis poser
-        NEXT_PUBLIC_GOOGLE_WALLET_READY=true et GOOGLE_PUSH_ENABLED=true sur Vercel (variables d&apos;env,
-        hors de cette console).
+        Publishing accordé le 07.09.2026 (dossier 05598252) : statut « Approuvé » ici, et
+        NEXT_PUBLIC_GOOGLE_WALLET_READY=true sur Vercel (variable d&apos;env, hors de cette console).
       </p>
     </div>
   );
