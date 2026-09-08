@@ -38,7 +38,8 @@ numériques** natives Apple Wallet & Google Wallet, vendues en abonnement par
 ## ⏳ Ce qui MANQUE
 ### Actions QUI NE DÉPENDENT QUE DU FONDATEUR (hors code)
 1. Sentry (DSN) + UptimeRobot (monitoring, code prêt).
-2. Google Wallet **publishing access** (dossier `wallet/`), puis `NEXT_PUBLIC_GOOGLE_WALLET_READY=true`.
+2. ~~Google Wallet **publishing access**~~ — **accordé le 07.09.2026** (dossier 05598252) ;
+   `NEXT_PUBLIC_GOOGLE_WALLET_READY=true` posé sur Vercel.
 3. **IDE** depuis zefix.ch → `src/content/legal/company.ts` (débloque légal + Google).
 4. Google Search Console + soumettre le sitemap.
 5. **Activer « leaked password protection »** : Supabase → Authentication → Sign In/Providers → Password.
@@ -48,8 +49,11 @@ numériques** natives Apple Wallet & Google Wallet, vendues en abonnement par
 ### Code — phase NEXT (par priorité)
 1. **Séquences email B2B** : seul l'email de bienvenue est branché ; A2/A3/activation/
    pré-churn sont rédigés dans `crm/Sequences_Email_Marchands.md`, pas automatisés (cron).
-2. **Mise à jour des objets Google Wallet après scan** (tampon n'avance pas sur Android ;
-   dépend de l'approbation ; GET-then-merge obligatoire — jamais d'UPDATE qui efface).
+2. **Mise à jour des objets Google Wallet après scan** — **débloqué** par l'approbation
+   du 07.09.2026, et désormais le dernier verrou Google : `GoogleChannel`
+   (`src/lib/wallet/channel.ts`) est un stub qui renvoie `{ pushed: 0 }`, donc le
+   tampon n'avance pas sur Android. GET-then-merge / `loyaltyobject.patch`
+   obligatoire — jamais d'UPDATE qui efface.
 3. **Tests RLS couche 2** (comportementale « Alice-vs-Bob » sur vraie base Postgres ;
    introduit Docker/Postgres en CI). Permettra aussi de durcir `is_admin()` (révoquer anon).
 4. Témoignages réels sur la landing (les 3 actuels sont fictifs).
