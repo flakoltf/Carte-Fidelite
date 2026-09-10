@@ -32,6 +32,17 @@ const noReward: PromiseLike<CountResult> = Promise.resolve({ count: 0, error: nu
 // Compte les cartes « prêtes à offrir » selon le type de programme. Le seuil et
 // la colonne diffèrent (stamp_card → stamps_count/goal ; amount_points →
 // points_balance/rewardThreshold). Tenancy posée dans chaque branche.
+// Partagé par queryComptoirStats (Server Action web) et par la route Bearer
+// GET /api/comptoir/rewards-due (3ᵉ chiffre du comptoir mobile) : un seul
+// comptage, jamais deux définitions de « récompense due » qui divergent.
+export async function queryRewardsDue(
+  admin: CountClient,
+  merchantId: string,
+  program: LoyaltyProgram,
+): Promise<number> {
+  return safeCount(await rewardReadyQuery(admin, merchantId, program));
+}
+
 function rewardReadyQuery(
   admin: CountClient,
   merchantId: string,
