@@ -6,6 +6,7 @@ import { resolveLoyaltyProgram } from "@/lib/loyalty/resolveProgram";
 import { logAuditEvent, extractRequestMeta } from "@/lib/auditLog";
 import { UUID_RE } from "@/lib/validation/uuid";
 import { maxPointsThreshold } from "@/lib/loyalty/points";
+import { currentAuthSession } from "@/lib/auth/currentMerchant";
 
 // Encaissement « Offrir la récompense » — logique partagée par /api/redeem et
 // /api/scan/redeem (le comptoir poste sur le second ; la fiche Clients sur le
@@ -15,10 +16,13 @@ import { maxPointsThreshold } from "@/lib/loyalty/points";
 // Opération de COMPTOIR : on agit comme le titulaire du compte (résolution par
 // user.id, jamais via impersonation admin) — cf. currentOwnMerchantId.
 export async function redeemReward(req: NextRequest): Promise<NextResponse> {
-  const { createClient } = await import("@/utils/supabase/server");
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  // Cookie (dashboard) OU jeton « Authorization: Bearer » (app mobile) — même
+  // chemin unique que /api/scan (src/lib/auth/currentMerchant.ts). Le marchand
+  // reste résolu par l'utilisateur authentifié (.eq("user_id")), jamais par un
+  // id fourni : le jeton IDENTIFIE, il n'élargit jamais (invariant n°3).
+  const session = await currentAuthSession({ request: req });
+  if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const { user } = session;
 
   const rl = await rateLimit(`redeem:${user.id}`, 60, 60000);
   if (!rl.success) return NextResponse.json({ error: "Trop de demandes. Réessayez." }, { status: 429 });
