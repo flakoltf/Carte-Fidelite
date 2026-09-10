@@ -21,14 +21,28 @@ function credentials() {
   ) as { client_email: string; private_key: string };
 }
 
-function walletClient() {
+function walletJwt() {
   const creds = credentials();
-  const auth = new google.auth.JWT({
+  return new google.auth.JWT({
     email: creds.client_email,
     key: creds.private_key,
     scopes: ['https://www.googleapis.com/auth/wallet_object.issuer'],
   });
-  return google.walletobjects({ version: 'v1', auth });
+}
+
+function walletClient() {
+  return google.walletobjects({ version: 'v1', auth: walletJwt() });
+}
+
+/**
+ * Access token OAuth pour l'API Wallet REST (même service account que
+ * walletClient). Utilisé par googleObject.ts, qui parle à l'API en fetch nu
+ * pour garantir le verbe HTTP (PATCH, jamais PUT — invariant n°2).
+ */
+export async function walletAccessToken(): Promise<string> {
+  const { token } = await walletJwt().getAccessToken();
+  if (!token) throw new Error('Google Wallet : access token vide.');
+  return token;
 }
 
 // ---------------------------------------------------------------------------
