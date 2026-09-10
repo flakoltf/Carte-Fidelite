@@ -125,7 +125,9 @@ await api().post("/api/scan", { carte: cardId });
 ```
 
 Les routes du cœur mobile acceptent `Authorization: Bearer` depuis la PR #82
-(scan, annulation, segments, envoi de message). **Session expirée** : sur un
+(scan, annulation, segments, envoi de message), rejointes par l'encaissement
+(`/api/scan/redeem`) et le comptage « récompenses dues »
+(`/api/comptoir/rewards-due`) avec le comptoir complet. **Session expirée** : sur un
 `401` en cours d'usage, le client pose une notice (`sessionNotice.ts`) puis
 ferme la session Supabase ; l'`AuthProvider` observe la déconnexion, les
 onglets renvoient vers la connexion, qui affiche « Votre session a expiré.
@@ -177,7 +179,7 @@ Règles tenues par les composants et vérifiées par les tests :
 ```bash
 npm run lint        # eslint (config Expo)
 npm run typecheck   # tsc --noEmit, TypeScript strict
-npm test            # jest (preset jest-expo) — 227 tests, aucun appel réseau
+npm test            # jest (preset jest-expo) — 275 tests, aucun appel réseau
 ```
 
 Les trois commandes tournent aussi en CI sur toute modification de `mobile/`
