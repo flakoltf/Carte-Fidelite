@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from "@/lib/api";
-import { submitRevert, submitScan } from "../scanApi";
+import { submitRedeem, submitRevert, submitScan } from "../scanApi";
 
 /** Faux client API : aucun réseau, jamais de scan réel. */
 function fakeClient(post: jest.Mock): ApiClient {
@@ -62,6 +62,73 @@ describe("submitScan", () => {
     const outcome = await submitScan("payload-qr", fakeClient(jest.fn().mockResolvedValue(null)));
 
     expect(outcome.kind).toBe("refused");
+  });
+
+  it("joint le montant CHF quand le pavé le fournit (amount_points)", async () => {
+    const post = jest.fn().mockResolvedValue({ success: true, currentValue: 62, pointsEarned: 12, rewardReady: false });
+
+    const outcome = await submitScan("payload-qr", fakeClient(post), 12.5);
+
+    expect(post).toHaveBeenCalledWith("/api/scan", { cardId: "payload-qr", amountChf: 12.5 });
+    expect(outcome).toMatchObject({ kind: "credit", title: "+12 points" });
+  });
+
+  it("sans montant, le corps ne porte JAMAIS de clé amountChf", async () => {
+    const post = jest.fn().mockResolvedValue({ success: true });
+
+    await submitScan("payload-qr", fakeClient(post));
+
+    expect(post).toHaveBeenCalledWith("/api/scan", { cardId: "payload-qr" });
+  });
+});
+
+describe("submitRedeem", () => {
+  it("poste sur /api/scan/redeem avec le payload QR seul (tampons, amount_points)", async () => {
+    const post = jest.fn().mockResolvedValue({ success: true, card: { stamps_count: 0 } });
+
+    const result = await submitRedeem("payload-qr", undefined, fakeClient(post));
+
+    expect(post).toHaveBeenCalledWith("/api/scan/redeem", { cardId: "payload-qr" });
+    expect(result).toEqual({ ok: true, cycleReset: false, tierReward: null });
+  });
+
+  it("joint le palier choisi pour une carte à points (contrat du comptoir web)", async () => {
+    const post = jest.fn().mockResolvedValue({
+      success: true,
+      tier: { threshold: 200, reward: "Menu offert" },
+      cycleReset: true,
+    });
+
+    const result = await submitRedeem("payload-qr", 200, fakeClient(post));
+
+    expect(post).toHaveBeenCalledWith("/api/scan/redeem", { cardId: "payload-qr", tierThreshold: 200 });
+    expect(result).toEqual({ ok: true, cycleReset: true, tierReward: "Menu offert" });
+  });
+
+  it("remonte tel quel le refus du serveur (déjà encaissée, palier non atteint…)", async () => {
+    const post = jest.fn().mockRejectedValue(new ApiError("Carte non complète ou déjà encaissée", 409));
+
+    const result = await submitRedeem("payload-qr", undefined, fakeClient(post));
+
+    expect(result).toEqual({ ok: false, offline: false, message: "Carte non complète ou déjà encaissée" });
+  });
+
+  it("dit clairement que rien n'a été encaissé si le réseau tombe", async () => {
+    const post = jest.fn().mockRejectedValue(new ApiError("Connexion impossible. Vérifiez votre réseau.", 0));
+
+    const result = await submitRedeem("payload-qr", undefined, fakeClient(post));
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.offline).toBe(true);
+      expect(result.message).toMatch(/rien n'a été encaissé/i);
+    }
+  });
+
+  it("réponse sans drapeau success : traitée comme un refus, jamais comme un encaissement", async () => {
+    const result = await submitRedeem("payload-qr", undefined, fakeClient(jest.fn().mockResolvedValue(null)));
+
+    expect(result.ok).toBe(false);
   });
 });
 

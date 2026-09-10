@@ -11,6 +11,8 @@ import { colors, radius, spacing, type } from "@/theme";
 import { BandeauAnnuler, NoteAnnulation } from "./components/BandeauAnnuler";
 import { ChiffresDuJour } from "./components/ChiffresDuJour";
 import { DemandePermission } from "./components/DemandePermission";
+import { EncaissementRecompense } from "./components/EncaissementRecompense";
+import { PaveMontant } from "./components/PaveMontant";
 import { ResultatPleinEcran } from "./components/ResultatPleinEcran";
 import { Viseur } from "./components/Viseur";
 import { revertSecondsLeft, type RevertableLoyaltyType } from "./revertRules";
@@ -53,6 +55,10 @@ export function ComptoirScreen() {
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
   const [noteAnnulation, setNoteAnnulation] = useState<string | null>(null);
 
+  // Pavé CHF (programmes amount_points) : envoi en vol + échec du dernier envoi.
+  const [montantEnCours, setMontantEnCours] = useState(false);
+  const [montantErreur, setMontantErreur] = useState<string | null>(null);
+
   // Redemande un rendu chaque seconde pour le décompte d'annulation.
   const [, battement] = useReducer((n: number) => n + 1, 0);
 
@@ -60,6 +66,32 @@ export function ComptoirScreen() {
   // React ne se propage.
   const occupe = useRef(false);
   const derniereLecture = useRef<{ valeur: string; at: number } | null>(null);
+
+  // Post-traitement COMMUN d'un résultat de scan (viseur ou pavé CHF) : le
+  // bandeau d'annulation vise toujours le DERNIER crédit, jamais un client
+  // précédent, et chaque résultat a UN retour haptique (D11) : crédit = impact
+  // léger (le geste ordinaire, pavé CHF ouvert compris), récompense = succès
+  // marqué, doublon = avertissement, refus = erreur.
+  const appliquerResultat = useCallback(
+    (outcome: ScanOutcome) => {
+      setNoteAnnulation(null);
+      setAnnulable(outcome.revert ? { ...outcome.revert, at: new Date() } : null);
+      setResultat(outcome);
+
+      if (outcome.kind === "credit" || outcome.kind === "amount-required") {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (outcome.kind === "credit") void rafraichir();
+      } else if (outcome.kind === "reward") {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void rafraichir();
+      } else if (outcome.kind === "cooldown") {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } else {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    },
+    [rafraichir],
+  );
 
   const traiterCode = useCallback(
     async (valeur: string) => {
@@ -74,46 +106,49 @@ export function ComptoirScreen() {
       setEnCoursDeScan(true);
 
       const outcome = await submitScan(valeur);
-
-      // Un nouveau scan remplace l'annulation en attente : le bandeau vise
-      // toujours le DERNIER crédit, jamais un client précédent.
-      setNoteAnnulation(null);
-      setAnnulable(outcome.revert ? { ...outcome.revert, at: new Date() } : null);
-      setResultat(outcome);
       setEnCoursDeScan(false);
-
-      // Un seul retour par résultat, jamais en rafale (D11) : crédit = impact
-      // léger (le geste ordinaire), récompense = succès marqué, doublon =
-      // avertissement, refus = erreur — trois sensations distinctes.
-      if (outcome.kind === "credit") {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        void rafraichir();
-      } else if (outcome.kind === "reward") {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else if (outcome.kind === "cooldown") {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      } else {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
+      appliquerResultat(outcome);
     },
-    [rafraichir],
+    [appliquerResultat],
+  );
+
+  // Pavé CHF : renvoie le MÊME scan avec le montant tapé. Réseau coupé → le
+  // pavé reste ouvert, montant conservé, « Réessayer » — jamais d'impasse.
+  const crediterMontant = useCallback(
+    async (montantChf: number) => {
+      if (!resultat || montantEnCours) return;
+      setMontantEnCours(true);
+      const outcome = await submitScan(resultat.cardId, undefined, montantChf);
+      setMontantEnCours(false);
+      if (outcome.kind === "offline") {
+        setMontantErreur("Pas de réseau — le crédit n'a pas été enregistré.");
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      setMontantErreur(null);
+      appliquerResultat(outcome);
+    },
+    [resultat, montantEnCours, appliquerResultat],
   );
 
   const fermerResultat = useCallback(() => {
     setResultat(null);
+    setMontantErreur(null);
     // La lecture suivante redevient possible immédiatement (hors même QR).
     occupe.current = false;
   }, []);
 
   // Android : le bouton retour matériel ferme le résultat, jamais l'app (A4).
+  // Pendant un crédit au montant en vol, il ne ferme rien : on ne quitte jamais
+  // un envoi sans voir son verdict (l'encaissement a sa propre garde).
   useEffect(() => {
     if (!resultat) return;
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
-      fermerResultat();
+      if (!montantEnCours) fermerResultat();
       return true;
     });
     return () => subscription.remove();
-  }, [resultat, fermerResultat]);
+  }, [resultat, montantEnCours, fermerResultat]);
 
   // Fermeture automatique des états qui n'appellent aucune décision.
   useEffect(() => {
@@ -227,7 +262,21 @@ export function ComptoirScreen() {
         ) : null}
       </View>
 
-      {resultat ? <ResultatPleinEcran outcome={resultat} onFermer={fermerResultat} /> : null}
+      {/* Trois plein-écrans possibles : pavé CHF (crédit au montant),
+          encaissement (récompense atteinte ET encaissable), résultat simple. */}
+      {resultat?.kind === "amount-required" ? (
+        <PaveMontant
+          customerName={resultat.customerName}
+          enCours={montantEnCours}
+          erreur={montantErreur}
+          onCrediter={(montantChf) => void crediterMontant(montantChf)}
+          onFermer={fermerResultat}
+        />
+      ) : resultat?.kind === "reward" && resultat.redeem ? (
+        <EncaissementRecompense outcome={resultat} onFermer={fermerResultat} onEncaisse={() => void rafraichir()} />
+      ) : resultat ? (
+        <ResultatPleinEcran outcome={resultat} onFermer={fermerResultat} />
+      ) : null}
     </View>
   );
 }

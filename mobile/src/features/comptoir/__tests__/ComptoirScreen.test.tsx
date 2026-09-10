@@ -7,6 +7,8 @@ import { ApiError } from "@/lib/api";
 
 // ── Aucun appel réel : ni caméra, ni réseau, ni Supabase. ─────────────────────
 const mockPost = jest.fn();
+// GET /api/comptoir/rewards-due — le 3ᵉ chiffre du jour, compté côté serveur.
+const mockGet = jest.fn(async () => ({ rewardsDue: 4 }));
 const mockDemanderPermission = jest.fn();
 let mockPermission: { granted: boolean; canAskAgain: boolean } | null = {
   granted: true,
@@ -60,7 +62,7 @@ const setFocus = (value: boolean) =>
 
 jest.mock("@/lib/api", () => {
   const actual = jest.requireActual("@/lib/api");
-  return { ...actual, api: () => ({ post: mockPost, get: jest.fn(), patch: jest.fn(), del: jest.fn(), request: jest.fn() }) };
+  return { ...actual, api: () => ({ post: mockPost, get: mockGet, patch: jest.fn(), del: jest.fn(), request: jest.fn() }) };
 });
 
 jest.mock("@/lib/supabase", () => ({
@@ -216,10 +218,14 @@ describe("ComptoirScreen — permission caméra", () => {
 });
 
 describe("ComptoirScreen — scan", () => {
-  it("affiche les chiffres du jour au-dessus du viseur", async () => {
+  it("affiche les chiffres du jour au-dessus du viseur, récompenses dues comprises", async () => {
     await render(<ComptoirScreen />);
 
     await waitFor(() => expect(screen.getAllByText("7")).toHaveLength(2));
+    // « Récompenses dues » vient de la route Bearer, jamais compté sur mobile.
+    expect(screen.getByTestId("chiffre-recompenses")).toBeTruthy();
+    expect(screen.getByText("4")).toBeTruthy();
+    expect(mockGet).toHaveBeenCalledWith("/api/comptoir/rewards-due");
     expect(screen.getByTestId("viseur")).toBeTruthy();
   });
 
@@ -338,11 +344,98 @@ describe("ComptoirScreen — scan", () => {
     await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Récompense atteinte"));
 
     // Bien au-delà du délai de fermeture des crédits simples (1500 ms) :
-    // la récompense, elle, reste affichée.
+    // la récompense, elle, reste affichée — avec son bouton d'encaissement.
     await act(async () => {
       await new Promise((r) => setTimeout(r, 2200));
     });
-    expect(screen.getByTestId("resultat-scan")).toBeTruthy();
+    expect(screen.getByTestId("encaissement-recompense")).toBeTruthy();
+    expect(screen.getByTestId("bouton-offrir")).toBeTruthy();
+  });
+
+  it("encaisse la récompense après confirmation explicite, puis rend le viseur", async () => {
+    mockPost
+      .mockResolvedValueOnce({ ...CREDIT, rewardReady: true, card: { stamps_count: 8, customers: { full_name: "Marie Favre" } } })
+      .mockResolvedValueOnce({ success: true, card: { stamps_count: 0 } });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("bouton-offrir")).toBeTruthy());
+    // Rien n'est parti sans geste : un seul appel (le scan).
+    expect(mockPost).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(screen.getByTestId("bouton-offrir"));
+
+    await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Récompense offerte"));
+    expect(mockPost).toHaveBeenCalledWith("/api/scan/redeem", { cardId: "QR-CARTE-1" });
+    // Confirmation vue, puis retour au viseur tout seul (1500 ms, vrai temps).
+    await waitFor(() => expect(screen.queryByTestId("encaissement-recompense")).toBeNull(), { timeout: 4000 });
+    expect(screen.getByTestId("viseur")).toBeTruthy();
+  });
+
+  it("carte à points : valide le palier choisi (tierThreshold), comme au comptoir web", async () => {
+    mockPost
+      .mockResolvedValueOnce({
+        success: true,
+        added: true,
+        rewardReady: true,
+        loyaltyType: "points",
+        currentValue: 200,
+        maxThreshold: 200,
+        redeemableTiers: [
+          { threshold: 100, reward: "Café offert" },
+          { threshold: 200, reward: "Menu offert" },
+        ],
+      })
+      .mockResolvedValueOnce({ success: true, tier: { threshold: 200, reward: "Menu offert" }, cycleReset: true });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("bouton-palier-200")).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId("bouton-palier-200"));
+
+    await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("Carte remise à zéro"));
+    expect(mockPost).toHaveBeenCalledWith("/api/scan/redeem", { cardId: "QR-CARTE-1", tierThreshold: 200 });
+  });
+
+  it("tape le montant au pavé CHF et crédite avec le MÊME payload QR", async () => {
+    mockPost
+      .mockRejectedValueOnce(
+        new ApiError("Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales).", 400, { ok: false }),
+      )
+      .mockResolvedValueOnce({ success: true, currentValue: 62, pointsEarned: 12, rewardReady: false });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("pave-montant")).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId("touche-1"));
+    await fireEvent.press(screen.getByTestId("touche-2"));
+    await fireEvent.press(screen.getByTestId("touche-virgule"));
+    await fireEvent.press(screen.getByTestId("touche-5"));
+    await fireEvent.press(screen.getByTestId("touche-0"));
+    // Le montant se RELIT avant l'envoi, sur l'affichage et sur le bouton.
+    expect(screen.getByTestId("montant-affiche").props.children).toBe("CHF 12.50");
+
+    await fireEvent.press(screen.getByTestId("bouton-crediter"));
+
+    await waitFor(() => expect(screen.getByTestId("resultat-titre").props.children).toBe("+12 points"));
+    expect(mockPost).toHaveBeenLastCalledWith("/api/scan", { cardId: "QR-CARTE-1", amountChf: 12.5 });
+  });
+
+  it("réseau coupé pendant le crédit au montant : le pavé reste ouvert, montant conservé", async () => {
+    mockPost
+      .mockRejectedValueOnce(
+        new ApiError("Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales).", 400, { ok: false }),
+      )
+      .mockRejectedValueOnce(new ApiError("Connexion impossible. Vérifiez votre réseau.", 0));
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("pave-montant")).toBeTruthy());
+    await fireEvent.press(screen.getByTestId("touche-9"));
+
+    await fireEvent.press(screen.getByTestId("bouton-crediter"));
+
+    await waitFor(() => expect(screen.getByTestId("erreur-montant")).toBeTruthy());
+    expect(screen.getByTestId("pave-montant")).toBeTruthy();
+    expect(screen.getByTestId("montant-affiche").props.children).toBe("CHF 9.—");
   });
 
   it("rend la main au viseur tout seul après un crédit", async () => {
@@ -389,11 +482,25 @@ describe("ComptoirScreen — retours haptiques", () => {
     mockPost.mockResolvedValue({ ...CREDIT, rewardReady: true, card: { stamps_count: 8 } });
     await render(<ComptoirScreen />);
     await scanner();
-    await waitFor(() => expect(screen.getByTestId("resultat-scan")).toBeTruthy());
+    await waitFor(() => expect(screen.getByTestId("encaissement-recompense")).toBeTruthy());
 
     expect(haptics().notificationAsync).toHaveBeenCalledTimes(1);
     expect(haptics().notificationAsync).toHaveBeenCalledWith("success");
     expect(haptics().impactAsync).not.toHaveBeenCalled();
+  });
+
+  it("encaissement réussi : un DEUXIÈME succès haptique, au moment du geste", async () => {
+    mockPost
+      .mockResolvedValueOnce({ ...CREDIT, rewardReady: true, card: { stamps_count: 8 } })
+      .mockResolvedValueOnce({ success: true, card: { stamps_count: 0 } });
+    await render(<ComptoirScreen />);
+    await scanner();
+    await waitFor(() => expect(screen.getByTestId("bouton-offrir")).toBeTruthy());
+
+    await fireEvent.press(screen.getByTestId("bouton-offrir"));
+
+    await waitFor(() => expect(haptics().notificationAsync).toHaveBeenCalledTimes(2));
+    expect(haptics().notificationAsync).toHaveBeenLastCalledWith("success");
   });
 
   it("refus : notification d'ERREUR, distincte du doublon (avertissement)", async () => {

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 
+import { api } from "@/lib/api";
 import { getSupabase } from "@/lib/supabase";
 
 import { fetchComptoirStats, type ComptoirStats, type CountClient } from "./stats";
@@ -22,7 +23,7 @@ export function useComptoirStats(merchantId: string | null | undefined) {
     setChargement(true);
     try {
       const client = getSupabase() as unknown as CountClient;
-      const valeurs = await fetchComptoirStats(client, merchantId, new Date());
+      const valeurs = await fetchComptoirStats(client, merchantId, new Date(), api());
       if (monte.current) setStats(valeurs);
     } catch {
       // Un chiffre indisponible ne doit jamais empêcher de scanner : on garde

@@ -16,6 +16,8 @@ export function ChiffresDuJour({ stats, chargement }: { stats: ComptoirStats | n
       <Chiffre valeur={valeur(stats?.scansToday)} libelle="scans aujourd'hui" testID="chiffre-scans" />
       <View style={styles.separateur} />
       <Chiffre valeur={valeur(stats?.activeCards)} libelle="cartes actives" testID="chiffre-cartes" />
+      <View style={styles.separateur} />
+      <Chiffre valeur={valeur(stats?.rewardsDue)} libelle="récompenses dues" testID="chiffre-recompenses" />
     </View>
   );
 }
@@ -38,9 +40,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "center",
-    gap: spacing.lg,
+    // md (et plus lg) : trois chiffres depuis le comptoir complet — la rangée
+    // doit tenir à 393 pt avec des libellés sur deux lignes.
+    gap: spacing.md,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   // flex + minWidth 0 : en police agrandie les deux blocs se partagent la
   // largeur et le libellé passe sur deux lignes au lieu de sortir de l'écran.
