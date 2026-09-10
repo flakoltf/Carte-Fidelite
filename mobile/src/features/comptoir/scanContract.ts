@@ -41,8 +41,27 @@ export type ScanOutcomeKind =
   | "amount-required"
   | "refused";
 
+/** Palier validable d'une carte à points (`redeemableTiers` de la réponse). */
+export interface RedeemableTier {
+  threshold: number;
+  reward: string;
+}
+
+/**
+ * Comment ENCAISSER cette récompense (écran « Récompense atteinte »).
+ * `single` : un seul bouton, POST /api/scan/redeem { cardId } (tampons,
+ * amount_points). `tiers` : un bouton par palier validable, POST
+ * { cardId, tierThreshold } — même contrat que le web (RedeemFullScreen).
+ * Absent (`null`) : rien à encaisser (visit_based / tiered, purement informatifs).
+ */
+export type RedeemPlan =
+  | { mode: "single"; rewardLabel: string | null }
+  | { mode: "tiers"; tiers: RedeemableTier[]; maxThreshold: number | null };
+
 export interface ScanOutcome {
   kind: ScanOutcomeKind;
+  /** Payload brut du QR scanné — repassé tel quel au serveur pour encaisser ou créditer au montant. */
+  cardId: string;
   /** Ligne géante de l'écran de résultat. */
   title: string;
   /** Progression ou précision sous le titre ; `null` quand le serveur n'en donne pas. */
@@ -53,6 +72,8 @@ export interface ScanOutcome {
   loyaltyType: LoyaltyType | null;
   /** Renseigné uniquement quand le bandeau « Annuler » a lieu d'être. */
   revert: { cardId: string; loyaltyType: RevertableLoyaltyType } | null;
+  /** Renseigné uniquement quand la récompense peut s'encaisser depuis l'app. */
+  redeem: RedeemPlan | null;
 }
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -109,68 +130,100 @@ const AMOUNT_REQUIRED = /montant en chf/i;
 
 function refusal(
   kind: ScanOutcomeKind,
+  cardId: string,
   title: string,
   message: string,
   loyaltyType: LoyaltyType | null = null,
 ): ScanOutcome {
-  return { kind, title, detail: null, message, customerName: null, loyaltyType, revert: null };
+  return { kind, cardId, title, detail: null, message, customerName: null, loyaltyType, revert: null, redeem: null };
+}
+
+/**
+ * Plan d'encaissement d'une récompense atteinte, lu DÉFENSIVEMENT dans la
+ * réponse du scan. Points : seuls les paliers bien formés du serveur passent
+ * (`redeemableTiers`) — aucun seuil recalculé ici. Une liste vide/illisible →
+ * pas de plan : l'écran informe sans proposer de bouton (jamais d'impasse).
+ */
+function readRedeemPlan(type: LoyaltyType | null, body: ScanResponseBody): RedeemPlan | null {
+  if (type === "stamp_card") return { mode: "single", rewardLabel: null };
+  if (type === "amount_points") return { mode: "single", rewardLabel: str(body.rewardLabel) };
+  if (type === "points") {
+    const raw = Array.isArray(body.redeemableTiers) ? body.redeemableTiers : [];
+    const tiers: RedeemableTier[] = [];
+    for (const entry of raw) {
+      const t = entry as { threshold?: unknown; reward?: unknown } | null;
+      const threshold = num(t?.threshold);
+      const reward = str(t?.reward);
+      if (threshold !== null && reward !== null) tiers.push({ threshold, reward });
+    }
+    if (tiers.length === 0) return null;
+    return { mode: "tiers", tiers, maxThreshold: num(body.maxThreshold) };
+  }
+  // visit_based / tiered : pas de notion d'encaissement (cf. /api/scan/redeem).
+  return null;
 }
 
 export function interpretScanResult(result: ScanApiResult, cardId: string): ScanOutcome {
   if (!result.ok) {
     const { status, message } = result;
     if (status === 0) {
-      return refusal("offline", "Pas de réseau", "Le crédit n'a pas été enregistré. Réessayez une fois connecté.");
+      return refusal("offline", cardId, "Pas de réseau", "Le crédit n'a pas été enregistré. Réessayez une fois connecté.");
     }
     // Doublon : le serveur pose explicitement `cooldown: true` (429). Un 429 sans
     // ce drapeau est le plafond de scans par minute — message du serveur.
     const payload = (result.payload ?? {}) as { cooldown?: unknown };
     if (status === 429 && payload.cooldown === true) {
-      return refusal("cooldown", "Déjà scanné il y a un instant", message);
+      return refusal("cooldown", cardId, "Déjà scanné il y a un instant", message);
     }
     if (status === 404) {
-      return refusal("unknown-card", "Carte inconnue", message);
+      return refusal("unknown-card", cardId, "Carte inconnue", message);
     }
     if (status === 400 && AMOUNT_REQUIRED.test(message)) {
       return refusal(
         "amount-required",
+        cardId,
         "Crédit au montant",
-        "Cette carte se crédite selon le montant dépensé : passez par le comptoir sur ordinateur.",
+        "Tapez le montant de l'achat : les points suivent.",
         "amount_points",
       );
     }
-    return refusal("refused", "Scan refusé", message);
+    return refusal("refused", cardId, "Scan refusé", message);
   }
 
   const body = result.body;
   if (body.success !== true) {
-    return refusal("refused", "Scan refusé", str(body.error) ?? "Scan refusé.");
+    return refusal("refused", cardId, "Scan refusé", str(body.error) ?? "Scan refusé.");
   }
 
   const loyaltyType = readLoyaltyType(body);
   const customerName = readCustomerName(body);
 
   // Récompense atteinte : le serveur l'annonce (rewardReady), qu'un crédit ait
-  // eu lieu ou que la carte fût déjà pleine. Jamais d'annulation ici.
+  // eu lieu ou que la carte fût déjà pleine. Jamais d'annulation ici — mais un
+  // plan d'encaissement quand la mécanique s'encaisse (/api/scan/redeem).
   if (body.rewardReady === true) {
     return {
       kind: "reward",
+      cardId,
       title: "Récompense atteinte",
       detail: creditDetail(loyaltyType, body),
       message: null,
       customerName,
       loyaltyType,
       revert: null,
+      redeem: readRedeemPlan(loyaltyType, body),
     };
   }
 
   return {
     kind: "credit",
+    cardId,
     title: creditTitle(loyaltyType, body),
     detail: creditDetail(loyaltyType, body),
     message: null,
     customerName,
     loyaltyType,
     revert: canRevertScan(loyaltyType) ? { cardId, loyaltyType } : null,
+    redeem: null,
   };
 }

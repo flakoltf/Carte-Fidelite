@@ -126,6 +126,84 @@ describe("interpretScanResult — récompense", () => {
   });
 });
 
+describe("interpretScanResult — plan d'encaissement", () => {
+  it("carte à tampons pleine : un seul bouton OFFRIR (mode single)", () => {
+    const outcome = interpretScanResult(
+      ok({ success: true, added: false, rewardReady: true, loyaltyType: "stamp_card", stampGoal: 8, card: { stamps_count: 8 } }),
+      "carte-1",
+    );
+
+    expect(outcome.redeem).toEqual({ mode: "single", rewardLabel: null });
+    expect(outcome.cardId).toBe("carte-1");
+  });
+
+  it("amount_points au seuil : mode single, avec le libellé de récompense du serveur", () => {
+    const outcome = interpretScanResult(
+      ok({ success: true, currentValue: 120, pointsEarned: 20, rewardReady: true, rewardLabel: "Café offert" }),
+      "carte-1",
+    );
+
+    expect(outcome.redeem).toEqual({ mode: "single", rewardLabel: "Café offert" });
+  });
+
+  it("carte à points : un bouton par palier validable du serveur (jamais recalculés)", () => {
+    const outcome = interpretScanResult(
+      ok({
+        success: true, added: true, rewardReady: true, loyaltyType: "points",
+        currentValue: 120, maxThreshold: 200,
+        redeemableTiers: [
+          { threshold: 50, reward: "Café offert" },
+          { threshold: 100, reward: "Menu offert" },
+        ],
+      }),
+      "carte-1",
+    );
+
+    expect(outcome.redeem).toEqual({
+      mode: "tiers",
+      tiers: [
+        { threshold: 50, reward: "Café offert" },
+        { threshold: 100, reward: "Menu offert" },
+      ],
+      maxThreshold: 200,
+    });
+  });
+
+  it("paliers illisibles → aucun plan : l'écran informe sans proposer de bouton", () => {
+    const outcome = interpretScanResult(
+      ok({ success: true, added: true, rewardReady: true, loyaltyType: "points", currentValue: 200, redeemableTiers: [{ threshold: "x" }] }),
+      "carte-1",
+    );
+
+    expect(outcome.kind).toBe("reward");
+    expect(outcome.redeem).toBeNull();
+  });
+
+  it("visites et paliers d'ancienneté : purement informatifs, rien à encaisser", () => {
+    const visites = interpretScanResult(
+      ok({ success: true, added: true, rewardReady: true, loyaltyType: "visit_based", card: { stamps_count: 10 } }),
+      "carte-1",
+    );
+    const paliers = interpretScanResult(
+      ok({ success: true, added: true, rewardReady: true, loyaltyType: "tiered", card: { stamps_count: 20 } }),
+      "carte-1",
+    );
+
+    expect(visites.redeem).toBeNull();
+    expect(paliers.redeem).toBeNull();
+  });
+
+  it("jamais de plan hors récompense (crédit simple, refus)", () => {
+    const credit = interpretScanResult(
+      ok({ success: true, added: true, rewardReady: false, loyaltyType: "stamp_card", stampGoal: 8, card: { stamps_count: 4 } }),
+      "carte-1",
+    );
+
+    expect(credit.redeem).toBeNull();
+    expect(interpretScanResult(ko(404, "Carte invalide ou introuvable"), "carte-1").redeem).toBeNull();
+  });
+});
+
 describe("interpretScanResult — refus du serveur", () => {
   it("cooldown : le drapeau du serveur fait foi", () => {
     const outcome = interpretScanResult(
@@ -171,7 +249,7 @@ describe("interpretScanResult — refus du serveur", () => {
     expect(outcome).toMatchObject({ kind: "refused", message: "Cette carte appartient à un autre établissement" });
   });
 
-  it("montant requis (400 amount_points) : état dédié", () => {
+  it("montant requis (400 amount_points) : état dédié, qui ouvre le pavé CHF", () => {
     const outcome = interpretScanResult(
       ko(400, "Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales).", {
         ok: false,
@@ -181,7 +259,9 @@ describe("interpretScanResult — refus du serveur", () => {
     );
 
     expect(outcome.kind).toBe("amount-required");
-    expect(outcome.message).toMatch(/ordinateur/i);
+    expect(outcome.message).toMatch(/montant/i);
+    // Le pavé renverra le MÊME payload QR signé, avec le montant tapé.
+    expect(outcome.cardId).toBe("carte-1");
   });
 
   it("hors ligne : le client API remonte un statut 0", () => {

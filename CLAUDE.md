@@ -95,10 +95,15 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
   `consentedRecipients`) ; formulaire `/demarrer` enrichi + email de confirmation ;
   fiche admin GET-then-merge (n'efface plus `loyalty_config`) ; SEO logo/favicon/
   og-image/Search Console ; pages légales complètes (IDE CHE-242.720.495) ;
-  app mobile commerçant M1-M4 (voir tableau stack).
+  app mobile commerçant M1-M5 (voir tableau stack) avec **comptoir complet** :
+  encaissement au comptoir mobile (`/api/scan/redeem` ouvert au Bearer, choix du
+  palier pour les cartes à points), pavé numérique CHF (`amount_points`), 3ᵉ
+  chiffre « récompenses dues » via la route Bearer `GET /api/comptoir/rewards-due`
+  (comptage serveur `queryRewardsDue`, jamais recodé côté mobile) ; préparation
+  publication App Store (EAS/TestFlight) faite.
 - **Google Wallet accordé le 2026-09-07** (dossier 05598252) : émission active
   en production, bouton client visible, plus aucune mention d'attente dans la copie.
-- **En attente** : polish mobile M5 ; publication App Store (EAS/TestFlight) ;
+- **En attente** : soumission App Store (préparation faite, voir ci-dessus) ;
   Sentry (DSN absent, code prêt) ; vieilles PRs #34-#60 à trier (périmées probables).
 - **DETTE OUVERTE, Google Wallet** : `GoogleChannel` (`src/lib/wallet/channel.ts`)
   est un **stub** — `notify()` renvoie `{ pushed: 0 }` sans rien faire. Poser

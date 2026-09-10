@@ -73,18 +73,6 @@ describe("ResultatPleinEcran", () => {
     expect(screen.getByTestId("resultat-message").props.children).toMatch(/n'a pas été enregistré/);
   });
 
-  it("renvoie vers l'ordinateur pour un crédit au montant", async () => {
-    const montant = outcomeFor({
-      ok: false,
-      status: 400,
-      message: "Le montant en CHF est requis (> 0, ≤ 10000, max 2 décimales).",
-    });
-
-    await render(<ResultatPleinEcran outcome={montant} onFermer={jest.fn()} />);
-
-    expect(screen.getByTestId("resultat-message").props.children).toMatch(/ordinateur/);
-  });
-
   it("se referme au toucher, où qu'on touche, et le dit discrètement", async () => {
     const onFermer = jest.fn();
     await render(<ResultatPleinEcran outcome={credit} onFermer={onFermer} />);
