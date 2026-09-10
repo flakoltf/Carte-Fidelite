@@ -9,9 +9,10 @@ import { AppleChannel } from "@/lib/wallet/channel";
 // Best-effort par conception : l'enregistrement de la modification ne doit
 // jamais échouer parce qu'un push a raté.
 //
-// Google : le rafraîchissement des objets passe par le même canal wallet
-// (GoogleChannel), volontairement désactivé tant que le publishing access n'est
-// pas accordé — les objets seront rafraîchis par ce canal le jour de l'activation.
+// Google : le rafraîchissement des objets passe par le canal wallet
+// GoogleChannel (PATCH des loyaltyObjects, cf. googleObject.ts), actif derrière
+// le flag GOOGLE_PUSH_ENABLED. Ici on ne pousse qu'Apple : le PATCH Google ne
+// porte que l'état de carte (solde/message), pas l'identité commerce.
 export async function refreshMerchantPasses(merchantId: string): Promise<{ pushed: number }> {
   const { data } = await supabaseAdmin
     .from("loyalty_cards")

@@ -100,14 +100,10 @@ marchands ; l'inscription publique est désactivée (`/signup` → `/login`).
   en production, bouton client visible, plus aucune mention d'attente dans la copie.
 - **En attente** : polish mobile M5 ; publication App Store (EAS/TestFlight) ;
   Sentry (DSN absent, code prêt) ; vieilles PRs #34-#60 à trier (périmées probables).
-- **DETTE OUVERTE, Google Wallet** : `GoogleChannel` (`src/lib/wallet/channel.ts`)
-  est un **stub** — `notify()` renvoie `{ pushed: 0 }` sans rien faire. Poser
-  `GOOGLE_PUSH_ENABLED=true` ajoute donc un canal **inerte** : une carte Google
-  s'émet correctement mais **son solde ne bouge jamais** après un scan. Il n'existe
-  aucune fonction de mise à jour d'objet (seul `ensureLoyaltyClass` patche la
-  *classe*, c'est-à-dire le design partagé). Correctif = `loyaltyobject.patch`
-  (invariant n°2 : jamais d'UPDATE/PUT), objectId déterministe
-  `${GOOGLE_ISSUER_ID}.${cardId}` — voir ETAT-PROJET.md « phase NEXT » n°2.
+- **Google Wallet, mise à jour d'objets : IMPLÉMENTÉE** — `GoogleChannel.notify()`
+  PATCHe les `loyaltyObjects` (solde + message, `src/lib/wallet/googleObject.ts`,
+  jamais d'UPDATE/PUT, 404 ignoré) ; activation = poser `GOOGLE_PUSH_ENABLED=true`
+  dans Vercel après vérification (pas encore fait).
 - **Limitation documentée** : bannière de notification Apple sur écran
   verrouillé = couche d'affichage Apple, capricieuse (docs/NOTIFICATIONS-WALLET.md)
   — ne jamais promettre sa fiabilité.

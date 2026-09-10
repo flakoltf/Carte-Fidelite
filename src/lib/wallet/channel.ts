@@ -34,10 +34,26 @@ export const AppleChannel: NotificationChannel = {
   },
 };
 
-// Désactivé tant que l'émetteur Google Wallet est en mode démo (pas d'accès publishing).
+// Canal Google Wallet : PATCH direct des loyaltyObjects (pas de push/pull comme
+// APNs — l'état est poussé dans l'objet, l'appareil se synchronise tout seul).
+// ACTIVATION : poser GOOGLE_PUSH_ENABLED=true dans Vercel (cf. getChannels) une
+// fois GOOGLE_ISSUER_ID + GOOGLE_CREDENTIALS_JSON vérifiés en prod — aucun
+// défaut de code n'active ce canal.
 export const GoogleChannel: NotificationChannel = {
   kind: "wallet",
-  async notify() { return { pushed: 0 }; },
+  async notify(cardIds, message) {
+    if (!cardIds.length) return { pushed: 0 };
+    try {
+      // Import dynamique : channel.ts est importé partout, googleapis (auth) ne
+      // doit charger que si le canal est actif ET sollicité.
+      const { pushGoogleObjectUpdates } = await import("@/lib/wallet/googleObject");
+      return await pushGoogleObjectUpdates(cardIds, message);
+    } catch (e) {
+      // Best-effort : un échec Google (auth, réseau) ne casse jamais le scan.
+      console.error("[GoogleChannel] push failed:", e instanceof Error ? e.message : e);
+      return { pushed: 0 };
+    }
+  },
 };
 
 export function getChannels(): NotificationChannel[] {
